@@ -1,0 +1,1062 @@
+{
+  "schemaVersion": 1,
+  "id": "toki-pona-glyph-quest",
+  "title": "Toki Pona Glyph Quest",
+  "status": "draft",
+  "standardGlyphs": [
+    "a",
+    "akesi",
+    "ala",
+    "alasa",
+    "ale",
+    "anpa",
+    "ante",
+    "anu",
+    "awen",
+    "e",
+    "en",
+    "esun",
+    "ijo",
+    "ike",
+    "ilo",
+    "insa",
+    "jaki",
+    "jan",
+    "jelo",
+    "jo",
+    "kala",
+    "kalama",
+    "kama",
+    "kasi",
+    "ken",
+    "kepeken",
+    "kili",
+    "kiwen",
+    "ko",
+    "kon",
+    "kule",
+    "kulupu",
+    "kute",
+    "la",
+    "lape",
+    "laso",
+    "lawa",
+    "len",
+    "lete",
+    "li",
+    "lili",
+    "linja",
+    "lipu",
+    "loje",
+    "lon",
+    "luka",
+    "lukin",
+    "lupa",
+    "ma",
+    "mama",
+    "mani",
+    "meli",
+    "mi",
+    "mije",
+    "moku",
+    "moli",
+    "monsi",
+    "mu",
+    "mun",
+    "musi",
+    "mute",
+    "nanpa",
+    "nasa",
+    "nasin",
+    "nena",
+    "ni",
+    "nimi",
+    "noka",
+    "o",
+    "olin",
+    "ona",
+    "open",
+    "pakala",
+    "pali",
+    "palisa",
+    "pan",
+    "pana",
+    "pi",
+    "pilin",
+    "pimeja",
+    "pini",
+    "pipi",
+    "poka",
+    "poki",
+    "pona",
+    "pu",
+    "sama",
+    "seli",
+    "selo",
+    "seme",
+    "sewi",
+    "sijelo",
+    "sike",
+    "sin",
+    "sina",
+    "sinpin",
+    "sitelen",
+    "sona",
+    "soweli",
+    "suli",
+    "suno",
+    "supa",
+    "suwi",
+    "tan",
+    "taso",
+    "tawa",
+    "telo",
+    "tenpo",
+    "toki",
+    "tomo",
+    "tu",
+    "unpa",
+    "uta",
+    "utala",
+    "walo",
+    "wan",
+    "waso",
+    "wawa",
+    "weka",
+    "wile"
+  ],
+  "baselineGlyphs": [
+    "namako",
+    "kin",
+    "oko",
+    "kipisi",
+    "leko",
+    "monsuta",
+    "tonsi",
+    "jasima",
+    "kijetesantakalu",
+    "soko",
+    "meso",
+    "epiku",
+    "kokosila",
+    "lanpan",
+    "n",
+    "misikeke",
+    "ku",
+    "pake",
+    "apeja",
+    "majuna",
+    "powe",
+    "linluwi",
+    "kiki",
+    "su"
+  ],
+  "baselineSymbols": [
+    "[",
+    "]",
+    "(",
+    ")",
+    "{",
+    "}",
+    ":",
+    ".",
+    ",",
+    "U+3000",
+    "cartouche-start",
+    "cartouche-end",
+    "cartouche-extension",
+    "stacking-joiner",
+    "scaling-joiner",
+    "long-start",
+    "long-end",
+    "reverse-long-start",
+    "reverse-long-end",
+    "middle-dot",
+    "colon",
+    "tally",
+    "left-corner",
+    "right-corner",
+    "ni-left",
+    "ni-up",
+    "ni-right",
+    "sewi-alt"
+  ],
+  "rules": {
+    "canonicalGlyphsPerLevel": 10,
+    "canonicalGlyphTotal": 120,
+    "allowDraftPartialCampaign": true,
+    "bonusCanSatisfyMinimum": false,
+    "requiredPuzzleRewardsConsumable": false
+  },
+  "levels": [
+    {
+      "id": "L01",
+      "ordinal": 1,
+      "title": "First circuits",
+      "canonicalGlyphs": [
+        "o",
+        "e",
+        "pana",
+        "li",
+        "lon",
+        "open",
+        "anpa",
+        "wawa",
+        "lupa",
+        "sewi"
+      ],
+      "startArea": "entry",
+      "initialStates": {
+        "workshopDoorOpen": false,
+        "mazeEntranceUnlocked": false,
+        "mazeExitReleased": false,
+        "upperAccess": false,
+        "maintenanceAccess": false,
+        "powerOn": false,
+        "innerMazeDoorUnlocked": false,
+        "innerMazeClueRecovered": false,
+        "observationDoorUnlocked": false,
+        "exitUnlocked": false
+      },
+      "areas": [
+        {
+          "id": "entry",
+          "name": "Entry Chamber",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Entry Chamber",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "workshop",
+          "name": "Workshop",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Workshop",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "concourse",
+          "name": "Lower Concourse",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Lower Concourse",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "mazeHub",
+          "name": "Maze Hub",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Maze Hub",
+          "tags": [
+            "maze"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeA",
+          "name": "Maze dead end A",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End A",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeB",
+          "name": "Maze dead end B",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End B",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeC",
+          "name": "Maze dead end C",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End C",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeInner",
+          "name": "Sealed maze chamber",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Inner Chamber",
+          "tags": [
+            "maze",
+            "delayed-return"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "upper",
+          "name": "Upper Gallery",
+          "floor": 1,
+          "worldRef": "upper",
+          "roomRef": "Upper Gallery",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "maintenance",
+          "name": "Maintenance Level",
+          "floor": -1,
+          "worldRef": "lower",
+          "roomRef": "Maintenance Level",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "observation",
+          "name": "Observation Room",
+          "floor": 1,
+          "worldRef": "upper",
+          "roomRef": "Observation Room",
+          "tags": [],
+          "runtime": {}
+        }
+      ],
+      "connections": [
+        {
+          "id": "entry-workshop",
+          "from": "entry",
+          "to": "workshop",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "workshop-concourse",
+          "from": "workshop",
+          "to": "concourse",
+          "bidirectional": true,
+          "kind": "door",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "workshopDoorOpen": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-enter",
+          "from": "concourse",
+          "to": "mazeHub",
+          "bidirectional": false,
+          "kind": "maze-door",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "mazeEntranceUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-exit",
+          "from": "mazeHub",
+          "to": "concourse",
+          "bidirectional": false,
+          "kind": "maze-door-return",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "mazeExitReleased": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-a",
+          "from": "mazeHub",
+          "to": "mazeA",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-b",
+          "from": "mazeHub",
+          "to": "mazeB",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-c",
+          "from": "mazeHub",
+          "to": "mazeC",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "maze-inner",
+          "from": "mazeHub",
+          "to": "mazeInner",
+          "bidirectional": true,
+          "kind": "locked-inner-door",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "innerMazeDoorUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "concourse-upper",
+          "from": "concourse",
+          "to": "upper",
+          "bidirectional": true,
+          "kind": "lift",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "upperAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "upper-maintenance",
+          "from": "upper",
+          "to": "maintenance",
+          "bidirectional": true,
+          "kind": "trapdoor",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "maintenanceAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "upper-observation",
+          "from": "upper",
+          "to": "observation",
+          "bidirectional": true,
+          "kind": "powered-glyph-door",
+          "requirements": {
+            "glyphs": [
+              "sewi"
+            ],
+            "states": {
+              "powerOn": true,
+              "observationDoorUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        }
+      ],
+      "puzzles": [
+        {
+          "id": "intro-o",
+          "chain": "intro",
+          "type": "pickup",
+          "area": "entry",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "o"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Recover o",
+            "instructions": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "intro-e",
+          "chain": "intro",
+          "type": "pickup",
+          "area": "entry",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "e"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Recover e",
+            "instructions": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "ball-table",
+          "chain": "workshop",
+          "type": "world-action",
+          "area": "workshop",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "o",
+              "e"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "pana"
+            ],
+            "setStates": {
+              "workshopDoorOpen": true,
+              "mazeEntranceUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "workshopDoorOpen": true,
+              "mazeEntranceUnlocked": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "o pana e sike lon supa",
+            "instructions": "Put the ball on the table.",
+            "module": "world-action",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "maze-dead-a",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeA",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "li"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze glyph A",
+            "instructions": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "maze-dead-b",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeB",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "lon"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze glyph B",
+            "instructions": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "maze-dead-c",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeC",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "open"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze glyph C",
+            "instructions": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "maze-exit-code",
+          "chain": "maze",
+          "type": "glyph-key-code",
+          "area": "mazeHub",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "li",
+              "lon",
+              "open"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "anpa"
+            ],
+            "setStates": {
+              "mazeExitReleased": true,
+              "upperAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "mazeExitReleased": true,
+              "upperAccess": true
+            }
+          },
+          "inputSequence": [
+            "li",
+            "lon",
+            "open"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Maze door code",
+            "instructions": "Place the three recovered maze glyphs in marker order 1 → 2 → 3.",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "upper-wawa-sentence",
+          "chain": "upper",
+          "type": "sentence-fill",
+          "area": "upper",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "li",
+              "lon",
+              "anpa"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "wawa"
+            ],
+            "setStates": {
+              "maintenanceAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "maintenanceAccess": true
+            }
+          },
+          "inputSequence": [
+            "wawa",
+            "li",
+            "lon",
+            "anpa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Upper inscription",
+            "instructions": "Complete the sentence using owned glyph keys.",
+            "module": "sentence-fill",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "maintenance-power",
+          "chain": "power",
+          "type": "glyph-machine",
+          "area": "maintenance",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "wawa"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "lupa"
+            ],
+            "setStates": {
+              "powerOn": true,
+              "innerMazeDoorUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "powerOn": true,
+              "innerMazeDoorUnlocked": true
+            }
+          },
+          "inputSequence": [
+            "wawa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Restore power",
+            "instructions": "Use wawa as the machine key.",
+            "module": "glyph-machine",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "inner-maze-clue",
+          "chain": "return",
+          "type": "glyph-key-panel",
+          "area": "mazeInner",
+          "sourceClass": "required-state",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "lupa"
+            ],
+            "states": {
+              "powerOn": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "innerMazeClueRecovered": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [
+            "lupa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Sealed chamber",
+            "instructions": "Inspect the powered mechanism and recover the clue.",
+            "module": "glyph-key-panel",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "entry-sewi-sentence",
+          "chain": "return",
+          "type": "sentence-fill",
+          "area": "entry",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "o",
+              "open",
+              "e",
+              "lupa"
+            ],
+            "states": {
+              "innerMazeClueRecovered": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "sewi"
+            ],
+            "setStates": {
+              "observationDoorUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "observationDoorUnlocked": true
+            }
+          },
+          "inputSequence": [
+            "o",
+            "open",
+            "e",
+            "lupa",
+            "sewi"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Entry inscription",
+            "instructions": "Complete the sentence using reusable glyph keys.",
+            "module": "sentence-fill",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "observation-terminal",
+          "chain": "finale",
+          "type": "terminal",
+          "area": "observation",
+          "sourceClass": "story",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "sewi"
+            ],
+            "states": {
+              "powerOn": true,
+              "innerMazeClueRecovered": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "exitUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": true,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Observation terminal",
+            "instructions": "Confirm the restored system.",
+            "module": "terminal",
+            "payload": {}
+          },
+          "notes": ""
+        }
+      ],
+      "completion": {
+        "requirements": {
+          "glyphs": [],
+          "states": {
+            "exitUnlocked": true
+          },
+          "solvedPuzzles": []
+        },
+        "exitArea": "observation"
+      },
+      "runtime": {
+        "geometryMode": "engine-authored",
+        "expectedFloors": [
+          -1,
+          0,
+          1
+        ],
+        "note": "Area/worldRef values map campaign topology onto the existing first-person renderer. Puzzle modules own the screen while active."
+      },
+      "rules": {
+        "canonicalGlyphsPerLevel": 10,
+        "canonicalGlyphTotal": 120,
+        "allowDraftPartialCampaign": true,
+        "bonusCanSatisfyMinimum": false,
+        "requiredPuzzleRewardsConsumable": false
+      }
+    }
+  ],
+  "runtime": {
+    "puzzlePresentation": "fullscreen-until-complete-or-exit",
+    "glyphOwnership": "permanent-reusable-key",
+    "saveSystem": "indexeddb"
+  }
+}

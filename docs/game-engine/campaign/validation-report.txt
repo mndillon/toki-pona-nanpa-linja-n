@@ -1,0 +1,120 @@
+Campaign validation: PASS
+Levels checked: 12
+Errors: 0
+Warnings: 0
+
+L01: PASS | states=81 | softLocks=0 | completeStates=11
+  reachable areas: concourse, entry, maintenance, mazeA, mazeB, mazeC, mazeHub, mazeInner, observation, upper, workshop
+  proof: solve:l1-intro-o -> solve:l1-intro-e -> move:l1-entry-workshop -> solve:l1-ball-table -> move:l1-workshop-concourse -> move:l1-maze-enter -> move:l1-maze-a -> solve:l1-maze-seli -> move:l1-maze-a -> move:l1-maze-b -> solve:l1-maze-awen -> move:l1-maze-b -> move:l1-maze-c -> solve:l1-maze-luka -> move:l1-maze-c -> solve:l1-maze-code -> move:l1-maze-exit -> move:l1-concourse-upper -> solve:l1-upper-number -> move:l1-upper-maintenance -> solve:l1-maintenance-sequence -> move:l1-upper-maintenance -> move:l1-concourse-upper -> move:l1-maze-enter -> move:l1-maze-inner -> solve:l1-inner-signed-number
+  skip scenario preowned:l1-intro-o: PASS (o)
+  skip scenario preowned:l1-intro-e: PASS (e)
+  skip scenario preowned:l1-ball-table: PASS (wan, tu)
+  skip scenario preowned:l1-maze-seli: PASS (seli)
+  skip scenario preowned:l1-maze-awen: PASS (awen)
+  skip scenario preowned:l1-maze-luka: PASS (luka)
+  skip scenario preowned:l1-maze-code: PASS (nanpa)
+  skip scenario preowned:l1-upper-number: PASS (ona)
+  skip scenario preowned:l1-inner-signed-number: PASS (ma)
+  skip scenario preowned:all-skip-safe: PASS (o, e, wan, tu, seli, awen, luka, nanpa, ona, ma)
+L02: PASS | states=44 | softLocks=0 | completeStates=6
+  reachable areas: l2Archive, l2Atrium, l2Cartography, l2Lab, l2Vault, l2Workshop
+  proof: solve:l2-digit-order -> move:l2-atrium-archive -> solve:l2-archive-sequence -> move:l2-atrium-archive -> move:l2-atrium-workshop -> solve:l2-workshop-stones -> move:l2-workshop-cartography -> solve:l2-map-cache -> move:l2-workshop-cartography -> move:l2-atrium-workshop -> move:l2-atrium-archive -> solve:l2-hidden-cache -> move:l2-archive-lab -> solve:l2-thousands -> solve:l2-scientific -> solve:l2-full-form-bridge
+  skip scenario preowned:l2-digit-order: PASS (ijo, utala)
+  skip scenario preowned:l2-country-kana: PASS (suno)
+  skip scenario preowned:l2-archive-sequence: PASS (mun, pipi)
+  skip scenario preowned:l2-workshop-stones: PASS (jo, kiwen)
+  skip scenario preowned:l2-hidden-cache: PASS (en)
+  skip scenario preowned:l2-thousands: PASS (kulupu)
+  skip scenario preowned:l2-scientific: PASS (kala)
+  skip scenario preowned:l2-full-form-bridge: PASS (nena)
+  skip scenario preowned:all-skip-safe: PASS (ijo, utala, suno, mun, pipi, jo, kiwen, en, kulupu, kala, nena)
+L03: PASS | states=27 | softLocks=0 | completeStates=6
+  reachable areas: l3Chronology, l3Core, l3Navigation, l3Observation, l3Relay, l3Workshop
+  proof: solve:l3-clock-alignment -> move:l3-chronology-relay -> solve:l3-relay-routing -> move:l3-relay-navigation -> solve:l3-path-circuit -> move:l3-navigation-observation -> solve:l3-lights-pattern -> move:l3-observation-workshop -> solve:l3-balance-machine -> move:l3-workshop-core -> solve:l3-context-match
+  skip scenario preowned:l3-clock-alignment: PASS (tenpo, suno)
+  skip scenario preowned:l3-relay-routing: PASS (toki, kasi)
+  skip scenario preowned:l3-path-circuit: PASS (nasin, tawa)
+  skip scenario preowned:l3-lights-pattern: PASS (sitelen, sona)
+  skip scenario preowned:l3-balance-machine: PASS (ilo, poka)
+  skip scenario preowned:all-skip-safe: PASS (tenpo, suno, toki, kasi, nasin, tawa, sitelen, sona, ilo, poka)
+L04: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l4Code, l4Junction, l4Pump, l4Ratio, l4Schedule, l4Stack
+  proof: solve:l4-jug-transfer -> move:l4-pump-code -> solve:l4-codebreaker -> move:l4-pump-code -> move:l4-pump-junction -> move:l4-junction-stack -> solve:l4-hanoi-stack -> move:l4-junction-stack -> move:l4-junction-ratio -> solve:l4-equivalence -> move:l4-ratio-schedule -> solve:l4-schedule-order
+  skip scenario preowned:l4-jug-transfer: PASS (telo, poki)
+  skip scenario preowned:l4-hanoi-stack: PASS (palisa, supa)
+  skip scenario preowned:l4-codebreaker: PASS (kule, lukin)
+  skip scenario preowned:l4-equivalence: PASS (sama, ante)
+  skip scenario preowned:l4-schedule-order: PASS (open, pini)
+  skip scenario preowned:all-skip-safe: PASS (telo, poki, palisa, supa, kule, lukin, sama, ante, open, pini)
+L05: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l5Freight, l5Junction, l5Pantry, l5River, l5Slide, l5Strategy
+  proof: solve:l5-river-crossing -> move:l5-river-freight -> solve:l5-sokoban-freight -> move:l5-river-freight -> move:l5-river-junction -> move:l5-junction-slide -> solve:l5-sliding-grid -> move:l5-junction-slide -> move:l5-junction-strategy -> solve:l5-peg-line -> move:l5-strategy-pantry -> solve:l5-pantry-nonogram
+  skip scenario preowned:l5-river-crossing: PASS (jan, soweli)
+  skip scenario preowned:l5-sokoban-freight: PASS (pana, lupa)
+  skip scenario preowned:l5-sliding-grid: PASS (sewi, anpa)
+  skip scenario preowned:l5-peg-line: PASS (linja, lawa)
+  skip scenario preowned:l5-pantry-nonogram: PASS (kili, moku)
+  skip scenario preowned:all-skip-safe: PASS (jan, soweli, pana, lupa, sewi, anpa, linja, lawa, kili, moku)
+L06: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l6Bases, l6Calculator, l6Cards, l6Crossword, l6Junction, l6Vault
+  proof: solve:l6-card-order -> move:l6-cards-calculator -> solve:l6-calculator -> move:l6-cards-calculator -> move:l6-cards-junction -> move:l6-junction-crossword -> solve:l6-country-crossword -> move:l6-junction-crossword -> move:l6-junction-bases -> solve:l6-base-match -> move:l6-bases-vault -> solve:l6-position-rings
+  skip scenario preowned:l6-card-order: PASS (musi, lipu)
+  skip scenario preowned:l6-calculator: PASS (pali, ken)
+  skip scenario preowned:l6-country-crossword: PASS (nimi, pu)
+  skip scenario preowned:l6-base-match: PASS (noka, nasa)
+  skip scenario preowned:l6-position-rings: PASS (sike, lon)
+  skip scenario preowned:all-skip-safe: PASS (musi, lipu, pali, ken, nimi, pu, noka, nasa, sike, lon)
+L07: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l7Airflow, l7Echo, l7Junction, l7Power, l7Pulse, l7Spectrum
+  proof: solve:l7-tone-sequence -> move:l7-echo-pulse -> solve:l7-pulse-sync -> move:l7-echo-pulse -> move:l7-echo-junction -> move:l7-junction-airflow -> solve:l7-airflow-network -> move:l7-junction-airflow -> move:l7-junction-spectrum -> solve:l7-spectrum-order -> move:l7-spectrum-power -> solve:l7-power-balance
+  skip scenario preowned:l7-tone-sequence: PASS (kalama, kute)
+  skip scenario preowned:l7-airflow-network: PASS (kon, selo)
+  skip scenario preowned:l7-pulse-sync: PASS (sijelo, pilin)
+  skip scenario preowned:l7-spectrum-order: PASS (loje, jelo)
+  skip scenario preowned:l7-power-balance: PASS (pimeja, wawa)
+  skip scenario preowned:all-skip-safe: PASS (kalama, kute, kon, selo, sijelo, pilin, loje, jelo, pimeja, wawa)
+L08: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l8Deduction, l8Junction, l8Mirror, l8Schedule, l8Transit, l8Truth
+  proof: solve:l8-deduction-order -> move:l8-deduction-truth -> solve:l8-truth-gates -> move:l8-deduction-truth -> move:l8-deduction-junction -> move:l8-junction-mirror -> solve:l8-dual-mirror -> move:l8-junction-mirror -> move:l8-junction-schedule -> solve:l8-dependency-schedule -> move:l8-schedule-transit -> solve:l8-transit-vault
+  skip scenario preowned:l8-deduction-order: PASS (seme, ni)
+  skip scenario preowned:l8-dual-mirror: PASS (sinpin, monsi)
+  skip scenario preowned:l8-truth-gates: PASS (ala, anu)
+  skip scenario preowned:l8-dependency-schedule: PASS (kepeken, tan)
+  skip scenario preowned:l8-transit-vault: PASS (weka, kama)
+  skip scenario preowned:all-skip-safe: PASS (seme, ni, sinpin, monsi, ala, anu, kepeken, tan, weka, kama)
+L09: PASS | states=30 | softLocks=0 | completeStates=6
+  reachable areas: l9Loft, l9Maze, l9Sphinx, l9Survey, l9Vault, l9Weights
+  proof: move:l9-survey-maze -> solve:l9-maze-survey -> move:l9-maze-sphinx -> solve:l9-sphinx-riddles -> move:l9-sphinx-weights -> solve:l9-counterweight -> move:l9-weights-loft -> solve:l9-route-polarity -> move:l9-loft-vault -> solve:l9-layer-alignment
+  skip scenario preowned:l9-maze-survey: PASS (alasa, insa)
+  skip scenario preowned:l9-sphinx-riddles: PASS (wile, taso)
+  skip scenario preowned:l9-counterweight: PASS (suli, lili)
+  skip scenario preowned:l9-route-polarity: PASS (ike, pona)
+  skip scenario preowned:l9-layer-alignment: PASS (tomo, la)
+  skip scenario preowned:all-skip-safe: PASS (alasa, insa, wile, taso, suli, lili, ike, pona, tomo, la)
+L10: PASS | states=39 | softLocks=0 | completeStates=7
+  reachable areas: l10Cold, l10Dispatch, l10Ledger, l10Market, l10Quarantine, l10Receiving, l10Textile
+  proof: move:l10-receiving-market -> solve:l10-market-till -> move:l10-receiving-market -> solve:l10-delivery-routing -> move:l10-receiving-market -> move:l10-market-cold -> solve:l10-cold-chain -> move:l10-cold-textile -> solve:l10-textile-mixer -> solve:l10-textile-routing -> move:l10-textile-ledger -> solve:l10-inspection-audit
+  skip scenario preowned:l10-market-till: PASS (esun, mani)
+  skip scenario preowned:l10-delivery-routing: PASS (pan, suwi)
+  skip scenario preowned:l10-cold-chain: PASS (lete, ko)
+  skip scenario preowned:l10-textile-routing: PASS (len, laso)
+  skip scenario preowned:l10-inspection-audit: PASS (jaki, walo)
+  skip scenario preowned:all-skip-safe: PASS (esun, mani, pan, suwi, lete, ko, len, laso, jaki, walo)
+L11: PASS | states=34 | softLocks=0 | completeStates=7
+  reachable areas: l11Aviary, l11Field, l11Hub, l11Incubator, l11Nest, l11Recovery, l11Registry
+  proof: solve:l11-call-survey -> move:l11-field-hub -> solve:l11-call-triangulation -> move:l11-hub-canopy -> solve:l11-roost-schedule -> move:l11-aviary-incubator -> move:l11-incubator-registry -> solve:l11-lineage-match -> move:l11-incubator-registry -> move:l11-aviary-incubator -> move:l11-aviary-nest -> solve:l11-parent-bands -> move:l11-nest-recovery -> solve:l11-habitat-triage
+  skip scenario preowned:l11-call-triangulation: PASS (mu, waso)
+  skip scenario preowned:l11-roost-schedule: PASS (lape, uta)
+  skip scenario preowned:l11-lineage-match: PASS (mama, unpa)
+  skip scenario preowned:l11-parent-bands: PASS (meli, mije)
+  skip scenario preowned:l11-habitat-triage: PASS (akesi, moli)
+  skip scenario preowned:all-skip-safe: PASS (mu, waso, lape, uta, mama, unpa, meli, mije, akesi, moli)
+L12: PASS | states=37 | softLocks=0 | completeStates=6
+  reachable areas: l12Cipher, l12Core, l12Entry, l12Final, l12Identity, l12Relation
+  proof: move:l12-entry-core -> solve:l12-parity-core -> move:l12-core-identity -> solve:l12-identity-order -> move:l12-identity-relation -> solve:l12-relation-mirrors -> move:l12-identity-relation -> move:l12-core-identity -> move:l12-core-cipher -> solve:l12-master-code -> move:l12-cipher-final -> solve:l12-final-sudoku
+  skip scenario preowned:l12-parity-core: PASS (pakala, sin)
+  skip scenario preowned:l12-identity-order: PASS (mi, sina)
+  skip scenario preowned:l12-master-code: PASS (ale, mute)
+  skip scenario preowned:l12-relation-mirrors: PASS (olin, pi)
+  skip scenario preowned:l12-final-sudoku: PASS (a, li)
+  skip scenario preowned:all-skip-safe: PASS (pakala, sin, mi, sina, ale, mute, olin, pi, a, li)

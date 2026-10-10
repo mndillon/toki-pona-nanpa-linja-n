@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/toki-pona-glyph-quest/campaign-schema-v1.json",
+  "title": "Toki Pona Glyph Quest Campaign v1",
+  "type": "object",
+  "required": ["schemaVersion", "id", "standardGlyphs", "baselineGlyphs", "baselineSymbols", "rules", "levels"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "status": { "enum": ["draft", "production"] },
+    "standardGlyphs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "baselineGlyphs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "baselineSymbols": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "rules": {
+      "type": "object",
+      "required": ["canonicalGlyphsPerLevel", "canonicalGlyphTotal"],
+      "properties": {
+        "canonicalGlyphsPerLevel": { "type": "integer", "minimum": 1 },
+        "canonicalGlyphTotal": { "type": "integer", "minimum": 1 },
+        "allowDraftPartialCampaign": { "type": "boolean" },
+        "bonusCanSatisfyMinimum": { "const": false },
+        "requiredPuzzleRewardsConsumable": { "const": false }
+      }
+    },
+    "levels": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/level" }
+    }
+  },
+  "$defs": {
+    "requirements": {
+      "type": "object",
+      "properties": {
+        "glyphs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "states": { "type": "object" },
+        "solvedPuzzles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      },
+      "additionalProperties": false
+    },
+    "effects": {
+      "type": "object",
+      "properties": {
+        "glyphs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "setStates": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "area": {
+      "type": "object",
+      "required": ["id", "name", "floor"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "floor": { "type": "number" },
+        "worldRef": { "type": "string" },
+        "roomRef": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "runtime": { "type": "object" }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "required": ["id", "from", "to", "bidirectional", "requirements"],
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "bidirectional": { "type": "boolean" },
+        "kind": { "type": "string" },
+        "requirements": { "$ref": "#/$defs/requirements" },
+        "runtime": { "type": "object" },
+        "notes": { "type": "string" }
+      }
+    },
+    "puzzle": {
+      "type": "object",
+      "required": ["id", "type", "area", "sourceClass", "requiredForMinimum", "requirements", "rewards", "ui"],
+      "properties": {
+        "id": { "type": "string" },
+        "chain": { "type": ["string", "null"] },
+        "type": { "type": "string" },
+        "area": { "type": "string" },
+        "sourceClass": { "enum": ["canonical", "required-state", "bonus", "story"] },
+        "requiredForMinimum": { "type": "boolean" },
+        "requirements": { "$ref": "#/$defs/requirements" },
+        "rewards": { "$ref": "#/$defs/effects" },
+        "skipIfRewardsOwned": { "type": "boolean" },
+        "skipSafe": { "type": "boolean" },
+        "storyCritical": { "type": "boolean" },
+        "alreadyOwnedEffects": { "$ref": "#/$defs/effects" },
+        "inputSequence": { "type": "array", "items": { "type": "string" } },
+        "repeatableGlyphUse": { "const": true },
+        "ui": {
+          "type": "object",
+          "required": ["presentation", "canExit", "module", "payload"],
+          "properties": {
+            "presentation": { "enum": ["world", "fullscreen"] },
+            "canExit": { "type": "boolean" },
+            "title": { "type": "string" },
+            "instructions": { "type": "string" },
+            "objective": { "type": "string" },
+            "module": { "type": "string" },
+            "payload": { "type": "object" }
+          }
+        }
+      }
+    },
+    "level": {
+      "type": "object",
+      "required": ["id", "ordinal", "canonicalGlyphs", "startArea", "initialStates", "areas", "connections", "puzzles", "completion"],
+      "properties": {
+        "id": { "type": "string" },
+        "ordinal": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "canonicalGlyphs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "startArea": { "type": "string" },
+        "initialStates": { "type": "object" },
+        "areas": { "type": "array", "items": { "$ref": "#/$defs/area" } },
+        "connections": { "type": "array", "items": { "$ref": "#/$defs/connection" } },
+        "puzzles": { "type": "array", "items": { "$ref": "#/$defs/puzzle" } },
+        "completion": {
+          "type": "object",
+          "required": ["requirements"],
+          "properties": {
+            "requirements": { "$ref": "#/$defs/requirements" },
+            "exitArea": { "type": ["string", "null"] }
+          }
+        },
+        "runtime": { "type": "object" }
+      }
+    }
+  }
+}

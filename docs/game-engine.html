@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Toki Pona Rooms — complete 12-level campaign</title>
+
+  <link rel="icon" href="/icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <link rel="stylesheet" href="./game-engine/game-engine.css?v=46" />
+</head>
+<body>
+  <a href="#main" class="skipLink">Skip to game <span class="tpLine">o tawa musi</span></a>
+
+  <main class="card" id="main" role="main" aria-labelledby="pageTitle">
+    <div class="pageHeadingRow">
+      <a class="pageHomeLink" href="./index.html" aria-label="Home" title="Home">
+        <svg class="pageHomeIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
+            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </a>
+      <div>
+        <h1 id="pageTitle">Toki Pona rooms — complete 12-level campaign</h1>
+        <span class="tpLine">musi tomo pi alasa sitelen pona</span>
+      </div>
+    </div>
+
+    <div class="help introHelp">
+      Explore all twelve campaign-driven first-person levels and recover all 120 canonical glyphs through spatial, logic, number, word and mechanism puzzles. Progress and transitions are saved in IndexedDB.
+          </div>
+
+    <section class="gameFrame" aria-label="First-person room explorer">
+      <div class="viewportWrap" id="viewportWrap">
+        <canvas id="gameCanvas" width="640" height="360" tabindex="0" aria-label="First-person game view"></canvas>
+        <canvas id="miniMap" width="180" height="180" aria-label="Explored map"></canvas>
+
+        <div class="hudTop" aria-hidden="true">
+          <span id="hudLevel">level 1</span>
+          <span id="hudRoom">Entry Chamber</span>
+          <span id="hudGlyphCount">L1 0/10 req · 0/120</span>
+        </div>
+        <div class="crosshair" aria-hidden="true"><span></span><span></span></div>
+        <div id="interactionPrompt" class="interactionPrompt" aria-live="polite"></div>
+        <div id="messageOverlay" class="messageOverlay" aria-live="polite"></div>
+        <div id="mouseHint" class="mouseHint">click view for mouse look · drag to turn · Esc releases</div>
+
+        <div id="mobileMovePad" class="mobileMovePad" aria-label="Movement controls">
+          <button type="button" class="mobileMoveBtn empty" tabindex="-1" aria-hidden="true"></button>
+          <button type="button" class="mobileMoveBtn" data-move="forward" aria-label="Move forward">▲</button>
+          <button type="button" class="mobileMoveBtn empty" tabindex="-1" aria-hidden="true"></button>
+          <button type="button" class="mobileMoveBtn" data-move="left" aria-label="Strafe left">◀</button>
+          <div class="mobileMoveCenter" aria-hidden="true">•</div>
+          <button type="button" class="mobileMoveBtn" data-move="right" aria-label="Strafe right">▶</button>
+          <button type="button" class="mobileMoveBtn empty" tabindex="-1" aria-hidden="true"></button>
+          <button type="button" class="mobileMoveBtn" data-move="back" aria-label="Move backward">▼</button>
+          <button type="button" class="mobileMoveBtn empty" tabindex="-1" aria-hidden="true"></button>
+        </div>
+        <button id="mobileUseBtn" class="mobileUseBtn" type="button" aria-label="Use or interact">USE</button>
+        <button id="mazeQuickExitBtn" class="mazeQuickExitBtn" type="button" hidden aria-label="Leave solved maze quickly" title="Leave solved maze (X)">Leave maze</button>
+        <button id="continueCampaignBtn" class="campaignContinueBtn" type="button" hidden>Continue to Level 2</button>
+      </div>
+
+      <div class="gameStatusGrid">
+        <div class="statusBlock">
+          <span class="statusLabel">local instruction</span>
+          <strong id="tpInstruction">o tawa insa.</strong>
+          <span id="enInstruction" class="statusSecondary">Go inside.</span>
+        </div>
+        <div class="statusBlock">
+          <span class="statusLabel">current objective</span>
+          <strong id="objectiveText">Explore the entry chamber.</strong>
+          <span id="inventoryText" class="statusSecondary">carrying: —</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="controlsPanel" aria-labelledby="controlsTitle">
+      <div class="controlsHeadingRow">
+        <h2 id="controlsTitle">Controls and progress</h2>
+        <div class="actionButtons">
+          <button id="collectionBtn" type="button">Glyph collection <span id="collectionBtnCount">0 / 120</span></button>
+          <button id="soundBtn" type="button" aria-pressed="true">Sound on</button>
+          <button id="mapBtn" type="button" aria-pressed="true">Map on</button>
+          <button id="resetBtn" type="button">New game</button>
+        </div>
+      </div>
+      <div class="controlLegend">
+        <span><kbd>W</kbd><kbd>S</kbd> move</span>
+        <span><kbd>A</kbd><kbd>D</kbd> strafe</span>
+        <span><kbd>←</kbd><kbd>→</kbd> turn</span>
+        <span><kbd>E</kbd> interact</span>
+        <span><kbd>G</kbd> glyph collection</span>
+        <span><kbd>M</kbd> map</span>
+        <span><kbd>X</kbd> leave solved maze</span>
+        <span>mobile: left pad moves, drag view to turn, USE interacts</span>
+      </div>
+      <div class="help">
+        Only the original 120 glyphs are collectible. Common Sitelen Pona 2026 glyphs outside that 120, plus standard punctuation/support symbols, are available from the start. Full-screen glyph puzzles use the shared letter-family picker. Choose a Toki Pona letter to see every available glyph in that family; punctuation/support symbols have their own key. Tap-first interaction is mobile-safe and glyphs remain reusable.
+      </div>
+    </section>
+
+    <details class="help fieldNotes">
+      <summary>Field notes</summary>
+      <div id="fieldLog" class="fieldLog" aria-live="polite"></div>
+    </details>
+  </main>
+
+  <div id="levelIntroOverlay" class="overlayScreen levelIntroOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="levelIntroTitle">
+    <div class="overlayCard levelIntroCard">
+      <div class="overlayEyebrow">level</div>
+      <h2 id="levelIntroTitle">Level</h2>
+      <canvas id="levelIntroCartouche" width="420" height="150" aria-label="Level number as an abbreviated nanpa-linja-n numeric cartouche"></canvas>
+      <p id="levelIntroHint">Tap anywhere to start.</p>
+      <button id="levelIntroStartBtn" type="button">Start</button>
+    </div>
+  </div>
+
+  <div id="glyphPopup" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="glyphPopupTitle">
+    <div class="overlayCard glyphRewardCard">
+      <div class="overlayEyebrow">glyph recovered</div>
+      <div id="glyphPopupGlyph" class="sitelenGlyph rewardGlyph" aria-hidden="true"></div>
+      <h2 id="glyphPopupTitle">—</h2>
+      <p id="glyphPopupSource"></p>
+      <div id="glyphPopupCount" class="overlayProgress">0 / 120</div>
+      <button id="glyphPopupClose" type="button">Continue</button>
+    </div>
+  </div>
+
+  <div id="collectionOverlay" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="collectionTitle">
+    <div class="overlayCard collectionCard">
+      <div class="overlayHeaderRow">
+        <div>
+          <div class="overlayEyebrow">game quest</div>
+          <h2 id="collectionTitle">Glyph collection <span id="collectionCount">0 / 120</span></h2>
+        </div>
+        <button id="collectionClose" type="button">Close</button>
+      </div>
+      <p class="help collectionHelp">Collected glyphs use the nasin nanpa font. Missing positions stay concealed.</p>
+      <div id="collectionLevelProgress" class="collectionLevelProgress" aria-live="polite"></div>
+      <div id="glyphGrid" class="glyphGrid" aria-label="120 glyph collection"></div>
+    </div>
+  </div>
+
+  <div id="sentenceOverlay" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="sentenceTitle">
+    <div class="overlayCard sentenceCard">
+      <div class="overlayEyebrow">glyph inscription</div>
+      <h2 id="sentenceTitle">Incomplete sentence</h2>
+      <div id="sentenceSlots" class="sentenceSlots"></div>
+      <p id="sentenceStatus" class="sentenceStatus"></p>
+      <div class="overlayButtonRow">
+        <button id="sentenceCompleteBtn" type="button">Complete sentence</button>
+        <button id="sentenceCloseBtn" type="button">Leave inscription</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="puzzleOverlay" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="puzzleTitle">
+    <div id="puzzleCard" class="overlayCard puzzleCard">
+      <div class="overlayEyebrow" id="puzzleEyebrow">glyph-key puzzle</div>
+      <h2 id="puzzleTitle">Puzzle</h2>
+      <p id="puzzleInstructions"></p>
+      <div id="puzzleBody" class="puzzleBody">
+        <div id="puzzleSlots" class="puzzleSlots" aria-label="Puzzle glyph slots"></div>
+        <div id="puzzleLiveCartoucheWrap" class="puzzleLiveCartoucheWrap" hidden>
+          <div class="puzzleLiveCartoucheHeader">
+            <div class="puzzleLiveCartoucheLabel">current sitelen cartouche</div>
+            <div id="puzzleLiveCartoucheSource" class="puzzleLiveCartoucheSource" aria-live="polite">—</div>
+          </div>
+          <canvas id="puzzleLiveCartoucheCanvas" class="puzzleLiveCartoucheCanvas" width="700" height="88" aria-label="Current sitelen cartouche preview"></canvas>
+        </div>
+        <div id="puzzleTrayWrap" class="puzzleTrayWrap">
+          <div class="puzzleTrayLabel">available glyph keys</div>
+          <div id="puzzleTray" class="puzzleTray" aria-label="Available glyph keys"></div>
+        </div>
+      </div>
+      <p id="puzzleStatus" class="puzzleStatus" aria-live="polite"></p>
+      <div class="overlayButtonRow">
+        <button id="puzzleResetBtn" type="button">Clear</button>
+        <button id="puzzleCompleteBtn" type="button">Activate</button>
+        <button id="puzzleCloseBtn" type="button">Leave puzzle</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="levelCompleteOverlay" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="levelCompleteTitle">
+    <div id="campaignConfetti" class="campaignConfetti" hidden aria-hidden="true"></div>
+    <div id="levelCompleteCard" class="overlayCard levelCompleteCard">
+      <div id="levelCompleteEyebrow" class="overlayEyebrow">level complete</div>
+      <h2 id="levelCompleteTitle">Level complete</h2>
+      <p id="levelCompleteText">The level objectives are complete.</p>
+      <div id="campaignCompleteBadge" class="campaignCompleteBadge" hidden>🎉 Congratulations — all 120 glyphs recovered! 🎉</div>
+      <div id="levelCompleteCount" class="overlayProgress">0 / 120 glyphs recovered</div>
+      <div class="overlayButtonRow">
+        <button id="continueLevelBtn" type="button">Continue to Level 2</button>
+        <button id="stayLevelBtn" type="button">Stay here</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="resetConfirmOverlay" class="overlayScreen" hidden role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitle">
+    <div class="overlayCard resetConfirmCard">
+      <div class="overlayEyebrow">confirm new game</div>
+      <h2 id="resetConfirmTitle">Start a new game?</h2>
+      <p>Current saved progress will be erased and replaced with a fresh campaign start.</p>
+      <div id="resetConfirmProgress" class="overlayProgress">0 / 120 glyphs recovered</div>
+      <div class="overlayButtonRow">
+        <button id="resetConfirmCancelBtn" type="button">Cancel</button>
+        <button id="resetConfirmStartBtn" type="button">Yes, start new game</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./game-engine/campaign/campaign-constructor.js?v=5"></script>
+  <script src="./game-engine/campaign/campaign-validator.js?v=5"></script>
+  <script src="./game-engine/campaign/campaign-runtime.js?v=5"></script>
+  <script src="./game-engine/campaign/campaign-draft-v0.1.js?v=43"></script>
+  <script src="./game-engine/campaign/campaign-engine-adapter.js?v=5"></script>
+  <script src="./game-engine/game-engine-reset.js?v=42"></script>
+  <script src="./game-engine/game-engine.js?v=46"></script>
+</body>
+</html>

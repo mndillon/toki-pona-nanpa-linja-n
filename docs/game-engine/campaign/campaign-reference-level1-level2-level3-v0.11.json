@@ -1,0 +1,2437 @@
+{
+  "schemaVersion": 1,
+  "id": "toki-pona-glyph-quest",
+  "title": "Toki Pona Glyph Quest",
+  "status": "draft",
+  "standardGlyphs": [
+    "a",
+    "akesi",
+    "ala",
+    "alasa",
+    "ale",
+    "anpa",
+    "ante",
+    "anu",
+    "awen",
+    "e",
+    "en",
+    "esun",
+    "ijo",
+    "ike",
+    "ilo",
+    "insa",
+    "jaki",
+    "jan",
+    "jelo",
+    "jo",
+    "kala",
+    "kalama",
+    "kama",
+    "kasi",
+    "ken",
+    "kepeken",
+    "kili",
+    "kiwen",
+    "ko",
+    "kon",
+    "kule",
+    "kulupu",
+    "kute",
+    "la",
+    "lape",
+    "laso",
+    "lawa",
+    "len",
+    "lete",
+    "li",
+    "lili",
+    "linja",
+    "lipu",
+    "loje",
+    "lon",
+    "luka",
+    "lukin",
+    "lupa",
+    "ma",
+    "mama",
+    "mani",
+    "meli",
+    "mi",
+    "mije",
+    "moku",
+    "moli",
+    "monsi",
+    "mu",
+    "mun",
+    "musi",
+    "mute",
+    "nanpa",
+    "nasa",
+    "nasin",
+    "nena",
+    "ni",
+    "nimi",
+    "noka",
+    "o",
+    "olin",
+    "ona",
+    "open",
+    "pakala",
+    "pali",
+    "palisa",
+    "pan",
+    "pana",
+    "pi",
+    "pilin",
+    "pimeja",
+    "pini",
+    "pipi",
+    "poka",
+    "poki",
+    "pona",
+    "pu",
+    "sama",
+    "seli",
+    "selo",
+    "seme",
+    "sewi",
+    "sijelo",
+    "sike",
+    "sin",
+    "sina",
+    "sinpin",
+    "sitelen",
+    "sona",
+    "soweli",
+    "suli",
+    "suno",
+    "supa",
+    "suwi",
+    "tan",
+    "taso",
+    "tawa",
+    "telo",
+    "tenpo",
+    "toki",
+    "tomo",
+    "tu",
+    "unpa",
+    "uta",
+    "utala",
+    "walo",
+    "wan",
+    "waso",
+    "wawa",
+    "weka",
+    "wile"
+  ],
+  "baselineGlyphs": [
+    "namako",
+    "kin",
+    "oko",
+    "kipisi",
+    "leko",
+    "monsuta",
+    "tonsi",
+    "jasima",
+    "kijetesantakalu",
+    "soko",
+    "meso",
+    "epiku",
+    "kokosila",
+    "lanpan",
+    "n",
+    "misikeke",
+    "ku",
+    "pake",
+    "apeja",
+    "majuna",
+    "powe",
+    "linluwi",
+    "kiki",
+    "su"
+  ],
+  "baselineSymbols": [
+    "[",
+    "]",
+    "(",
+    ")",
+    "{",
+    "}",
+    ":",
+    ".",
+    ",",
+    "U+3000",
+    "cartouche-start",
+    "cartouche-end",
+    "cartouche-extension",
+    "stacking-joiner",
+    "scaling-joiner",
+    "long-start",
+    "long-end",
+    "reverse-long-start",
+    "reverse-long-end",
+    "middle-dot",
+    "colon",
+    "tally",
+    "left-corner",
+    "right-corner",
+    "ni-left",
+    "ni-up",
+    "ni-right",
+    "sewi-alt"
+  ],
+  "rules": {
+    "canonicalGlyphsPerLevel": 10,
+    "canonicalGlyphTotal": 120,
+    "allowDraftPartialCampaign": true,
+    "bonusCanSatisfyMinimum": false,
+    "requiredPuzzleRewardsConsumable": false
+  },
+  "levels": [
+    {
+      "id": "L01",
+      "ordinal": 1,
+      "title": "nanpa open",
+      "canonicalGlyphs": [
+        "o",
+        "e",
+        "wan",
+        "tu",
+        "seli",
+        "awen",
+        "luka",
+        "nanpa",
+        "ona",
+        "ma"
+      ],
+      "startArea": "entry",
+      "initialStates": {
+        "workshopDoorOpen": false,
+        "mazeEntranceUnlocked": false,
+        "mazeExitReleased": false,
+        "upperAccess": false,
+        "maintenanceAccess": false,
+        "powerOn": false,
+        "innerMazeDoorUnlocked": false,
+        "observationDoorUnlocked": false,
+        "exitUnlocked": false
+      },
+      "areas": [
+        {
+          "id": "entry",
+          "name": "Entry Chamber",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Entry Chamber",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "workshop",
+          "name": "Workshop",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Workshop",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "concourse",
+          "name": "Lower Concourse",
+          "floor": 0,
+          "worldRef": "main",
+          "roomRef": "Lower Concourse",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "mazeHub",
+          "name": "Maze",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Maze",
+          "tags": [
+            "maze"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeA",
+          "name": "Maze dead end A",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End A",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeB",
+          "name": "Maze dead end B",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End B",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeC",
+          "name": "Maze dead end C",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Dead End C",
+          "tags": [
+            "maze",
+            "dead-end"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "mazeInner",
+          "name": "Sealed maze chamber",
+          "floor": 0,
+          "worldRef": "maze",
+          "roomRef": "Inner Chamber",
+          "tags": [
+            "maze",
+            "delayed-return"
+          ],
+          "runtime": {}
+        },
+        {
+          "id": "upper",
+          "name": "Upper Gallery",
+          "floor": 1,
+          "worldRef": "upper",
+          "roomRef": "Upper Gallery",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "maintenance",
+          "name": "Maintenance Level",
+          "floor": -1,
+          "worldRef": "lower",
+          "roomRef": "Maintenance Level",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "observation",
+          "name": "Observation Room",
+          "floor": 1,
+          "worldRef": "upper",
+          "roomRef": "Observation Room",
+          "tags": [],
+          "runtime": {}
+        }
+      ],
+      "connections": [
+        {
+          "id": "l1-entry-workshop",
+          "from": "entry",
+          "to": "workshop",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-workshop-concourse",
+          "from": "workshop",
+          "to": "concourse",
+          "bidirectional": true,
+          "kind": "door",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "workshopDoorOpen": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-enter",
+          "from": "concourse",
+          "to": "mazeHub",
+          "bidirectional": false,
+          "kind": "maze-door",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "mazeEntranceUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-exit",
+          "from": "mazeHub",
+          "to": "concourse",
+          "bidirectional": false,
+          "kind": "maze-door-return",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "mazeExitReleased": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-a",
+          "from": "mazeHub",
+          "to": "mazeA",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-b",
+          "from": "mazeHub",
+          "to": "mazeB",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-c",
+          "from": "mazeHub",
+          "to": "mazeC",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-inner",
+          "from": "mazeHub",
+          "to": "mazeInner",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "innerMazeDoorUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-concourse-upper",
+          "from": "concourse",
+          "to": "upper",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "upperAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-upper-maintenance",
+          "from": "upper",
+          "to": "maintenance",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "maintenanceAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l1-upper-observation",
+          "from": "upper",
+          "to": "observation",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "observationDoorUnlocked": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        }
+      ],
+      "puzzles": [
+        {
+          "id": "l1-intro-o",
+          "chain": "intro",
+          "type": "pickup",
+          "area": "entry",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "o"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Recover o",
+            "instructions": "",
+            "objective": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-intro-e",
+          "chain": "intro",
+          "type": "pickup",
+          "area": "entry",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "e"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Recover e",
+            "instructions": "",
+            "objective": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-ball-table",
+          "chain": "workshop",
+          "type": "world-action",
+          "area": "workshop",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "o",
+              "e"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "wan",
+              "tu"
+            ],
+            "setStates": {
+              "workshopDoorOpen": true,
+              "mazeEntranceUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "workshopDoorOpen": true,
+              "mazeEntranceUnlocked": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "o pana e sike lon supa",
+            "instructions": "Put the ball on the table. The mechanism releases two number glyphs.",
+            "objective": "",
+            "module": "world-action",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-seli",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeA",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "seli"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze marker 1",
+            "instructions": "",
+            "objective": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-awen",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeB",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "awen"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze marker 2",
+            "instructions": "",
+            "objective": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-luka",
+          "chain": "maze",
+          "type": "pickup",
+          "area": "mazeC",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "luka"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "world",
+            "canExit": true,
+            "title": "Maze marker 3",
+            "instructions": "",
+            "objective": "",
+            "module": "pickup",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-maze-code",
+          "chain": "maze",
+          "type": "glyph-key-code",
+          "area": "mazeHub",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "seli",
+              "awen",
+              "luka"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "nanpa"
+            ],
+            "setStates": {
+              "mazeExitReleased": true,
+              "upperAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "mazeExitReleased": true,
+              "upperAccess": true
+            }
+          },
+          "inputSequence": [
+            "seli",
+            "luka",
+            "awen"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Maze return code",
+            "instructions": "The three maze markers give the order. Build marker 1 → 3 → 2.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-upper-number",
+          "chain": "number",
+          "type": "glyph-key-code",
+          "area": "upper",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "nanpa",
+              "wan",
+              "tu",
+              "seli"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "ona"
+            ],
+            "setStates": {
+              "maintenanceAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "maintenanceAccess": true
+            }
+          },
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "wan",
+            "tu",
+            "seli",
+            "nanpa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "First numeric cartouche",
+            "instructions": "Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-maintenance-sequence",
+          "chain": "power",
+          "type": "glyph-key-code",
+          "area": "maintenance",
+          "sourceClass": "required-state",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "wan",
+              "tu",
+              "seli",
+              "awen",
+              "luka"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "powerOn": true,
+              "innerMazeDoorUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [
+            "luka",
+            "awen",
+            "seli",
+            "tu",
+            "wan"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Power sequence",
+            "instructions": "Reverse the five digit glyphs you learned: 5 → 4 → 3 → 2 → 1.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-inner-signed-number",
+          "chain": "return",
+          "type": "glyph-key-code",
+          "area": "mazeInner",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "nanpa",
+              "ona",
+              "awen",
+              "o",
+              "luka"
+            ],
+            "states": {
+              "powerOn": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "ma"
+            ],
+            "setStates": {
+              "observationDoorUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "observationDoorUnlocked": true
+            }
+          },
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "ona",
+            "awen",
+            "o",
+            "luka",
+            "nanpa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Sealed numeric chamber",
+            "instructions": "Construct the abbreviated nanpa-format cartouche for −4.5.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l1-terminal",
+          "chain": "finale",
+          "type": "terminal",
+          "area": "observation",
+          "sourceClass": "story",
+          "requiredForMinimum": false,
+          "requirements": {
+            "glyphs": [
+              "ma"
+            ],
+            "states": {
+              "powerOn": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "exitUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Level 1 terminal",
+            "instructions": "Optional archive terminal. Level progression no longer depends on confirming it.",
+            "objective": "",
+            "module": "terminal",
+            "payload": {}
+          },
+          "notes": ""
+        }
+      ],
+      "completion": {
+        "requirements": {
+          "glyphs": [],
+          "states": {
+            "powerOn": true,
+            "observationDoorUnlocked": true
+          },
+          "solvedPuzzles": []
+        },
+        "exitArea": null
+      },
+      "runtime": {
+        "geometryMode": "engine-authored",
+        "expectedFloors": [
+          -1,
+          0,
+          1
+        ]
+      },
+      "rules": {
+        "canonicalGlyphsPerLevel": 10,
+        "canonicalGlyphTotal": 120,
+        "allowDraftPartialCampaign": true,
+        "bonusCanSatisfyMinimum": false,
+        "requiredPuzzleRewardsConsumable": false
+      }
+    },
+    {
+      "id": "L02",
+      "ordinal": 2,
+      "title": "nanpa tu",
+      "canonicalGlyphs": [
+        "ijo",
+        "utala",
+        "mun",
+        "pipi",
+        "jo",
+        "en",
+        "kulupu",
+        "kala",
+        "nena",
+        "kiwen"
+      ],
+      "startArea": "l2Atrium",
+      "initialStates": {
+        "l2ArchiveAccess": false,
+        "l2MapAccess": false,
+        "l2CartographyAccess": false,
+        "cacheRevealed": false,
+        "l2LabAccess": false,
+        "l2VaultAccess": false,
+        "l2ExitUnlocked": false
+      },
+      "areas": [
+        {
+          "id": "l2Atrium",
+          "name": "Second Atrium",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Second Atrium",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l2Workshop",
+          "name": "Number Workshop",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Number Workshop",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l2Cartography",
+          "name": "Cartography Room",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Cartography Room",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l2Archive",
+          "name": "Lower Archive",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Lower Archive",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l2Lab",
+          "name": "Notation Laboratory",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Notation Laboratory",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l2Vault",
+          "name": "Foundation Vault",
+          "floor": 0,
+          "worldRef": "l2main",
+          "roomRef": "Foundation Vault",
+          "tags": [],
+          "runtime": {}
+        }
+      ],
+      "connections": [
+        {
+          "id": "l2-atrium-workshop",
+          "from": "l2Atrium",
+          "to": "l2Workshop",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l2-atrium-archive",
+          "from": "l2Atrium",
+          "to": "l2Archive",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l2ArchiveAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l2-workshop-cartography",
+          "from": "l2Workshop",
+          "to": "l2Cartography",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l2CartographyAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l2-archive-lab",
+          "from": "l2Archive",
+          "to": "l2Lab",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l2LabAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l2-lab-vault",
+          "from": "l2Lab",
+          "to": "l2Vault",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l2VaultAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l2-cartography-vault",
+          "from": "l2Cartography",
+          "to": "l2Vault",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l2VaultAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        }
+      ],
+      "puzzles": [
+        {
+          "id": "l2-digit-order",
+          "chain": "digits",
+          "type": "glyph-key-code",
+          "area": "l2Atrium",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "wan",
+              "tu",
+              "seli",
+              "awen",
+              "luka"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "ijo",
+              "utala"
+            ],
+            "setStates": {
+              "l2ArchiveAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l2ArchiveAccess": true
+            }
+          },
+          "inputSequence": [
+            "wan",
+            "tu",
+            "seli",
+            "awen",
+            "luka"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Missing edge digits",
+            "instructions": "Place the five Level 1 digit glyphs in ascending order. The machine reveals the two edge digits.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-country-kana",
+          "chain": "bonus-country",
+          "type": "country-cartouche",
+          "area": "l2Atrium",
+          "sourceClass": "bonus",
+          "requiredForMinimum": false,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "suno"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "ma seme?",
+            "instructions": "Identify the country, then spell its Toki Pona name using any owned glyph whose word begins with each required letter.",
+            "objective": "",
+            "module": "country-cartouche",
+            "payload": {
+              "country": "Ghana",
+              "answer": "KANA",
+              "clueTp": "ma ni li lon poka suno weka Apika. ona li jo e poka telo suli.",
+              "clueEn": "This country is in western Africa. It has a coast on a large body of water."
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-archive-sequence",
+          "chain": "digits",
+          "type": "glyph-key-code",
+          "area": "l2Archive",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "ijo",
+              "utala",
+              "wan",
+              "tu"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "mun",
+              "pipi"
+            ],
+            "setStates": {
+              "l2MapAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l2MapAccess": true
+            }
+          },
+          "inputSequence": [
+            "ijo",
+            "wan",
+            "tu",
+            "utala"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Archive sequence",
+            "instructions": "Use the clue 0 → 1 → 2 → 6 to build the four-glyph sequence.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-workshop-stones",
+          "chain": "material",
+          "type": "glyph-key-code",
+          "area": "l2Workshop",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "ma",
+              "awen",
+              "tu",
+              "wan"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "jo",
+              "kiwen"
+            ],
+            "setStates": {
+              "l2CartographyAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l2CartographyAccess": true
+            }
+          },
+          "inputSequence": [
+            "ma",
+            "wan",
+            "tu",
+            "awen"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Stone index",
+            "instructions": "The placards read MA, then the odd positions 1, 2, 4. Enter that sequence to release the stone key.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-map-cache",
+          "chain": "map",
+          "type": "coordinate-map",
+          "area": "l2Cartography",
+          "sourceClass": "required-state",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "ma",
+              "kiwen",
+              "nanpa",
+              "seli",
+              "jo"
+            ],
+            "states": {
+              "l2MapAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "cacheRevealed": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Coordinate map",
+            "instructions": "Mark the grid cell shown by the abbreviated ma coordinate.",
+            "objective": "Solve the coordinate map in Cartography.",
+            "module": "coordinate-map",
+            "payload": {
+              "source": "ma:(3,9)",
+              "targetX": 3,
+              "targetY": 9,
+              "gridWidth": 10,
+              "gridHeight": 10
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-hidden-cache",
+          "chain": "map",
+          "type": "glyph-key-code",
+          "area": "l2Archive",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "kiwen",
+              "ma"
+            ],
+            "states": {
+              "cacheRevealed": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "en"
+            ],
+            "setStates": {
+              "l2LabAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l2LabAccess": true
+            }
+          },
+          "inputSequence": [
+            "kiwen",
+            "ma",
+            "kiwen"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Revealed cache",
+            "instructions": "The cache displays three sitelen pona glyphs. Enter the same glyphs below in the same order.",
+            "objective": "Return to the Lower Archive and inspect the revealed cache.",
+            "module": "glyph-key-code",
+            "payload": {
+              "displaySequence": [
+                "kiwen",
+                "ma",
+                "kiwen"
+              ]
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-thousands",
+          "chain": "notation",
+          "type": "glyph-key-code",
+          "area": "l2Lab",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "wan",
+              "tu",
+              "seli",
+              "awen"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "kulupu"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [
+            "wan",
+            "tu",
+            "seli",
+            "awen"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Thousands grouping",
+            "instructions": "Arrange 1, 2, 3, 4 in order. The grouping mechanism reveals the thousands marker.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-scientific",
+          "chain": "notation",
+          "type": "glyph-key-code",
+          "area": "l2Lab",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "nanpa",
+              "wan",
+              "o",
+              "luka",
+              "seli",
+              "kulupu"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "kala"
+            ],
+            "setStates": {}
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "wan",
+            "o",
+            "luka",
+            "seli",
+            "nanpa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Notation laboratory",
+            "instructions": "Build the abbreviated numeric shell shown by the lab clue: 1.53. The solved apparatus reveals the scientific marker.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-full-form-bridge",
+          "chain": "notation",
+          "type": "glyph-key-code",
+          "area": "l2Lab",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "e",
+              "en",
+              "nanpa",
+              "kala"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "nena"
+            ],
+            "setStates": {
+              "l2VaultAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l2VaultAccess": true
+            }
+          },
+          "inputSequence": [
+            "e",
+            "en",
+            "e",
+            "nanpa"
+          ],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Full-form bridge",
+            "instructions": "The full-form diagram labels four surviving positions E → EN → E → NANPA. Reconstruct them.",
+            "objective": "",
+            "module": "glyph-key-code",
+            "payload": {}
+          },
+          "notes": ""
+        },
+        {
+          "id": "l2-vault-terminal",
+          "chain": "finale",
+          "type": "terminal",
+          "area": "l2Vault",
+          "sourceClass": "story",
+          "requiredForMinimum": false,
+          "requirements": {
+            "glyphs": [
+              "ijo",
+              "utala",
+              "mun",
+              "pipi",
+              "jo",
+              "en",
+              "kulupu",
+              "kala",
+              "nena",
+              "kiwen"
+            ],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "l2ExitUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Foundation complete",
+            "instructions": "Optional foundation terminal. The level is already complete once all required glyphs and mandatory world-state objectives are satisfied.",
+            "objective": "",
+            "module": "terminal",
+            "payload": {}
+          },
+          "notes": ""
+        }
+      ],
+      "completion": {
+        "requirements": {
+          "glyphs": [],
+          "states": {
+            "cacheRevealed": true,
+            "l2LabAccess": true,
+            "l2VaultAccess": true
+          },
+          "solvedPuzzles": []
+        },
+        "exitArea": null
+      },
+      "runtime": {
+        "geometryMode": "engine-authored",
+        "expectedFloors": [
+          0
+        ]
+      },
+      "rules": {
+        "canonicalGlyphsPerLevel": 10,
+        "canonicalGlyphTotal": 120,
+        "allowDraftPartialCampaign": true,
+        "bonusCanSatisfyMinimum": false,
+        "requiredPuzzleRewardsConsumable": false
+      }
+    },
+    {
+      "id": "L03",
+      "ordinal": 3,
+      "title": "nanpa seli",
+      "canonicalGlyphs": [
+        "tenpo",
+        "suno",
+        "toki",
+        "kasi",
+        "nasin",
+        "tawa",
+        "sitelen",
+        "sona",
+        "ilo",
+        "poka"
+      ],
+      "startArea": "l3Chronology",
+      "initialStates": {
+        "l3RelayAccess": false,
+        "l3NavigationAccess": false,
+        "l3ObservationAccess": false,
+        "l3WorkshopAccess": false,
+        "l3CoreAccess": false,
+        "l3ExitUnlocked": false
+      },
+      "areas": [
+        {
+          "id": "l3Chronology",
+          "name": "Chronology Hall",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Chronology Hall",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l3Relay",
+          "name": "Relay Gallery",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Relay Gallery",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l3Navigation",
+          "name": "Navigation Floor",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Navigation Floor",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l3Observation",
+          "name": "Observation Chamber",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Observation Chamber",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l3Workshop",
+          "name": "Instrument Workshop",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Instrument Workshop",
+          "tags": [],
+          "runtime": {}
+        },
+        {
+          "id": "l3Core",
+          "name": "Synchronization Core",
+          "floor": 0,
+          "worldRef": "l3main",
+          "roomRef": "Synchronization Core",
+          "tags": [],
+          "runtime": {}
+        }
+      ],
+      "connections": [
+        {
+          "id": "l3-chronology-relay",
+          "from": "l3Chronology",
+          "to": "l3Relay",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3RelayAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l3-relay-navigation",
+          "from": "l3Relay",
+          "to": "l3Navigation",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3NavigationAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l3-navigation-observation",
+          "from": "l3Navigation",
+          "to": "l3Observation",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3ObservationAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l3-observation-workshop",
+          "from": "l3Observation",
+          "to": "l3Workshop",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3WorkshopAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        },
+        {
+          "id": "l3-workshop-core",
+          "from": "l3Workshop",
+          "to": "l3Core",
+          "bidirectional": true,
+          "kind": "passage",
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3CoreAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "runtime": {},
+          "notes": ""
+        }
+      ],
+      "puzzles": [
+        {
+          "id": "l3-clock-alignment",
+          "chain": "time",
+          "type": "dial-bank",
+          "area": "l3Chronology",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {},
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "tenpo",
+              "suno"
+            ],
+            "setStates": {
+              "l3RelayAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l3RelayAccess": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Clock alignment",
+            "instructions": "Set the three clock dials so all three clues are true. This is a deduction puzzle; the dials can be changed independently.",
+            "objective": "",
+            "module": "dial-bank",
+            "payload": {
+              "startValues": [
+                0,
+                0,
+                0
+              ],
+              "targetValues": [
+                4,
+                3,
+                2
+              ],
+              "clues": [
+                "left + middle = 7",
+                "middle + right = 5",
+                "left + right = 6"
+              ]
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l3-relay-routing",
+          "chain": "signal",
+          "type": "route-board",
+          "area": "l3Relay",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3RelayAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "toki",
+              "kasi"
+            ],
+            "setStates": {
+              "l3NavigationAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l3NavigationAccess": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Relay routing",
+            "instructions": "Rotate the relay pieces to make one continuous signal path from the left input to the right output.",
+            "objective": "",
+            "module": "route-board",
+            "payload": {
+              "width": 4,
+              "height": 4,
+              "sourceRow": 1,
+              "sinkRow": 2,
+              "tiles": [
+                {
+                  "x": 0,
+                  "y": 1,
+                  "type": "straight",
+                  "rotation": 1
+                },
+                {
+                  "x": 1,
+                  "y": 1,
+                  "type": "corner",
+                  "rotation": 3
+                },
+                {
+                  "x": 1,
+                  "y": 2,
+                  "type": "straight",
+                  "rotation": 0
+                },
+                {
+                  "x": 1,
+                  "y": 3,
+                  "type": "corner",
+                  "rotation": 1
+                },
+                {
+                  "x": 2,
+                  "y": 3,
+                  "type": "straight",
+                  "rotation": 1
+                },
+                {
+                  "x": 3,
+                  "y": 3,
+                  "type": "corner",
+                  "rotation": 0
+                },
+                {
+                  "x": 3,
+                  "y": 2,
+                  "type": "corner",
+                  "rotation": 2
+                }
+              ]
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l3-path-circuit",
+          "chain": "navigation",
+          "type": "path-grid",
+          "area": "l3Navigation",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3NavigationAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "nasin",
+              "tawa"
+            ],
+            "setStates": {
+              "l3ObservationAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l3ObservationAccess": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Beacon route",
+            "instructions": "Move the marker through checkpoints A, B, C in that order, then reach the exit. Dark cells are blocked.",
+            "objective": "",
+            "module": "path-grid",
+            "payload": {
+              "width": 5,
+              "height": 5,
+              "start": [
+                0,
+                4
+              ],
+              "exit": [
+                4,
+                0
+              ],
+              "checkpoints": [
+                [
+                  0,
+                  2
+                ],
+                [
+                  2,
+                  1
+                ],
+                [
+                  4,
+                  2
+                ]
+              ],
+              "blocks": [
+                [
+                  1,
+                  4
+                ],
+                [
+                  2,
+                  4
+                ],
+                [
+                  3,
+                  4
+                ],
+                [
+                  1,
+                  3
+                ],
+                [
+                  3,
+                  3
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  3,
+                  1
+                ]
+              ]
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l3-lights-pattern",
+          "chain": "observation",
+          "type": "lights-out",
+          "area": "l3Observation",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3ObservationAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "sitelen",
+              "sona"
+            ],
+            "setStates": {
+              "l3WorkshopAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l3WorkshopAccess": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Observation lights",
+            "instructions": "Make all nine lamps glow. Tapping a lamp also changes its orthogonal neighbours.",
+            "objective": "",
+            "module": "lights-out",
+            "payload": {
+              "size": 3,
+              "initial": [
+                0,
+                1,
+                1,
+                1,
+                0,
+                1,
+                1,
+                1,
+                0
+              ],
+              "target": 1
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l3-balance-machine",
+          "chain": "instrument",
+          "type": "balance-scale",
+          "area": "l3Workshop",
+          "sourceClass": "canonical",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [],
+            "states": {
+              "l3WorkshopAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [
+              "ilo",
+              "poka"
+            ],
+            "setStates": {
+              "l3CoreAccess": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {
+              "l3CoreAccess": true
+            }
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Balance machine",
+            "instructions": "Select a combination of the four available weights that exactly balances the target mass. Each weight can be used once.",
+            "objective": "",
+            "module": "balance-scale",
+            "payload": {
+              "weights": [
+                1,
+                2,
+                4,
+                8
+              ],
+              "target": 11
+            }
+          },
+          "notes": ""
+        },
+        {
+          "id": "l3-context-match",
+          "chain": "finale",
+          "type": "context-match",
+          "area": "l3Core",
+          "sourceClass": "required-state",
+          "requiredForMinimum": true,
+          "requirements": {
+            "glyphs": [
+              "tenpo",
+              "suno",
+              "toki",
+              "kasi"
+            ],
+            "states": {
+              "l3CoreAccess": true
+            },
+            "solvedPuzzles": []
+          },
+          "rewards": {
+            "glyphs": [],
+            "setStates": {
+              "l3ExitUnlocked": true
+            }
+          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
+          "storyCritical": false,
+          "alreadyOwnedEffects": {
+            "glyphs": [],
+            "setStates": {}
+          },
+          "inputSequence": [],
+          "repeatableGlyphUse": true,
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Synchronization core",
+            "instructions": "The wall display is explicitly a time: 03:09. Choose the rendered cartouche that belongs on the time circuit.",
+            "objective": "",
+            "module": "context-match",
+            "payload": {
+              "choices": [
+                {
+                  "source": "03:09"
+                },
+                {
+                  "source": "--03-09"
+                },
+                {
+                  "source": "3.09"
+                }
+              ],
+              "correctIndex": 0
+            }
+          },
+          "notes": ""
+        }
+      ],
+      "completion": {
+        "requirements": {
+          "glyphs": [],
+          "states": {
+            "l3ExitUnlocked": true
+          },
+          "solvedPuzzles": []
+        },
+        "exitArea": null
+      },
+      "runtime": {
+        "geometryMode": "engine-authored",
+        "expectedFloors": [
+          0
+        ]
+      },
+      "rules": {
+        "canonicalGlyphsPerLevel": 10,
+        "canonicalGlyphTotal": 120,
+        "allowDraftPartialCampaign": true,
+        "bonusCanSatisfyMinimum": false,
+        "requiredPuzzleRewardsConsumable": false
+      }
+    }
+  ],
+  "runtime": {
+    "puzzlePresentation": "fullscreen-until-complete-or-exit",
+    "glyphOwnership": "permanent-reusable-key",
+    "saveSystem": "indexeddb",
+    "levelIntro": "nanpa-linja-n-abbreviated-nanpa-format"
+  },
+  "foundationMilestone": {
+    "afterLevel": "L02",
+    "collectibleGlyphs": [
+      "o",
+      "e",
+      "wan",
+      "tu",
+      "seli",
+      "awen",
+      "luka",
+      "nanpa",
+      "ona",
+      "ma",
+      "ijo",
+      "utala",
+      "mun",
+      "pipi",
+      "jo",
+      "en",
+      "kulupu",
+      "kala",
+      "nena",
+      "kiwen"
+    ],
+    "requiredInitials": [
+      "A",
+      "E",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "S",
+      "T",
+      "U",
+      "W"
+    ],
+    "numericAbbreviatedCollectibleGlyphs": [
+      "ijo",
+      "wan",
+      "tu",
+      "seli",
+      "awen",
+      "luka",
+      "utala",
+      "mun",
+      "pipi",
+      "jo",
+      "nanpa",
+      "en",
+      "ona",
+      "o",
+      "kulupu",
+      "kala"
+    ],
+    "numericAbbreviatedBaselineGlyphs": [
+      "kin",
+      "kipisi"
+    ],
+    "coordinateFoundationGlyphs": [
+      "ma",
+      "kiwen"
+    ],
+    "note": "By the end of Level 2 the guaranteed inventory covers every Toki Pona initial and the collectible repertoire needed for ordinary abbreviated decimal nanpa-linja-n cartouches. kin and kipisi are baseline."
+  }
+}

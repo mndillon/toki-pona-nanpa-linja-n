@@ -1,0 +1,1647 @@
+:root {
+  --pad: 14px;
+  --gap: 12px;
+  --border: #d0d7de;
+  --bg: #F3DFC0;
+  --muted: #3f4750;
+  --panel-strong: rgba(255,255,255,0.35);
+  --panel-border: rgba(17,17,17,0.18);
+  --game-ink: #eef3f5;
+  --game-muted: #aab7bd;
+  --game-line: #44515a;
+}
+
+@font-face {
+  font-family: "NasinNanpaGame";
+  src: url("../fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf") format("truetype");
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  min-width: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: #111;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+body { margin: 24px; min-width: 0; }
+button { font: inherit; }
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  max-width: 980px;
+}
+
+.pageHeadingRow { display: flex; align-items: flex-start; gap: 7px; }
+.pageHeadingRow h1 { margin: 0 0 6px; font-size: 18px; }
+.pageHomeLink {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-top: -4px;
+  color: #111;
+  opacity: 0.58;
+  text-decoration: none;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.pageHomeLink:hover { opacity: 0.9; background: rgba(17,17,17,0.06); }
+.pageHomeLink:focus-visible { opacity: 1; outline: 2px solid rgba(17,17,17,0.65); outline-offset: 2px; }
+.pageHomeIcon { display: block; width: 16px; height: 16px; }
+
+.tpLine { display: block; margin-top: 2px; font-size: 10pt; color: var(--muted); line-height: 1.25; }
+.help { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.introHelp { margin: 10px 0 12px; max-width: 860px; }
+
+button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #111;
+}
+button:hover { background: rgba(255,255,255,0.26); }
+button:disabled { opacity: 0.48; cursor: default; }
+button:focus-visible, a:focus-visible, canvas:focus-visible, summary:focus-visible {
+  outline: 3px solid #111;
+  outline-offset: 3px;
+}
+
+.skipLink {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  border: 2px solid #111;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: #111;
+  text-decoration: none;
+}
+.skipLink:focus { left: 24px; top: 24px; z-index: 9999; }
+
+.gameFrame {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.15);
+}
+.viewportWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 72vh;
+  overflow: hidden;
+  background: #11171b;
+  border-bottom: 1px solid var(--border);
+  touch-action: none;
+  user-select: none;
+}
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #11171b;
+  image-rendering: pixelated;
+  cursor: crosshair;
+}
+#miniMap {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: min(22%, 180px);
+  height: auto;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255,255,255,0.36);
+  border-radius: 8px;
+  background: rgba(10,14,17,0.82);
+  pointer-events: none;
+  opacity: 0.92;
+}
+#miniMap.isHidden { display: none; }
+
+.hudTop {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: none;
+  color: var(--game-ink);
+  font: 600 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-shadow: 0 1px 3px #000;
+}
+.hudTop span {
+  padding: 4px 7px;
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 5px;
+  background: rgba(0,0,0,0.35);
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px #000);
+}
+.crosshair span { position: absolute; background: rgba(255,255,255,0.88); }
+.crosshair span:first-child { left: 11px; top: 4px; width: 2px; height: 16px; }
+.crosshair span:last-child { left: 4px; top: 11px; width: 16px; height: 2px; }
+
+.interactionPrompt {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgba(0,0,0,0.62);
+  color: #fff;
+  font: 700 13px/1.25 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+  min-height: 28px;
+}
+.interactionPrompt:empty { visibility: hidden; }
+.messageOverlay {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100% - 36px));
+  color: #fff;
+  text-align: center;
+  font: 650 15px/1.35 system-ui, sans-serif;
+  text-shadow: 0 2px 5px #000, 0 0 12px #000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+.messageOverlay.show { opacity: 1; }
+.mouseHint {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(0,0,0,0.40);
+  color: rgba(255,255,255,0.72);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.gameStatusGrid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: 86px; }
+.statusBlock { padding: 11px 13px; min-width: 0; }
+.statusBlock + .statusBlock { border-left: 1px solid var(--border); }
+.statusLabel { display: block; margin-bottom: 5px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.statusBlock strong { display: block; font-size: 16px; line-height: 1.25; }
+.statusSecondary { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; line-height: 1.35; }
+
+.controlsPanel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.10);
+}
+.controlsHeadingRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.controlsHeadingRow h2 { margin: 0; font-size: 14px; }
+.actionButtons { display: flex; gap: 8px; flex-wrap: wrap; }
+.actionButtons button { padding: 8px 10px; }
+.controlLegend { display: flex; gap: 9px 15px; flex-wrap: wrap; align-items: center; margin-top: 10px; font-size: 12px; color: var(--muted); }
+kbd {
+  display: inline-block;
+  min-width: 24px;
+  margin-right: 3px;
+  padding: 2px 5px;
+  border: 1px solid rgba(17,17,17,0.28);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.30);
+  color: #111;
+  font: 650 11px/1.25 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: center;
+}
+.fieldNotes { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: rgba(255,255,255,0.10); }
+.fieldNotes summary { cursor: pointer; font-weight: 700; color: #111; }
+.fieldLog { margin-top: 8px; max-height: 160px; overflow: auto; }
+.fieldLogEntry + .fieldLogEntry { margin-top: 5px; }
+
+.sitelenGlyph { font-family: "NasinNanpaGame", sans-serif; font-variant-ligatures: none; font-feature-settings: "liga" 0, "dlig" 0, "calt" 0; }
+
+.overlayScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,0.60);
+}
+.overlayScreen[hidden] { display: none !important; }
+.overlayCard {
+  width: min(680px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+  border: 1px solid rgba(17,17,17,0.32);
+  border-radius: 14px;
+  background: #FAECD7;
+  color: #111;
+  padding: 18px;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+}
+.overlayEyebrow { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .11em; color: var(--muted); }
+.overlayCard h2 { margin: 4px 0 8px; font-size: 21px; }
+.overlayCard p { margin: 6px 0 14px; line-height: 1.4; }
+.overlayProgress { margin: 10px 0 14px; font-weight: 800; font-size: 14px; }
+.overlayHeaderRow { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.overlayHeaderRow h2 { margin-bottom: 0; }
+.overlayButtonRow { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+.glyphRewardCard { width: min(420px, 100%); text-align: center; }
+.rewardGlyph { font-size: 112px; line-height: 1; margin: 8px 0 2px; }
+.glyphRewardCard button { min-width: 150px; }
+
+.collectionCard { width: min(860px, 100%); }
+.collectionHelp { margin-bottom: 12px; }
+.glyphGrid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+}
+.glyphCell {
+  min-width: 0;
+  min-height: 68px;
+  padding: 6px 3px 5px;
+  border: 1px solid rgba(17,17,17,0.16);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.24);
+  text-align: center;
+}
+.glyphCell.missing { opacity: .36; }
+.glyphCellGlyph { font-size: 33px; line-height: 1.05; min-height: 36px; }
+.glyphCell.missing .glyphCellGlyph { font-family: system-ui, sans-serif; font-size: 24px; padding-top: 5px; }
+.glyphCellWord { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: var(--muted); }
+.glyphCell.missing .glyphCellWord { visibility: hidden; }
+
+.sentenceCard { width: min(700px, 100%); }
+.sentenceSlots { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.sentenceSlot {
+  width: 92px;
+  min-height: 105px;
+  padding: 8px 5px;
+  border: 1px solid rgba(17,17,17,0.18);
+  border-radius: 9px;
+  background: rgba(255,255,255,0.24);
+  text-align: center;
+}
+.sentenceSlotGlyph { font-size: 52px; line-height: 1.05; min-height: 57px; }
+.sentenceSlot.missing .sentenceSlotGlyph { font-family: system-ui, sans-serif; font-size: 35px; padding-top: 10px; }
+.sentenceSlotWord { margin-top: 5px; font: 700 12px/1.1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.sentenceStatus { min-height: 2.8em; color: var(--muted); }
+
+.levelCompleteCard { width: min(520px, 100%); position: relative; z-index: 2; overflow: visible; }
+.levelCompleteCard.isCampaignComplete { border-color: rgba(214,160,45,0.55); box-shadow: 0 18px 60px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,223,105,0.18) inset; }
+.levelCompleteCard.isCampaignComplete h2 { font-size: clamp(28px, 5vw, 42px); line-height: 1.05; margin-bottom: 10px; }
+.levelCompleteCard.isCampaignComplete h2.campaignCongratsFlash { animation: campaignCongratsFlash 3.25s ease-in-out 1 both; transform-origin: left center; }
+.levelCompleteCard.isCampaignComplete .overlayProgress { font-size: 16px; }
+.campaignCompleteBadge { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid rgba(214,160,45,0.45); border-radius: 12px; background: rgba(255,255,255,0.44); font-weight: 900; text-align: center; }
+.campaignConfetti { position: absolute; z-index: 1; inset: 0; pointer-events: none; overflow: hidden; }
+.campaignConfetti[hidden] { display: none !important; }
+.confettiPiece { position: absolute; top: -18vh; width: var(--w, 9px); height: var(--h, 16px); border-radius: var(--radius, 2px); opacity: 0.96; animation: confettiFall var(--fall, 5s) linear infinite; animation-delay: var(--delay, 0s); will-change: transform; }
+@keyframes confettiFall {
+  0% { transform: translate3d(0,-12vh,0) rotate(0deg); }
+  100% { transform: translate3d(var(--drift, 0px),132vh,0) rotate(var(--spin, 720deg)); }
+}
+@keyframes campaignCongratsFlash {
+  0%, 100% { color: #111; transform: scale(1); text-shadow: none; }
+  8% { color: #d12a2a; transform: scale(1.035); text-shadow: 0 0 14px rgba(209,42,42,.28); }
+  16% { color: #111; transform: scale(1); text-shadow: none; }
+  26% { color: #d08a00; transform: scale(1.05); text-shadow: 0 0 16px rgba(208,138,0,.30); }
+  35% { color: #111; transform: scale(1); text-shadow: none; }
+  46% { color: #087f8c; transform: scale(1.045); text-shadow: 0 0 16px rgba(8,127,140,.28); }
+  56% { color: #111; transform: scale(1); text-shadow: none; }
+  67% { color: #7a3db8; transform: scale(1.035); text-shadow: 0 0 14px rgba(122,61,184,.26); }
+  78%, 100% { color: #111; transform: scale(1); text-shadow: none; }
+}
+.resetConfirmCard { width: min(460px, 100%); }
+
+
+.mazeQuickExitBtn {
+  position: absolute;
+  z-index: 9;
+  right: 12px;
+  top: 198px;
+  min-width: 112px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.38);
+  border-radius: 9px;
+  background: rgba(243,223,192,0.92);
+  color: #111;
+  font: 800 13px/1.1 system-ui, sans-serif;
+  touch-action: manipulation;
+}
+.mazeQuickExitBtn[hidden] { display: none !important; }
+
+.mobileMovePad, .mobileUseBtn { display: none; }
+
+@media (pointer: coarse) {
+  .mouseHint { display: none; }
+  .mobileMovePad {
+    position: absolute;
+    z-index: 8;
+    left: 10px;
+    bottom: 10px;
+    display: grid;
+    grid-template-columns: 46px 46px 46px;
+    grid-template-rows: 46px 46px 46px;
+    gap: 5px;
+    padding: 8px;
+    border: 1px solid rgba(255,255,255,0.20);
+    border-radius: 16px;
+    background: rgba(0,0,0,0.28);
+    backdrop-filter: blur(5px);
+    touch-action: none;
+  }
+  .mobileMoveBtn, .mobileMoveCenter {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobileMoveBtn {
+    border: 1px solid rgba(255,255,255,0.28);
+    background: rgba(255,255,255,0.72);
+    color: #111;
+    padding: 0;
+    font-size: 18px;
+    touch-action: none;
+  }
+  .mobileMoveBtn.pressed { background: rgba(255,255,255,0.96); }
+  .mobileMoveBtn.empty { visibility: hidden; pointer-events: none; }
+  .mobileMoveCenter { color: rgba(255,255,255,0.48); background: rgba(255,255,255,0.08); }
+  .mobileUseBtn {
+    position: absolute;
+    z-index: 8;
+    right: 14px;
+    bottom: 18px;
+    display: block;
+    width: 72px;
+    height: 72px;
+    border: 2px solid rgba(255,255,255,0.38);
+    border-radius: 50%;
+    background: rgba(250,236,215,0.82);
+    color: #111;
+    font-weight: 900;
+    touch-action: none;
+  }
+  .interactionPrompt { bottom: 98px; }
+}
+
+@media (max-width: 720px) {
+  body { margin: 8px; }
+  .card { padding: 10px; }
+  .viewportWrap { aspect-ratio: 4 / 3; max-height: none; }
+  #miniMap { width: 28%; top: 8px; right: 8px; }
+  .mazeQuickExitBtn { top: auto; bottom: 104px; right: 12px; min-width: 104px; }
+  .gameStatusGrid { grid-template-columns: 1fr; }
+  .statusBlock + .statusBlock { border-left: 0; border-top: 1px solid var(--border); }
+  .glyphGrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 460px) {
+  .pageHeadingRow h1 { font-size: 16px; }
+  .controlsHeadingRow { align-items: flex-start; }
+  .actionButtons { width: 100%; }
+  .actionButtons button { flex: 1 1 auto; }
+  .controlLegend { gap: 7px 10px; }
+  .hudTop { right: 8px; gap: 4px; }
+  .hudTop span { font-size: 10px; padding: 3px 5px; }
+  .glyphGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .sentenceSlot { width: 74px; min-height: 92px; }
+  .sentenceSlotGlyph { font-size: 43px; min-height: 48px; }
+  .overlayScreen { padding: 8px; }
+  .overlayCard { padding: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .messageOverlay { transition: none; }
+}
+
+/* Campaign puzzle host */
+.puzzleCard {
+  position: relative;
+  width: min(760px, 100%);
+}
+.puzzleCard.puzzleCard--keys {
+  height: min(620px, calc(100dvh - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  gap: 6px;
+  padding: 14px;
+}
+.puzzleCard.puzzleCard--keys > .overlayEyebrow,
+.puzzleCard.puzzleCard--keys > h2,
+.puzzleCard.puzzleCard--keys > p { margin: 0; }
+.puzzleCard.puzzleCard--keys > h2 { font-size: 20px; line-height: 1.08; }
+.puzzleCard.puzzleCard--keys > #puzzleInstructions { line-height: 1.28; }
+.puzzleBody {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  align-content: start;
+}
+.puzzleSlots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  align-content: flex-start;
+  min-height: 0;
+  padding: 3px 0;
+}
+.puzzleSlot {
+  position: relative;
+  flex: 1 1 46px;
+  width: auto;
+  min-width: 44px;
+  max-width: 78px;
+  height: 72px;
+  min-height: 72px;
+  padding: 4px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 2px dashed rgba(17,17,17,.34);
+  border-radius: 11px;
+  background: rgba(255,255,255,.20);
+  touch-action: manipulation;
+}
+.puzzleSlot.fillable { cursor: pointer; }
+.puzzleSlot.selectedTarget {
+  outline: 3px solid rgba(17,17,17,.22);
+  outline-offset: 2px;
+  background: rgba(255,255,255,.42);
+}
+.puzzleSlot.locked { border-style: solid; opacity: .62; }
+.puzzleSlot.wrong { border-color: #8d3d36; background: rgba(141,61,54,.10); }
+.puzzleSlot.correct { border-color: #496f56; background: rgba(73,111,86,.10); }
+.puzzleSlotGlyph {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 39px;
+  line-height: 1;
+}
+.puzzleSlot.empty .puzzleSlotGlyph {
+  min-height: 38px;
+  padding-top: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 25px;
+}
+.puzzleSlotLabel {
+  font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--muted);
+}
+.puzzleTrayWrap {
+  min-height: 0;
+  border-top: 1px solid rgba(17,17,17,.16);
+  padding-top: 6px;
+}
+.puzzleTrayLabel {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.puzzleTray { display: block; min-height: 0; }
+.puzzleStatus {
+  min-height: 1.2em;
+  max-height: 2.6em;
+  overflow: hidden;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+.puzzleCard.puzzleCard--keys > .overlayButtonRow {
+  flex-wrap: nowrap;
+  justify-content: stretch;
+  gap: 7px;
+}
+.puzzleCard.puzzleCard--keys > .overlayButtonRow button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 42px;
+  padding: 7px 9px;
+}
+.puzzleKey {
+  width: 58px;
+  height: 58px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(17,17,17,.24);
+  border-radius: 11px;
+  background: rgba(255,255,255,.60);
+  color: #111;
+  font-family: "NasinNanpaGame", sans-serif;
+  font-size: 39px;
+  line-height: 1;
+  touch-action: manipulation;
+  user-select: none;
+}
+.puzzleKey.isSelected { outline: 3px solid rgba(17,17,17,.20); outline-offset: 2px; }
+.puzzleKey:active { transform: translateY(1px); }
+.puzzleDragGhost {
+  position: fixed;
+  z-index: 12000;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(17,17,17,.42);
+  border-radius: 13px;
+  background: #FAECD7;
+  pointer-events: none;
+  font-family: "NasinNanpaGame", sans-serif;
+  font-size: 44px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  transform: translate(-50%, -50%);
+}
+.puzzleTerminalMessage {
+  padding: 18px;
+  border: 1px solid rgba(17,17,17,.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,.22);
+  line-height: 1.5;
+}
+
+.puzzleLiveCartoucheWrap {
+  width: 100%;
+  min-height: 0;
+  padding: 6px 8px 5px;
+  border: 1px solid rgba(17,17,17,.15);
+  border-radius: 10px;
+  background: rgba(255,255,255,.18);
+  overflow: hidden;
+}
+.puzzleLiveCartoucheHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.puzzleLiveCartoucheLabel {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.puzzleLiveCartoucheSource {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font: 600 10.5px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: right;
+}
+.puzzleLiveCartoucheCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62px;
+  margin: 1px auto 0;
+}
+
+/* Shared glyph-family picker. The family row stays in-flow; actual glyphs open
+   as a temporary bottom sheet so the puzzle viewport never grows. */
+.puzzleFamilyRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1px 1px 3px;
+  scrollbar-width: thin;
+}
+.puzzleFamilyKey {
+  flex: 0 0 42px;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  min-height: 42px;
+  padding: 4px;
+  border: 2px solid rgba(17,17,17,.22);
+  border-radius: 9px;
+  background: rgba(255,255,255,.42);
+  font: 800 15px/1 system-ui,sans-serif;
+  touch-action: manipulation;
+}
+.puzzleFamilyKey.isSelected {
+  outline: 3px solid rgba(17,17,17,.18);
+  outline-offset: 1px;
+  background: rgba(255,255,255,.72);
+}
+.puzzleFamilyKey.punctuation { font-size: 22px; }
+.puzzleGlyphDrawer {
+  position: absolute;
+  z-index: 40;
+  left: 12px;
+  right: 12px;
+  bottom: 61px;
+  max-height: min(34dvh, 220px);
+  overflow: hidden;
+  padding: 8px;
+  border: 1px solid rgba(17,17,17,.28);
+  border-radius: 14px;
+  background: #FAECD7;
+  box-shadow: 0 -8px 28px rgba(0,0,0,.24);
+}
+.puzzleGlyphDrawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 2px 5px;
+}
+.puzzleGlyphDrawerTitle {
+  font: 800 13px/1 system-ui,sans-serif;
+}
+.puzzleGlyphDrawerClose {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 9px;
+  font-size: 24px;
+  line-height: 1;
+}
+.puzzleGlyphDrawerKeys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-content: flex-start;
+  max-height: calc(min(34dvh, 220px) - 47px);
+  overflow: auto;
+  padding: 2px;
+}
+
+@media (pointer: coarse), (max-width: 600px) {
+  .overlayScreen:has(.puzzleCard--keys) { padding: 6px; }
+  .puzzleCard.puzzleCard--keys {
+    height: calc(100dvh - 12px);
+    max-height: calc(100dvh - 12px);
+    gap: 4px;
+    padding: 10px;
+  }
+  .puzzleCard.puzzleCard--keys > h2 { font-size: 18px; }
+  .puzzleCard.puzzleCard--keys > #puzzleInstructions { font-size: 13.5px; line-height: 1.22; }
+  .puzzleSlots { gap: 5px; padding: 2px 0; }
+  .puzzleSlot {
+    flex-basis: 44px;
+    min-width: 42px;
+    max-width: 64px;
+    height: 62px;
+    min-height: 62px;
+    border-radius: 9px;
+  }
+  .puzzleSlotGlyph { min-height: 35px; font-size: 34px; }
+  .puzzleSlot.empty .puzzleSlotGlyph { min-height: 32px; font-size: 23px; }
+  .puzzleSlotLabel { font-size: 9px; }
+  .puzzleLiveCartoucheWrap { padding: 4px 6px 3px; }
+  .puzzleLiveCartoucheCanvas { max-height: 54px; }
+  .puzzleLiveCartoucheLabel { font-size: 9px; }
+  .puzzleLiveCartoucheSource { font-size: 9px; }
+  .puzzleTrayLabel { margin-bottom: 3px; font-size: 9px; }
+  .puzzleFamilyRow {
+    display: grid;
+    grid-template-rows: repeat(2, 44px);
+    grid-auto-flow: column;
+    grid-auto-columns: 44px;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+  }
+  .puzzleFamilyKey {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 4px;
+  }
+  .puzzleGlyphDrawer {
+    left: 8px;
+    right: 8px;
+    bottom: 56px;
+    max-height: min(33dvh, 205px);
+    padding: 7px;
+  }
+  .puzzleGlyphDrawerKeys { max-height: calc(min(33dvh, 205px) - 45px); }
+  .puzzleKey { width: 54px; height: 54px; font-size: 36px; }
+  .puzzleStatus { font-size: 11px; }
+  .puzzleCard.puzzleCard--keys > .overlayButtonRow { gap: 5px; }
+  .puzzleCard.puzzleCard--keys > .overlayButtonRow button { min-height: 44px; padding: 6px 5px; font-size: 12px; }
+}
+
+@media (max-width: 390px) {
+  .puzzleCard.puzzleCard--keys { padding: 8px; }
+  .puzzleSlot { max-width: 58px; height: 58px; min-height: 58px; }
+  .puzzleSlotGlyph { font-size: 31px; min-height: 33px; }
+  .puzzleFamilyRow { grid-template-rows: repeat(2, 42px); grid-auto-columns: 42px; }
+  .puzzleFamilyKey { width: 42px; min-width: 42px; height: 42px; min-height: 42px; }
+  .puzzleKey { width: 50px; height: 50px; font-size: 33px; }
+}
+
+/* Very short landscape phone viewports: retain the no-scroll contract by
+   tightening nonessential chrome while keeping slots, live preview, picker,
+   and actions usable. */
+@media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 760px) {
+  .puzzleCard.puzzleCard--keys { padding: 7px 9px; gap: 2px; }
+  .puzzleCard.puzzleCard--keys > .overlayEyebrow { display: none; }
+  .puzzleCard.puzzleCard--keys > h2 { font-size: 16px; }
+  .puzzleCard.puzzleCard--keys > #puzzleInstructions {
+    max-height: 2.35em;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.15;
+  }
+  .puzzleBody { gap: 3px; }
+  .puzzleSlot { height: 48px; min-height: 48px; max-width: 58px; }
+  .puzzleSlotGlyph { min-height: 28px; font-size: 27px; }
+  .puzzleSlot.empty .puzzleSlotGlyph { min-height: 26px; font-size: 20px; }
+  .puzzleLiveCartoucheHeader { display: none; }
+  .puzzleLiveCartoucheCanvas { max-height: 42px; }
+  .puzzleTrayLabel { display: none; }
+  .puzzleFamilyRow {
+    display: flex;
+    flex-wrap: nowrap;
+    height: 40px;
+    overflow-x: auto;
+  }
+  .puzzleFamilyKey { flex: 0 0 40px; width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
+  .puzzleStatus { display: none; }
+  .puzzleCard.puzzleCard--keys > .overlayButtonRow button { min-height: 38px; }
+  .puzzleGlyphDrawer { bottom: 47px; max-height: min(44dvh, 150px); }
+  .puzzleGlyphDrawerKeys { max-height: calc(min(44dvh, 150px) - 42px); }
+  .puzzleKey { width: 46px; height: 46px; font-size: 30px; }
+}
+
+/* Country-name bonus puzzle */
+.countryClueBox { width:100%; padding:12px; border:1px solid rgba(17,17,17,.15); border-radius:12px; background:rgba(255,255,255,.20); }
+.countryClueTp { font-weight:750; line-height:1.45; }
+.countryClueEn { margin-top:5px; color:var(--muted); font-size:12px; line-height:1.4; }
+
+/* Coordinate map puzzle */
+.coordinatePuzzleClue { width:100%; text-align:center; }
+.coordinatePuzzleLabel { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.coordinatePuzzleCanvas { display:block; width:min(100%,430px); height:auto; margin:5px auto 8px; }
+.coordinateMapGrid {
+  --map-cols:12;
+  display:grid; grid-template-columns:repeat(var(--map-cols), minmax(20px,1fr));
+  width:min(100%,430px); margin:0 auto; border:2px solid rgba(17,17,17,.28); border-radius:10px; overflow:hidden;
+}
+.coordinateMapCell {
+  aspect-ratio:1/1; min-width:0; min-height:0; padding:0; border:0; border-right:1px solid rgba(17,17,17,.11); border-bottom:1px solid rgba(17,17,17,.11);
+  border-radius:0; background:rgba(255,255,255,.18); touch-action:manipulation;
+}
+.coordinateMapCell.landmark { background:rgba(17,17,17,.09); }
+.coordinateMapCell:hover, .coordinateMapCell:focus-visible { background:rgba(255,255,255,.65); }
+
+@media (pointer: coarse), (max-width: 600px) {
+  .puzzleCard:not(.puzzleCard--keys) { max-height:94vh; }
+  .coordinateMapGrid { width:min(100%,360px); }
+  .countryClueBox { padding:7px 9px; }
+  .countryClueTp { font-size:13px; line-height:1.3; }
+  .countryClueEn { margin-top:3px; font-size:10.5px; line-height:1.25; }
+}
+
+@media (max-width:390px) {
+  .coordinateMapGrid { width:100%; }
+}
+
+
+/* v0.9 progression clarity */
+.collectionLevelProgress {
+  margin: 6px 0 10px;
+  font: 700 13px/1.3 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.campaignContinueBtn {
+  position: absolute;
+  z-index: 11;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  min-width: 190px;
+  min-height: 46px;
+  padding: 9px 16px;
+  border: 2px solid rgba(255,255,255,0.65);
+  border-radius: 10px;
+  background: rgba(243,223,192,0.96);
+  color: #111;
+  font: 900 14px/1.15 system-ui, sans-serif;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  touch-action: manipulation;
+}
+.campaignContinueBtn[hidden] { display: none !important; }
+@media (pointer: coarse) {
+  .campaignContinueBtn {
+    left: 10px;
+    top: 58px;
+    bottom: auto;
+    transform: none;
+    width: min(210px, 58%);
+    min-width: 150px;
+    min-height: 48px;
+  }
+}
+@media (max-width: 460px) {
+  .campaignContinueBtn {
+    width: min(230px, calc(100% - 180px));
+    min-width: 150px;
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+}
+
+/* v0.10 Level 2 puzzle clarity + fixed-viewport coordinate map */
+.puzzleCard.puzzleCard--map {
+  height: min(660px, calc(100dvh - 12px));
+  max-height: calc(100dvh - 12px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto;
+  gap: 5px;
+  padding: 12px;
+}
+.puzzleCard.puzzleCard--map > .overlayEyebrow,
+.puzzleCard.puzzleCard--map > h2,
+.puzzleCard.puzzleCard--map > p { margin: 0; }
+.puzzleCard.puzzleCard--map > h2 { font-size: 19px; line-height: 1.08; }
+.puzzleCard.puzzleCard--map > #puzzleInstructions { font-size: 13.5px; line-height: 1.22; }
+.puzzleCard.puzzleCard--map .puzzleBody,
+.puzzleCard.puzzleCard--map .puzzleSlots {
+  min-height: 0;
+  overflow: hidden;
+}
+.puzzleCard.puzzleCard--map .puzzleSlots {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  justify-items: center;
+  align-items: start;
+  gap: 4px;
+  padding: 0;
+}
+.puzzleCard.puzzleCard--map > .overlayButtonRow {
+  flex-wrap: nowrap;
+  justify-content: stretch;
+}
+.puzzleCard.puzzleCard--map > .overlayButtonRow button:not([hidden]) {
+  flex: 1 1 0;
+  min-height: 42px;
+}
+.puzzleCard.puzzleCard--map .puzzleStatus {
+  margin: 0;
+  min-height: 1.1em;
+}
+.coordinatePuzzleClue { margin: 0; }
+.coordinatePuzzleCanvas {
+  width: min(100%, 360px);
+  max-height: 76px;
+  object-fit: contain;
+  margin: 1px auto 2px;
+}
+.coordinateMapGrid {
+  width: min(100%, 46dvh, 400px);
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  align-self: start;
+}
+.coordinateMapCell { position: relative; }
+.coordinateAxis {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  color: rgba(17,17,17,.58);
+  font: 700 12px/1 "NasinNanpaGame", sans-serif;
+}
+.coordinateAxisX { top: 2px; left: 50%; transform: translateX(-50%); }
+.coordinateAxisY { left: 2px; top: 50%; transform: translateY(-50%); }
+
+.puzzleSourceSequence {
+  flex: 1 0 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px 7px;
+  border: 1px solid rgba(17,17,17,.16);
+  border-radius: 10px;
+  background: rgba(255,255,255,.20);
+}
+.puzzleSourceSequenceLabel {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.puzzleSourceSequenceGlyphs { display: flex; align-items: center; gap: 8px; }
+.puzzleSourceGlyph {
+  min-width: 38px;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(17,17,17,.20);
+  border-radius: 8px;
+  background: rgba(255,255,255,.45);
+  font-size: 31px;
+  line-height: 1;
+}
+
+@media (pointer: coarse), (max-width: 600px) {
+  .overlayScreen:has(.puzzleCard--map) { padding: 6px; }
+  .puzzleCard.puzzleCard--map {
+    height: calc(100dvh - 12px);
+    max-height: calc(100dvh - 12px);
+    padding: 9px;
+    gap: 3px;
+  }
+  .puzzleCard.puzzleCard--map > h2 { font-size: 17px; }
+  .puzzleCard.puzzleCard--map > #puzzleInstructions { font-size: 12px; line-height: 1.16; }
+  .coordinatePuzzleLabel { font-size: 9px; }
+  .coordinatePuzzleCanvas { width: min(100%, 310px); max-height: 58px; }
+  .coordinateMapGrid { width: min(100%, 44dvh, 320px); }
+  .coordinateAxis { font-size: 10px; }
+  .puzzleCard.puzzleCard--map > .overlayButtonRow button:not([hidden]) { min-height: 44px; }
+  .puzzleSourceSequence { padding: 4px 6px; gap: 7px; }
+  .puzzleSourceGlyph { min-width: 34px; min-height: 34px; font-size: 28px; }
+}
+
+@media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 760px) {
+  .puzzleCard.puzzleCard--map > .overlayEyebrow { display: none; }
+  .puzzleCard.puzzleCard--map > h2 { font-size: 15px; }
+  .puzzleCard.puzzleCard--map > #puzzleInstructions { font-size: 10.5px; }
+  .coordinatePuzzleLabel { display: none; }
+  .coordinatePuzzleCanvas { max-height: 45px; }
+  .coordinateMapGrid { width: min(100%, 41dvh, 245px); }
+  .puzzleCard.puzzleCard--map .puzzleStatus { font-size: 10px; }
+}
+
+
+/* Level 3 mechanism puzzles: all fit inside the game viewport and use tap-first controls. */
+.puzzleCard.puzzleCard--mechanism {
+  width: min(760px, calc(100vw - 24px));
+  max-width: 760px;
+  height: min(720px, calc(100dvh - 20px));
+  max-height: calc(100dvh - 20px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0,1fr) auto auto;
+  gap: 7px;
+}
+.puzzleCard--mechanism .puzzleBody { min-height:0; overflow:hidden; }
+.puzzleCard--mechanism .puzzleSlots { height:100%; min-height:0; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; }
+.mechanismClues { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; width:min(100%,620px); }
+.mechanismClue { padding:7px 8px; border:1px solid rgba(17,17,17,.18); border-radius:9px; background:rgba(255,255,255,.36); font:700 13px/1.2 system-ui,sans-serif; text-align:center; }
+.dialBank { display:flex; justify-content:center; gap:clamp(10px,4vw,28px); width:100%; }
+.dialUnit { display:grid; grid-template-rows:auto 38px 74px 38px; gap:4px; justify-items:center; }
+.dialLabel { font:800 11px/1 system-ui,sans-serif; text-transform:uppercase; letter-spacing:.05em; }
+.dialAdjust { width:54px; min-width:54px; height:38px; min-height:38px; padding:0; }
+.dialValue { width:74px; height:74px; border:2px solid rgba(17,17,17,.35); border-radius:50%; background:#f7e4c7; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.dialValue .sitelenGlyph { font-size:42px; line-height:.85; }.dialValue small{font:700 10px/1 system-ui,sans-serif;color:var(--muted);}
+.routeBoardWrap { display:flex; justify-content:center; align-items:center; width:min(100%,500px); }
+.routeTile[data-edge] { position:relative; }
+.routeTile[data-edge]::after { content:attr(data-edge); position:absolute; top:4px; right:5px; font:900 8px/1 system-ui,sans-serif; letter-spacing:.04em; color:#453b31; }
+.routeBoard { --route-cols:4; display:grid; grid-template-columns:repeat(var(--route-cols),1fr); gap:5px; width:min(100%,380px); aspect-ratio:1; }
+.routeTile { min-width:0; min-height:0; padding:0; font:900 clamp(30px,8vw,58px)/1 ui-monospace,monospace; border:2px solid rgba(17,17,17,.25); border-radius:9px; background:#e7d2b3; touch-action:manipulation; }
+.routeTile.empty { border-style:dashed; opacity:.22; pointer-events:none; }.routeTile.connected{background:#9fd3ad;border-color:#315f42;}
+.pathGrid { --path-cols:5; display:grid; grid-template-columns:repeat(var(--path-cols),1fr); gap:4px; width:min(100%,330px); aspect-ratio:1; }
+.pathCell { position:relative; display:flex; align-items:center; justify-content:center; border:1px solid rgba(17,17,17,.22); border-radius:7px; background:rgba(255,255,255,.35); font:900 16px/1 system-ui,sans-serif; }
+.pathCell.blocked{background:#343b3e;border-color:#343b3e}.pathCell.checkpoint{background:#e7d2b3}.pathCell.checkpoint.visited{background:#9fd3ad}.pathCell.exit{box-shadow:inset 0 0 0 3px #7b6a53}.pathToken{position:absolute;font-size:25px;color:#163b24;text-shadow:0 1px #fff;}
+.pathControls { display:grid; grid-template-columns:repeat(4,52px); gap:7px; }.pathMove{width:52px;height:46px;min-height:46px;padding:0;font-size:21px;}
+.lightsGrid { --lights-cols:3; display:grid; grid-template-columns:repeat(var(--lights-cols),1fr); gap:10px; width:min(100%,310px); aspect-ratio:1; }
+.lightCell { min-width:0; min-height:0; padding:0; border-radius:50%; border:3px solid rgba(17,17,17,.3); background:#554f46; box-shadow:inset 0 0 18px rgba(0,0,0,.28); }.lightCell.on{background:#f3df89;box-shadow:0 0 18px rgba(244,215,104,.76),inset 0 0 10px rgba(255,255,255,.65);}
+.balanceTarget { display:flex; flex-direction:column; align-items:center; gap:3px; }.balanceTarget strong{font:800 11px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}.balanceTargetCanvas{width:min(220px,70vw);height:auto;max-height:68px;}
+.balanceWeights { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; }.balanceWeight{width:76px;height:76px;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid rgba(17,17,17,.25);}.balanceWeight .sitelenGlyph{font-size:39px}.balanceWeight small{font:700 10px/1 system-ui,sans-serif}.balanceWeight.selected{background:#9fd3ad;border-color:#315f42;transform:translateY(-3px)}
+.balanceReadout { font:800 14px/1.2 system-ui,sans-serif; padding:7px 12px; border-radius:9px; background:rgba(17,17,17,.08); }.balanceReadout.balanced{background:#9fd3ad;color:#173925;}
+.contextTarget { display:flex; align-items:center; justify-content:center; gap:12px; padding:8px 14px; border-radius:10px; background:rgba(17,17,17,.08); }.contextTarget strong{font:900 12px/1 system-ui,sans-serif;letter-spacing:.08em}.contextTarget span{font:800 22px/1 ui-monospace,monospace;}
+.contextChoices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; width:100%; }.contextChoice{position:relative; min-width:0; padding:7px 5px; border:2px solid rgba(17,17,17,.22);}.contextChoice.selected{background:#d9c3a3;border-color:#3f382f}.contextChoiceTag{position:absolute;left:7px;top:6px;font:900 12px/1 system-ui,sans-serif}.contextChoiceCanvas{width:100%;height:auto;max-height:78px;display:block;}
+
+@media (pointer:coarse), (max-width:600px) {
+  .overlayScreen:has(.puzzleCard--mechanism){padding:6px}.puzzleCard.puzzleCard--mechanism{width:calc(100vw - 12px);height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);padding:9px;gap:4px}.puzzleCard--mechanism>h2{font-size:18px}.puzzleCard--mechanism>#puzzleInstructions{font-size:13px;line-height:1.18;margin:0}.mechanismClues{gap:4px}.mechanismClue{font-size:11px;padding:5px 4px}.dialUnit{grid-template-rows:auto 34px 60px 34px}.dialAdjust{width:48px;min-width:48px;height:34px;min-height:34px}.dialValue{width:60px;height:60px}.dialValue .sitelenGlyph{font-size:34px}.routeBoardWrap{width:min(100%,390px)}.routeBoard{width:min(100%,280px);gap:3px}.routeTile{font-size:38px;border-radius:7px}.pathGrid{width:min(100%,265px);gap:3px}.pathControls{grid-template-columns:repeat(4,46px);gap:5px}.pathMove{width:46px;height:42px;min-height:42px}.lightsGrid{width:min(100%,245px);gap:7px}.balanceWeight{width:62px;height:62px}.balanceWeight .sitelenGlyph{font-size:32px}.contextChoices{gap:4px}.contextChoice{padding:5px 2px}.contextChoiceCanvas{max-height:62px}
+}
+
+/* Level 4 mechanisms: varied, tap-first, and bounded to the existing fixed puzzle viewport. */
+.jugTarget{display:flex;align-items:center;justify-content:center;gap:10px;font:800 12px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}.jugTarget .sitelenGlyph{font-size:34px}.jugTarget small{font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted)}
+.jugVessels{display:flex;justify-content:center;align-items:flex-end;gap:34px;width:100%;}.jugUnit{display:flex;flex-direction:column;align-items:center;gap:5px}.jugVessel{position:relative;width:92px;height:150px;border:3px solid rgba(17,17,17,.45);border-top-width:2px;border-radius:8px 8px 16px 16px;overflow:hidden;background:rgba(255,255,255,.32)}.jugVesselFill{position:absolute;left:0;right:0;bottom:0;background:#9cc9d8;transition:height .16s ease}.jugReadout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 1px rgba(255,255,255,.75)}.jugReadout .sitelenGlyph{font-size:42px;line-height:.9}.jugReadout small,.jugLabel{font:800 11px/1.1 system-ui,sans-serif}.jugControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:min(100%,520px)}.jugAction{min-height:42px;padding:6px 8px}
+.hanoiBoard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,620px);height:min(240px,34dvh)}.hanoiRod{position:relative;min-width:0;min-height:0;padding:5px 4px 20px;border:2px solid rgba(17,17,17,.2);background:rgba(255,255,255,.25);overflow:hidden}.hanoiRod.selected{background:#e8d5b7;border-color:#564b3d}.hanoiPost{position:absolute;left:50%;bottom:29px;top:14px;width:6px;transform:translateX(-50%);background:#685b4c;border-radius:4px}.hanoiBase{position:absolute;left:10%;right:10%;bottom:25px;height:7px;background:#685b4c;border-radius:4px}.hanoiStack{position:absolute;left:5%;right:5%;bottom:32px;display:flex;flex-direction:column-reverse;align-items:center;gap:3px;pointer-events:none}.hanoiDisk{height:34px;border:2px solid rgba(17,17,17,.28);border-radius:12px;background:#d9c3a3;display:flex;align-items:center;justify-content:center}.hanoiDisk .sitelenGlyph{font-size:23px}.hanoiRod small{position:absolute;bottom:5px;left:0;right:0;font:800 10px/1 system-ui,sans-serif}.hanoiMoves{font:800 12px/1 system-ui,sans-serif}
+.codeLegend{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;font:800 11px/1 system-ui,sans-serif}.codeLegend>strong{text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.codeLegendGlyph{display:grid;place-items:center;width:48px;height:48px;padding:0;border-radius:8px;background:rgba(17,17,17,.07)}.codeLegendGlyph .sitelenGlyph{font-size:31px;line-height:1}.codeGuess{display:grid;grid-template-columns:repeat(var(--code-cols,4),70px);gap:9px;justify-content:center;max-width:100%}.codeSymbol{width:70px;height:70px;min-height:70px;padding:0}.codeSymbol .sitelenGlyph{font-size:40px;line-height:1}.codeSubmit{min-height:42px;padding:8px 20px}.codeHistory{display:grid;gap:4px;width:min(100%,500px)}.codeHistoryRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:5px 8px;border-radius:7px;background:rgba(17,17,17,.06);font:700 11px/1.2 system-ui,sans-serif}.codeHistorySymbols{display:flex;align-items:center;gap:8px}.codeHistorySymbols .sitelenGlyph{font-size:24px;line-height:1}
+.equivalenceWrap{display:flex;align-items:center;justify-content:center;width:100%;min-height:0}.equivalenceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(100%,680px)}.equivalenceHeader{text-align:center;font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em}.equivalenceCard{min-width:0;min-height:0;padding:4px;border:2px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;justify-content:center}.equivalenceCard.movable{cursor:pointer}.equivalenceCard.selected{background:#e8d5b7;border-color:#564b3d}.equivalenceCanvas{display:block;width:100%;height:auto;max-height:58px}.equivalenceCard small{font:700 9px/1 ui-monospace,monospace;color:var(--muted)}
+.scheduleList{display:grid;gap:5px;width:min(100%,760px)}.scheduleItem{display:grid;grid-template-columns:28px minmax(0,1fr) 48px;gap:6px;align-items:center;padding:4px 6px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.25)}.scheduleRank{font:900 18px/1 system-ui,sans-serif;text-align:center}.scheduleCartouches{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,.9fr);gap:6px;align-items:center;justify-items:center;min-width:0}.scheduleCanvas{display:block;width:auto;height:auto;max-width:100%;max-height:none}.scheduleControls{display:grid;grid-template-columns:1fr 1fr;gap:3px}.scheduleControls button{width:22px;height:36px;min-width:22px;min-height:36px;padding:0;font-size:18px}
+
+@media (pointer:coarse), (max-width:600px){
+  .jugVessels{gap:22px}.jugVessel{width:74px;height:116px}.jugReadout .sitelenGlyph{font-size:34px}.jugControls{gap:4px}.jugAction{font-size:11px;min-height:38px;padding:4px}.hanoiBoard{height:min(190px,29dvh);gap:5px}.hanoiDisk{height:27px}.hanoiDisk .sitelenGlyph{font-size:18px}.codeLegendGlyph{width:42px;height:42px}.codeLegendGlyph .sitelenGlyph{font-size:27px}.codeGuess{grid-template-columns:repeat(var(--code-cols,4),56px);gap:6px}.codeGuess[data-symbol-count="5"],.codeGuess[data-symbol-count="6"]{grid-template-columns:repeat(3,56px)}.codeSymbol{width:56px;height:56px;min-height:56px}.codeSymbol .sitelenGlyph{font-size:33px}.codeHistory{gap:3px}.codeHistoryRow{padding:4px 6px;font-size:10px}.codeHistorySymbols{gap:5px}.codeHistorySymbols .sitelenGlyph{font-size:20px}.equivalenceGrid{gap:3px}.equivalenceCard{padding:2px}.equivalenceCanvas{max-height:45px}.equivalenceCard small{font-size:8px}.scheduleList{gap:3px}.scheduleItem{grid-template-columns:22px minmax(0,1fr) 42px;padding:2px 4px;gap:4px}.scheduleRank{font-size:15px}.scheduleCanvas{max-height:none}.scheduleControls button{width:19px;height:30px;min-width:19px;min-height:30px;font-size:16px}
+}
+
+@media (max-height:520px){
+  .jugVessel{height:92px}.jugVessels{gap:16px}.hanoiBoard{height:145px}.codeHistoryRow:nth-child(-n+2){display:none}.equivalenceCanvas{max-height:34px}.scheduleCanvas{max-height:none}.scheduleItem{padding:1px 3px}.scheduleControls button{height:26px;min-height:26px}
+}
+
+
+/* Level 5 mechanisms: new interaction families, still bounded to the fixed puzzle viewport. */
+.riverPuzzle{display:grid;grid-template-rows:auto auto auto auto;gap:8px;width:min(100%,560px);height:100%;min-height:0;align-content:start}
+.riverRules{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;line-height:1.15}
+.riverRules>strong{font-size:11px;color:#3f4750}
+.riverRule{display:flex;align-items:center;gap:4px;padding:3px 7px;border:1px solid rgba(17,17,17,.15);border-radius:999px;background:rgba(255,255,255,.35)}
+.riverRuleGlyph{display:inline-flex;align-items:center;gap:3px}.riverRuleGlyph .sitelenGlyph{font-size:22px}.riverRuleGlyph small{font-size:9px;color:#3f4750}.riverRulePlus{font-weight:900}.riverRuleBad{font:900 18px/1 system-ui;color:#8a1d1d}
+.riverBoardWrap{display:grid;gap:6px}
+.riverBoardLabels{display:grid;grid-template-columns:1fr .18fr .64fr .18fr 1fr;gap:0;font:900 10px/1.1 system-ui,sans-serif;letter-spacing:.06em;color:#3f4750;text-align:center}
+.riverBoard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(56px,1fr));gap:6px;min-height:0}
+.riverCell{border-radius:12px;display:grid;place-items:center;min-height:56px;border:1px solid rgba(17,17,17,.16);background:rgba(255,255,255,.24)}
+.riverCell.bank{background:linear-gradient(180deg,rgba(180,158,105,.34),rgba(133,155,88,.30))}
+.riverCell.water{background:linear-gradient(180deg,rgba(145,195,214,.42),rgba(103,162,189,.48))}
+.riverWave{font:900 24px/1 system-ui;color:rgba(255,255,255,.65)}
+.riverToken{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px}
+.riverToken .sitelenGlyph{font-size:34px;line-height:1}.riverToken small{font:700 10px/1 system-ui,sans-serif;color:#3f4750}
+.riverRaft{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px 4px;background:rgba(211,168,105,.92);border:2px solid rgba(49,38,26,.55);border-radius:10px 10px 26px 26px;box-shadow:0 3px 0 rgba(49,38,26,.18)}
+.riverRaftGlyph{font-size:30px;line-height:.9}.riverRaftGlyphCompound{font-family:"NasinNanpaGame",sans-serif;font-variant-ligatures:normal;font-feature-settings:"liga" 1,"dlig" 1,"calt" 1;letter-spacing:0;white-space:nowrap}.riverRaftMeta{font:800 9px/1 system-ui,sans-serif;color:#453b31;text-align:center}
+.riverControls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.riverControls button{min-height:42px;padding:6px 8px}
+.riverFooter{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;font:700 11px/1.2 system-ui,sans-serif;color:#3f4750}
+.sokobanWrap{display:grid;gap:8px;justify-items:center}.sokobanGrid{--soko-cols:6;display:grid;grid-template-columns:repeat(var(--soko-cols),48px);gap:2px}.sokobanCell{width:48px;height:48px;border:1px solid rgba(17,17,17,.12);border-radius:5px;background:rgba(255,255,255,.28);display:grid;place-items:center;font:900 24px/1 system-ui}.sokobanCell.wall{background:rgba(17,17,17,.72)}.sokobanCell.goal{box-shadow:inset 0 0 0 4px rgba(63,120,78,.35)}.sokobanCell.crate{background:rgba(190,145,75,.55)}.sokobanCell.player{outline:3px solid #111}.sokobanControls{display:grid;grid-template-columns:repeat(4,48px);gap:5px}.sokobanControls button{width:48px;height:42px;min-height:42px;padding:0;font-size:20px}
+.slidingGrid{--slide-cols:3;display:grid;grid-template-columns:repeat(var(--slide-cols),88px);gap:7px}.slidingTile{width:88px;height:88px;min-height:88px;display:grid;place-items:center;border-radius:11px}.slidingTile .sitelenGlyph{font-size:43px}.slidingTile small{font-size:10px}.slidingTile.blank{background:rgba(17,17,17,.08);border-style:dashed}
+.pegLine{display:grid;grid-template-columns:repeat(8,64px);gap:7px;max-width:100%}.pegHole{width:64px;height:64px;min-height:64px;border-radius:50%;font-size:30px;padding:0}.pegHole.occupied{background:rgba(255,255,255,.52)}.pegHole.selected{outline:3px solid #111;outline-offset:2px}
+.patternSequence{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:nowrap}.patternPanel{--pattern-cols:3;display:grid;grid-template-columns:repeat(var(--pattern-cols),22px);gap:3px;padding:6px;border:1px solid rgba(17,17,17,.18);border-radius:8px;background:rgba(255,255,255,.34)}.patternCell{width:22px;height:22px;border-radius:3px;background:rgba(17,17,17,.08)}.patternCell.on{background:#111}.patternQuestion{display:grid;place-items:center;width:80px;height:80px;border:1px dashed rgba(17,17,17,.3);border-radius:8px;font:900 32px/1 system-ui}.patternChoices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,520px)}.patternChoice{display:grid;place-items:center;padding:8px}.patternChoice.selected{outline:3px solid #111}
+
+@media (max-width:700px){.riverPuzzle{gap:6px;width:min(100%,420px)}.riverBoardLabels{font-size:9px;grid-template-columns:1fr .12fr .76fr .12fr 1fr}.riverBoard{grid-template-rows:repeat(4,minmax(48px,1fr));gap:4px}.riverCell{min-height:48px;border-radius:9px}.riverToken .sitelenGlyph{font-size:28px}.riverToken small{font-size:9px}.riverRaftGlyph{font-size:25px}.riverControls{gap:5px}.riverControls button{min-height:38px;padding:4px 6px}.riverFooter{font-size:10px;flex-direction:column;gap:4px}.sokobanGrid{grid-template-columns:repeat(var(--soko-cols),40px)}.sokobanCell{width:40px;height:40px}.slidingGrid{grid-template-columns:repeat(var(--slide-cols),70px)}.slidingTile{width:70px;height:70px;min-height:70px}.slidingTile .sitelenGlyph{font-size:34px}.pegLine{grid-template-columns:repeat(8,42px);gap:4px}.pegHole{width:42px;height:42px;min-height:42px;font-size:22px}.patternPanel{grid-template-columns:repeat(var(--pattern-cols),17px)}.patternCell{width:17px;height:17px}.patternChoices{gap:4px}.patternChoice{padding:4px}.patternQuestion{width:66px;height:66px}}
+@media (max-height:620px){.riverRules>strong{display:none}.riverFooter{display:none}.riverBoard{grid-template-rows:repeat(4,minmax(42px,1fr))}.sokobanGrid{grid-template-columns:repeat(var(--soko-cols),34px)}.sokobanCell{width:34px;height:34px}.slidingGrid{grid-template-columns:repeat(var(--slide-cols),60px)}.slidingTile{width:60px;height:60px;min-height:60px}.pegHole{width:38px;height:38px;min-height:38px}.pegLine{grid-template-columns:repeat(8,38px)}.patternPanel{grid-template-columns:repeat(var(--pattern-cols),15px)}.patternCell{width:15px;height:15px}}
+
+/* Level 5 final puzzle: 6x6 nonogram. Row/column clues use sitelen digit glyphs. */
+.nonogramWrap{
+  --nonogram-cell:48px;
+  display:grid;
+  grid-template-columns:minmax(74px,auto) auto;
+  grid-template-rows:minmax(64px,auto) auto;
+  gap:5px;
+  align-items:end;
+  justify-items:end;
+  max-width:100%;
+}
+.nonogramCorner{width:100%;height:100%}
+.nonogramTopClues{
+  display:grid;
+  grid-template-columns:repeat(var(--nonogram-cols),var(--nonogram-cell));
+  gap:3px;
+}
+.nonogramRowClues{
+  display:grid;
+  grid-template-rows:repeat(var(--nonogram-rows),var(--nonogram-cell));
+  gap:3px;
+}
+.nonogramClue{
+  min-height:var(--nonogram-cell);
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:3px;
+  padding:0 5px;
+  box-sizing:border-box;
+}
+.nonogramClue.vertical{
+  min-width:var(--nonogram-cell);
+  min-height:64px;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:4px 0;
+}
+.nonogramClueNumber{font-size:24px;line-height:1}.nonogramClueSeparator{font:900 17px/1 system-ui,sans-serif;color:#3f4750;flex:0 0 auto}
+.nonogramGrid{
+  display:grid;
+  grid-template-columns:repeat(var(--nonogram-cols),var(--nonogram-cell));
+  grid-template-rows:repeat(var(--nonogram-rows),var(--nonogram-cell));
+  gap:3px;
+}
+.nonogramCell{
+  width:var(--nonogram-cell);
+  height:var(--nonogram-cell);
+  min-width:var(--nonogram-cell);
+  min-height:var(--nonogram-cell);
+  padding:0;
+  border:1px solid rgba(17,17,17,.28);
+  border-radius:5px;
+  background:rgba(255,255,255,.42);
+  position:relative;
+}
+.nonogramCell.filled{background:#111;border-color:#111}
+.nonogramCell.marked::before{
+  content:'×';
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:rgba(17,17,17,.52);
+  font:700 28px/1 system-ui,sans-serif;
+}
+@media (max-width:600px){
+  .nonogramWrap{--nonogram-cell:38px;grid-template-columns:minmax(60px,auto) auto;gap:3px}
+  .nonogramTopClues,.nonogramRowClues,.nonogramGrid{gap:2px}
+  .nonogramClue{gap:2px;padding:0 3px}
+  .nonogramClue.vertical{min-height:52px;padding:2px 0}
+  .nonogramClueNumber{font-size:20px}
+  .nonogramCell.marked::before{font-size:22px}
+}
+@media (max-height:620px){
+  .nonogramWrap{--nonogram-cell:34px;grid-template-columns:minmax(54px,auto) auto}
+  .nonogramClue.vertical{min-height:46px}
+  .nonogramClueNumber{font-size:18px}
+}
+
+
+/* Level 6 — records / number-systems mechanisms. */
+.cardSortWrap{display:grid;gap:7px;justify-items:center;width:100%}
+.cardSortRow{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-width:0}
+.cardSortButton{padding:3px;min-width:0;background:transparent;border:2px solid transparent;border-radius:10px;box-shadow:none}
+.cardSortButton:hover{transform:none}.cardSortButton.selected{border-color:#111;background:rgba(17,17,17,.08)}
+.cardSortCanvas{display:block;width:82px;height:116px}
+.cardSortNote{font:800 11px/1 system-ui,sans-serif;color:var(--muted)}
+
+.calculatorPuzzle{display:grid;grid-template-rows:auto auto auto auto;gap:7px;width:min(100%,560px);justify-items:center}
+.calculatorProgress,.baseMatchProgress{font:900 11px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.calculatorExpression{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);align-items:center;gap:5px;width:100%}
+.calculatorCartouche{display:block;width:100%;height:auto;max-height:76px}
+.calculatorOperator{font:900 28px/1 system-ui,sans-serif;text-align:center}.calculatorOperator.sitelenGlyph{font-family:"NasinNanpaGame",sans-serif;font-size:34px;font-weight:400;line-height:1}
+.calculatorAnswer{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;width:min(100%,390px);padding:4px 7px;border:1px solid rgba(17,17,17,.18);border-radius:9px;background:rgba(255,255,255,.28)}
+.calculatorAnswer>strong{font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}
+.calculatorAnswerCanvas{display:block;width:100%;height:auto;max-height:62px}
+.calculatorKeypad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;width:min(100%,430px)}.calculatorKeypad--expression{grid-template-columns:repeat(4,minmax(0,1fr));width:min(100%,390px)}
+.calculatorKey{min-height:42px;padding:5px 6px;font-size:15px}.calculatorKey--enter{grid-column:auto;background:#d7e8d9}.calculatorKey--clear{font-size:12px}
+
+.baseMatchWrap{display:grid;gap:7px;width:min(100%,620px);justify-items:center}
+.baseMatchTarget{display:block;width:min(100%,360px);height:auto;max-height:76px;border:2px solid rgba(17,17,17,.22);border-radius:10px;background:rgba(255,255,255,.34)}
+.baseMatchChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:100%}
+.baseMatchChoice{padding:4px;min-width:0;border:2px solid rgba(17,17,17,.18)}.baseMatchChoice.selected{outline:3px solid #111}
+.baseMatchCanvas{display:block;width:100%;height:auto;max-height:68px}
+
+.ringLockWrap{display:grid;grid-template-columns:minmax(190px,.8fr) minmax(0,1.2fr);gap:10px;width:min(100%,680px);align-items:center}
+.ringLockClues{display:grid;gap:5px;align-self:stretch;align-content:center}
+.ringLockClue{padding:5px 7px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.3);font:700 11px/1.18 system-ui,sans-serif}
+.ringLockGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ringLockUnit{display:grid;grid-template-rows:auto auto auto;justify-items:center;gap:3px}
+.ringDial{position:relative;width:104px;height:104px;border:2px solid rgba(17,17,17,.28);border-radius:50%;background:rgba(255,255,255,.3)}
+.ringDot{position:absolute;width:11px;height:11px;border-radius:50%;background:rgba(17,17,17,.17);left:calc(50% - 5.5px);top:calc(50% - 5.5px)}
+.ringDot.active{background:#111;box-shadow:0 0 0 3px rgba(255,255,255,.72)}
+.ringDot0{transform:translate(0,-43px)}.ringDot1{transform:translate(30px,-30px)}.ringDot2{transform:translate(43px,0)}.ringDot3{transform:translate(30px,30px)}
+.ringDot4{transform:translate(0,43px)}.ringDot5{transform:translate(-30px,30px)}.ringDot6{transform:translate(-43px,0)}.ringDot7{transform:translate(-30px,-30px)}
+.ringCenterGlyph{position:absolute;inset:0;display:grid;place-items:center;font-size:39px;line-height:1}
+.ringLabel{font:800 10px/1 system-ui,sans-serif}.ringControls{display:grid;grid-template-columns:repeat(2,42px);gap:5px}.ringControls button{width:42px;height:34px;min-height:34px;padding:0;font-size:18px}
+
+/* Level 6 country crossword; answer letters are never printed in the cells. */
+.countryCrosswordWrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;width:min(100%,690px);height:100%;min-height:0;align-items:center}
+.countryCrosswordClues{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;min-width:0}
+.countryCrosswordClue{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:5px;row-gap:2px;padding:5px 6px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.3);font:700 10px/1.16 system-ui,sans-serif}
+.countryCrosswordClue strong{grid-row:1 / span 2;display:grid;grid-template-columns:auto auto;align-items:center;gap:3px}.countryCrosswordClue small{grid-column:2;color:var(--muted);font-size:8px;line-height:1.1}
+.countryCrosswordClueDirection{font:900 11px/1 system-ui,sans-serif;color:#4a443b}
+.countryCrosswordGrid{display:grid;grid-template-columns:repeat(var(--cross-cols),46px);grid-template-rows:repeat(var(--cross-rows),46px);gap:2px}
+.countryCrosswordCell{position:relative;width:46px;height:46px;min-width:46px;min-height:46px;padding:0;border-radius:5px}
+.countryCrosswordCell.block{background:rgba(17,17,17,.65);border-color:rgba(17,17,17,.65)}
+button.countryCrosswordCell{background:rgba(255,255,255,.42)}
+.countryCrosswordNumberHost{position:absolute;left:2px;top:2px;width:calc(100% * .90);height:calc(100% * .52);display:flex;align-items:flex-start;justify-content:flex-start;overflow:visible;opacity:.68;pointer-events:none;mix-blend-mode:multiply}
+.countryCrosswordNumberHost--clue{position:static;width:48px;height:28px;min-width:48px;opacity:.82}
+.countryCrosswordIndexCanvas{display:block;width:auto;height:auto;max-width:100%;max-height:100%}
+.countryCrosswordGlyph{font-size:29px;line-height:1}.countryCrosswordCell.empty .countryCrosswordGlyph{font-family:system-ui,sans-serif;font-size:17px;color:rgba(17,17,17,.35)}
+
+@media (pointer:coarse), (max-width:600px){
+  .cardSortRow{gap:3px}.cardSortCanvas{width:55px;height:78px}.cardSortButton{padding:1px;border-radius:7px}
+  .calculatorPuzzle{gap:4px}.calculatorExpression{gap:2px;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr)}.calculatorOperator{font-size:22px}.calculatorCartouche{max-height:55px}.calculatorAnswerCanvas{max-height:47px}.calculatorKeypad{gap:3px}.calculatorKey{min-height:36px;padding:2px;font-size:13px}
+  .baseMatchWrap{gap:4px}.baseMatchTarget{max-height:56px}.baseMatchChoices{gap:4px}.baseMatchCanvas{max-height:51px}
+  .ringLockWrap{grid-template-columns:1fr;gap:5px}.ringLockClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.ringLockClue{padding:3px 4px;font-size:9px}.ringLockGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.ringDial{width:70px;height:70px}.ringDot{width:8px;height:8px;left:calc(50% - 4px);top:calc(50% - 4px)}.ringDot0{transform:translate(0,-28px)}.ringDot1{transform:translate(20px,-20px)}.ringDot2{transform:translate(28px,0)}.ringDot3{transform:translate(20px,20px)}.ringDot4{transform:translate(0,28px)}.ringDot5{transform:translate(-20px,20px)}.ringDot6{transform:translate(-28px,0)}.ringDot7{transform:translate(-20px,-20px)}.ringCenterGlyph{font-size:28px}.ringControls{grid-template-columns:repeat(2,34px);gap:2px}.ringControls button{width:34px;height:30px;min-height:30px}
+  .countryCrosswordWrap{grid-template-columns:1fr;grid-template-rows:auto auto;gap:4px;justify-items:center;align-content:center}.countryCrosswordClues{gap:3px;width:100%}.countryCrosswordClue{padding:3px 4px;font-size:8.5px}.countryCrosswordClue small{display:none}.countryCrosswordNumberHost--clue{width:42px;height:24px;min-width:42px}.countryCrosswordClueDirection{font-size:10px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),40px);grid-template-rows:repeat(var(--cross-rows),40px)}.countryCrosswordCell{width:40px;height:40px;min-width:40px;min-height:40px}.countryCrosswordGlyph{font-size:25px}
+}
+@media (max-width:390px){
+  .cardSortCanvas{width:50px;height:71px}
+  .countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),36px);grid-template-rows:repeat(var(--cross-rows),36px)}.countryCrosswordCell{width:36px;height:36px;min-width:36px;min-height:36px}.countryCrosswordGlyph{font-size:22px}
+}
+@media (max-height:620px){
+  .cardSortCanvas{width:48px;height:68px}
+  .calculatorCartouche{max-height:45px}.calculatorAnswerCanvas{max-height:40px}.calculatorKey{min-height:31px}
+  .ringLockClues{display:none}.ringDial{width:66px;height:66px}.ringDot0{transform:translate(0,-26px)}.ringDot1{transform:translate(18px,-18px)}.ringDot2{transform:translate(26px,0)}.ringDot3{transform:translate(18px,18px)}.ringDot4{transform:translate(0,26px)}.ringDot5{transform:translate(-18px,18px)}.ringDot6{transform:translate(-26px,0)}.ringDot7{transform:translate(-18px,-18px)}
+  .countryCrosswordClue{font-size:8px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),34px);grid-template-rows:repeat(var(--cross-rows),34px)}.countryCrosswordCell{width:34px;height:34px;min-width:34px;min-height:34px}
+}
+
+.calculatorAnswer--working{grid-template-columns:auto minmax(0,1fr);width:min(100%,520px)}
+.calculatorBenchWork{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;overflow:hidden}
+.calculatorBenchWorkCartouche{display:block;width:auto;height:auto;max-width:44%;max-height:58px;flex:0 1 auto}
+.calculatorBenchWorkOperator{font-family:"NasinNanpaGame",sans-serif;font-size:31px;line-height:1;flex:0 0 auto}
+.calculatorBenchPlaceholder{font:700 24px/1 system-ui,sans-serif;color:rgba(17,17,17,.35)}
+@media (pointer:coarse), (max-width:600px){
+  .calculatorBenchWork{gap:3px}
+  .calculatorBenchWorkCartouche{max-height:44px}
+  .calculatorBenchWorkOperator{font-size:25px}
+}
+
+
+/* Level 7 — sensory systems wing. */
+.toneSequenceWrap{display:grid;gap:10px;justify-items:center;width:min(100%,560px)}
+.toneReplay{min-width:150px}
+.toneProgress{font:900 16px/1 system-ui,sans-serif;letter-spacing:.12em;color:var(--muted);min-height:20px}
+.tonePads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.tonePad{min-height:92px;display:grid;place-items:center;gap:2px}.tonePad .sitelenGlyph{font-size:40px}.tonePad small{font-size:10px;color:var(--muted)}
+.tonePad.active{outline:4px solid #111;transform:translateY(-2px);background:#fff4a8}
+
+.airflowWrap{display:grid;justify-items:center;width:100%}
+.airflowGrid{display:grid;grid-template-columns:repeat(var(--air-cols),72px);gap:6px}
+.airflowTile{position:relative;width:72px;height:72px;min-height:72px;padding:0;font:900 44px/1 system-ui,sans-serif;border-radius:10px}
+.airflowTile.empty{visibility:hidden}
+.airflowTile.connected{background:#d8ecd9}
+.airflowTile[data-edge]::after{content:attr(data-edge);position:absolute;left:50%;bottom:3px;transform:translateX(-50%);font:900 8px/1 system-ui,sans-serif;letter-spacing:.04em}
+
+.pulseSyncWrap{display:grid;gap:8px;width:min(100%,680px)}
+.pulseBoard{display:grid;gap:8px}
+.pulseLane{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px;align-items:center}
+.pulseControls{display:grid;grid-template-columns:38px 36px 38px;gap:4px;align-items:center;justify-content:center}
+.pulseControls button{width:38px;height:36px;min-height:36px;padding:0}.pulseLaneLabel{display:grid;place-items:center;font-size:26px}
+.pulseCells{display:grid;grid-template-columns:repeat(var(--pulse-cols),minmax(0,1fr));gap:2px;min-width:0}
+.pulseCell{height:32px;border:1px solid rgba(17,17,17,.16);border-radius:3px;background:rgba(255,255,255,.25);position:relative}
+.pulseCell.on::after{content:'';position:absolute;inset:8px;border-radius:50%;background:#111}
+.pulseCell.gate{box-shadow:inset 0 0 0 3px #b06d2b;background:rgba(176,109,43,.12)}
+.pulseCell.gate.on{background:#d8ecd9}
+.pulseNote{text-align:center;font:800 10px/1.2 system-ui,sans-serif;color:var(--muted)}
+
+.spectrumWrap{display:grid;grid-template-columns:minmax(210px,.9fr) minmax(0,1.1fr);gap:10px;width:min(100%,700px);align-items:center}
+.spectrumClues{display:grid;gap:5px}
+.spectrumClue{padding:5px 7px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.3);font:700 11px/1.18 system-ui,sans-serif}
+.spectrumFilters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.spectrumFilter{min-height:100px;padding:6px 4px;display:grid;grid-template-rows:1fr auto;gap:5px;justify-items:center}
+.spectrumFilter.selected{outline:3px solid #111;outline-offset:2px}
+.spectrumSwatch{display:block;width:44px;height:58px;border-radius:6px;border:2px solid rgba(17,17,17,.3)}
+.spectrumFilter--black .spectrumSwatch{background:#111}
+.spectrumFilter--red .spectrumSwatch{background:#d33}
+.spectrumFilter--yellow .spectrumSwatch{background:#e2c431}
+.spectrumFilter--blue .spectrumSwatch{background:#4a70c9}
+.spectrumFilter--white .spectrumSwatch{background:#fff}
+
+.powerBalanceWrap{display:grid;gap:10px;width:min(100%,690px);justify-items:center}
+.powerMeters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(100%,520px)}
+.powerMeter{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px;padding:5px 7px;border:1px solid rgba(17,17,17,.16);border-radius:9px;background:rgba(255,255,255,.3)}
+.powerMeter strong{font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.powerMeterCanvas{display:block;width:100%;height:auto;max-height:58px}
+.powerBreakers{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;width:100%}
+.powerBreaker{min-height:92px;padding:6px;display:grid;grid-template-rows:auto 1fr;gap:4px;justify-items:center}
+.powerBreaker.on{background:#d8ecd9;outline:3px solid #3f784e}
+.powerBreakerLamp{width:16px;height:16px;border-radius:50%;background:rgba(17,17,17,.16);border:1px solid rgba(17,17,17,.3)}
+.powerBreaker.on .powerBreakerLamp{background:#3f784e}
+.powerBreakerCanvas{display:block;width:100%;height:auto;max-height:58px}
+
+@media (pointer:coarse), (max-width:600px){
+  .toneSequenceWrap{gap:6px}.tonePads{gap:4px}.tonePad{min-height:66px}.tonePad .sitelenGlyph{font-size:31px}
+  .airflowGrid{grid-template-columns:repeat(var(--air-cols),54px);gap:4px}.airflowTile{width:54px;height:54px;min-height:54px;font-size:34px}
+  .pulseSyncWrap{gap:5px}.pulseBoard{gap:5px}.pulseLane{grid-template-columns:96px minmax(0,1fr);gap:5px}.pulseControls{grid-template-columns:30px 30px 30px;gap:2px}.pulseControls button{width:30px;height:30px;min-height:30px}.pulseLaneLabel{font-size:22px}.pulseCell{height:24px}.pulseCell.on::after{inset:6px}.pulseNote{font-size:9px}
+  .spectrumWrap{grid-template-columns:1fr;gap:6px}.spectrumClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.spectrumClue{padding:3px 5px;font-size:9px}.spectrumFilter{min-height:70px;padding:3px 2px;font-size:9px}.spectrumSwatch{width:32px;height:38px}
+  .powerBalanceWrap{gap:6px}.powerMeters{gap:4px}.powerMeter{padding:3px 4px}.powerMeterCanvas{max-height:45px}.powerBreakers{gap:4px}.powerBreaker{min-height:68px;padding:3px}.powerBreakerCanvas{max-height:44px}
+}
+@media (max-height:620px){
+  .tonePad{min-height:56px}.tonePad .sitelenGlyph{font-size:28px}
+  .airflowGrid{grid-template-columns:repeat(var(--air-cols),48px);gap:3px}.airflowTile{width:48px;height:48px;min-height:48px;font-size:30px}
+  .pulseCell{height:20px}.pulseCell.on::after{inset:5px}.pulseNote{display:none}
+  .spectrumClues{display:none}.spectrumFilter{min-height:62px}.spectrumSwatch{height:34px}
+  .powerMeterCanvas{max-height:40px}.powerBreaker{min-height:58px}.powerBreakerCanvas{max-height:38px}
+}
+
+
+/* Level 8 — higher-difficulty constraint systems wing. */
+.deductionWrap{display:grid;grid-template-columns:minmax(240px,.95fr) minmax(0,1.05fr);gap:10px;width:min(100%,760px);align-items:center}
+.deductionClues,.dependencyClues{display:grid;gap:4px}
+.deductionClue{padding:5px 7px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.3);font:700 10.5px/1.18 system-ui,sans-serif}
+.deductionTokens,.dependencyTokens{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.dependencyTokens{grid-template-columns:repeat(7,minmax(0,1fr))}
+.deductionToken{position:relative;min-height:96px;padding:8px 3px 5px;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;gap:2px}
+.deductionToken.selected{outline:3px solid #111;outline-offset:2px}
+.deductionSlot{position:absolute;left:4px;top:3px;font:900 8px/1 system-ui,sans-serif;color:var(--muted)}
+.deductionGlyph{font-size:38px;align-self:center}.deductionLabel{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}
+
+.dualMirrorWrap{display:grid;gap:6px;justify-items:center;width:min(100%,620px)}
+.dualMirrorLegend{font:800 10px/1.2 system-ui,sans-serif;color:var(--muted);text-align:center}
+.dualMirrorBoard{position:relative;display:grid;grid-template-columns:repeat(var(--mirror-cols),62px);grid-template-rows:repeat(var(--mirror-rows),62px);gap:2px;padding:0}
+.dualMirrorCell{position:relative;width:62px;height:62px;border:1px solid rgba(17,17,17,.14);background:rgba(255,255,255,.22);z-index:2}
+.dualMirrorMirror{width:100%;height:100%;min-height:0;padding:0;border:0;border-radius:0;background:rgba(255,255,255,.38);font:900 42px/1 ui-monospace,monospace;box-shadow:none}
+.dualMirrorMirror:hover{transform:none;background:rgba(255,255,255,.65)}
+.dualMirrorBeams{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:3}
+.dualMirrorBeam{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.84}
+.dualMirrorBeam.beam1{stroke:#b14343}.dualMirrorBeam.beam2{stroke:#395fae;stroke-dasharray:12 8}
+.dualMirrorEdgeLabel{font:900 18px/1 system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#f7ead4;stroke-width:5;fill:#111}
+.dualMirrorEdgeLabel.out{font-size:16px}
+
+.truthGateWrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(250px,1.1fr);gap:12px;width:min(100%,680px);align-items:center}
+.truthGateDiagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.truthGateSelect{min-height:88px;padding:7px 4px;display:grid;gap:5px;align-content:center}.truthGateSelect small{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}.truthGateSelect strong{font:900 16px/1 system-ui,sans-serif}
+.truthTable{display:grid;grid-template-columns:repeat(4,48px);gap:3px;justify-content:center}
+.truthTable>strong{display:grid;place-items:center;height:26px;font:900 10px/1 system-ui,sans-serif}
+.truthBit{display:grid;place-items:center;width:48px;height:34px;border:1px solid rgba(17,17,17,.16);border-radius:5px;background:rgba(255,255,255,.3);font-size:23px}
+.truthGateKey{grid-column:1/-1;text-align:center;font:800 9px/1.2 system-ui,sans-serif;color:var(--muted)}
+
+.exactPathWrap{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:8px 12px;width:min(100%,700px);align-items:center;justify-content:center}
+.exactPathMeters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;grid-column:1}
+.exactPathMeter{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px;align-items:center;padding:4px 6px;border:1px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.3)}
+.exactPathMeter strong{font:900 9px/1 system-ui,sans-serif;text-transform:uppercase}.exactPathMeterCanvas{display:block;width:100%;height:auto;max-height:48px}
+.exactPathGrid{display:grid;grid-template-columns:repeat(var(--path-cols),62px);gap:4px;grid-column:2;grid-row:1 / span 2}
+.exactPathCell{position:relative;width:62px;height:62px;min-height:62px;padding:0;display:grid;place-items:center}
+.exactPathCell:disabled{opacity:1;color:inherit}.exactPathCell.visited{background:#d9e7d9}.exactPathCell.current{outline:3px solid #111}.exactPathCell.exit{box-shadow:inset 0 0 0 3px #a66a27}
+.exactPathStep{position:absolute;left:4px;top:3px;font:900 7px/1 system-ui,sans-serif;color:var(--muted)}
+.exactPathValue{font-size:31px}
+.exactPathControls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;grid-column:1}.exactPathControls button{min-height:38px}
+
+@media (pointer:coarse), (max-width:600px){
+  .deductionWrap{grid-template-columns:1fr;gap:5px}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.deductionClue{padding:3px 4px;font-size:8.5px}
+  .deductionToken{min-height:66px;padding:5px 1px 3px}.deductionGlyph{font-size:28px}.deductionLabel{font-size:7px}.dependencyTokens{gap:2px}.dependencyTokens .deductionToken{min-height:61px}.dependencyTokens .deductionGlyph{font-size:25px}
+  .dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),48px);grid-template-rows:repeat(var(--mirror-rows),48px)}.dualMirrorCell{width:48px;height:48px}.dualMirrorMirror{font-size:32px}.dualMirrorLegend{font-size:9px}
+  .truthGateWrap{grid-template-columns:1fr;gap:6px}.truthGateSelect{min-height:56px}.truthTable{grid-template-columns:repeat(4,40px)}.truthBit{width:40px;height:28px;font-size:20px}
+  .exactPathWrap{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:5px;justify-items:center}.exactPathMeters{grid-column:1;width:100%}.exactPathGrid{grid-column:1;grid-row:2;grid-template-columns:repeat(var(--path-cols),52px)}.exactPathCell{width:52px;height:52px;min-height:52px}.exactPathValue{font-size:27px}.exactPathControls{grid-column:1;grid-row:3;width:100%}
+}
+@media (max-height:620px){
+  .deductionClue{font-size:8px;padding:2px 4px}.deductionToken{min-height:54px}.deductionGlyph{font-size:24px}.deductionLabel{display:none}
+  .dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),43px);grid-template-rows:repeat(var(--mirror-rows),43px)}.dualMirrorCell{width:43px;height:43px}.dualMirrorMirror{font-size:28px}
+  .truthGateSelect{min-height:48px;padding:3px}.truthBit{height:24px;font-size:18px}.truthGateKey{display:none}
+  .exactPathMeterCanvas{max-height:37px}.exactPathGrid{grid-template-columns:repeat(var(--path-cols),45px)}.exactPathCell{width:45px;height:45px;min-height:45px}.exactPathValue{font-size:24px}.exactPathControls button{min-height:32px}
+}
+
+
+/* Level 9 — vertical labyrinth / navigation-state interactions. */
+.sphinxWrap{display:grid;gap:9px;width:min(100%,650px);justify-items:center}
+.sphinxCrest{font-size:58px;line-height:1}
+.sphinxProgress{font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sphinxRiddle{padding:9px 11px;border:1px solid rgba(17,17,17,.18);border-radius:10px;background:rgba(255,255,255,.34);font:700 13px/1.3 system-ui,sans-serif;text-align:center}
+.sphinxChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;width:100%}
+.sphinxChoice{min-height:88px;display:grid;place-items:center}.sphinxChoice .sitelenGlyph{font-size:46px}
+
+.coupledSwitchWrap{display:grid;gap:10px;width:min(100%,680px)}
+.coupledLampRows{display:grid;gap:6px}
+.coupledLampRow{display:grid;grid-template-columns:repeat(var(--coupled-cols,6),minmax(0,1fr));gap:5px;align-items:center}.coupledLampRow>strong{grid-column:1/-1}
+.coupledLampRow strong{font:900 9px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.coupledLamp{display:grid;place-items:center;height:40px;border-radius:7px;border:1px solid rgba(17,17,17,.18);background:rgba(17,17,17,.08);font:900 10px/1 system-ui,sans-serif;color:var(--muted)}
+.coupledLamp.on{background:#111;color:#fff}
+.coupledLevers{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.coupledLever{min-height:82px;padding:5px;display:grid;gap:2px;place-items:center}.coupledLever .sitelenGlyph{font-size:32px}.coupledLever small{font-size:8px;line-height:1.1;color:var(--muted)}
+.coupledSwitchNote{text-align:center;font:800 9px/1 system-ui,sans-serif;color:var(--muted)}
+
+.layerAlignWrap{display:grid;gap:7px;width:min(100%,760px);justify-items:center}
+.layerTargetSummary{font:800 10px/1.2 system-ui,sans-serif;color:var(--muted);text-align:center}
+.layerAlignStack{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%}
+.layerAlignUnit{display:grid;gap:4px;justify-items:center}
+.layerAlignHead{display:grid;grid-template-columns:34px minmax(0,1fr) 34px;gap:4px;align-items:center;width:100%}
+.layerAlignHead button{width:34px;height:32px;min-height:32px;padding:0}.layerAlignHead strong{text-align:center;font:900 10px/1 system-ui,sans-serif;text-transform:uppercase}
+.layerAlignGrid{display:grid;grid-template-columns:repeat(var(--layer-size),34px);grid-template-rows:repeat(var(--layer-size),34px);gap:2px}
+.layerAlignCell{position:relative;width:34px;height:34px;border:1px solid rgba(17,17,17,.15);border-radius:4px;background:rgba(255,255,255,.28);display:grid;place-items:center}
+.layerAlignCell.target::after{content:'';position:absolute;inset:4px;border:2px dashed rgba(17,17,17,.28);border-radius:50%}
+.layerMarker{position:relative;z-index:2;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font:900 11px/1 system-ui,sans-serif;color:#fff;background:#555}
+.layerMarker--a{background:#a64848}.layerMarker--b{background:#3e64a9}.layerMarker--c{background:#7b6a2d}.layerMarker.aligned{box-shadow:0 0 0 3px #4f875b}
+.layerRotation{font:800 8px/1 system-ui,sans-serif;color:var(--muted)}
+
+@media (pointer:coarse), (max-width:600px){
+  .sphinxWrap{gap:5px}.sphinxCrest{font-size:44px}.sphinxRiddle{padding:6px 8px;font-size:10px}.sphinxChoices{gap:4px}.sphinxChoice{min-height:62px}.sphinxChoice .sitelenGlyph{font-size:34px}
+  .coupledSwitchWrap{gap:6px}.coupledLampRow{gap:3px}.coupledLamp{height:31px}.coupledLevers{gap:3px}.coupledLever{min-height:58px;padding:3px}.coupledLever .sitelenGlyph{font-size:25px}.coupledLever small{font-size:7px}
+  .layerAlignStack{gap:4px}.layerAlignGrid{grid-template-columns:repeat(var(--layer-size),27px);grid-template-rows:repeat(var(--layer-size),27px)}.layerAlignCell{width:27px;height:27px}.layerMarker{width:18px;height:18px;font-size:9px}.layerAlignHead{grid-template-columns:28px minmax(0,1fr) 28px}.layerAlignHead button{width:28px;height:28px;min-height:28px}
+}
+@media (max-height:620px){
+  .sphinxRiddle{font-size:9px}.sphinxChoice{min-height:52px}.sphinxChoice .sitelenGlyph{font-size:30px}
+  .coupledLamp{height:27px}.coupledLever{min-height:50px}.coupledLever small{display:none}
+  .layerTargetSummary{display:none}.layerAlignGrid{grid-template-columns:repeat(var(--layer-size),24px);grid-template-rows:repeat(var(--layer-size),24px)}.layerAlignCell{width:24px;height:24px}.layerMarker{width:16px;height:16px;font-size:8px}
+}
+
+/* Level 10 — cold market / logistics tower. */
+.marketTillWrap,.coldChainWrap,.textileMixerWrap{display:grid;gap:10px;width:min(100%,720px);min-width:0}
+.marketTillCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0}
+.marketTillCard{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;align-items:center;min-width:0;padding:8px;border:1px solid rgba(17,17,17,.16);border-radius:10px;background:rgba(255,255,255,.32)}
+.marketTillHead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;min-width:0}.marketTillHead .sitelenGlyph{font-size:45px}.marketTillCopy{display:grid;gap:2px;min-width:0}.marketTillCopy strong{font:900 12px/1 system-ui,sans-serif}.marketTillCopy div{font:800 10px/1.2 system-ui,sans-serif;color:var(--muted)}
+.marketTillCartoucheFrame{display:flex;align-items:center;justify-content:center;min-width:0;width:100%;overflow:hidden}.marketTillCanvas{display:block;width:auto;height:auto;max-width:100%;max-height:82px;flex:0 1 auto}
+.marketTillTarget{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;min-width:0;padding:6px 9px;border-radius:9px;background:rgba(255,255,255,.3)}.marketTillTarget>strong{font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;white-space:nowrap}.marketTillTarget .marketTillCanvas{max-height:92px}
+.marketTillTokens{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}.marketToken{min-height:58px;font:900 13px/1 system-ui,sans-serif}.marketToken.selected{background:#d8ecd9;outline:3px solid #3f784e}
+.marketTillReadout{padding:6px;border:1px solid rgba(17,17,17,.15);border-radius:8px;text-align:center;font:900 12px/1 system-ui,sans-serif}.marketTillReadout.exact{background:#d8ecd9;color:#244a2e}
+.coldControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.coldControl{min-height:75px;display:grid;gap:4px;place-items:center}.coldControl strong{font:900 11px/1 system-ui,sans-serif}.coldControl span{font:800 10px/1 system-ui,sans-serif;color:var(--muted)}
+.coldGauges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.coldGauge{padding:7px;border:1px solid rgba(17,17,17,.16);border-radius:9px;background:rgba(255,255,255,.28);display:grid;gap:3px;justify-items:center}.coldGauge.matched{background:#d8ecd9;outline:3px solid #3f784e}.coldGauge strong{font:900 10px/1 system-ui,sans-serif}.coldGauge small{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}.coldGaugeCanvas{display:block;width:100%;height:auto;max-height:56px}
+.textileFormula{display:flex;gap:9px;align-items:center;justify-content:center;padding:10px;border:1px solid rgba(17,17,17,.16);border-radius:10px;background:rgba(255,255,255,.28);font:900 11px/1 system-ui,sans-serif}.textileFormula .sitelenGlyph{font-size:42px}.textileRatioOptions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.textileRatio{min-height:68px;font:900 15px/1 system-ui,sans-serif}.textileRatio.selected{outline:3px solid #111;background:#e8ddc5}
+@media (pointer:coarse), (max-width:600px){
+  .marketTillCards{grid-template-columns:1fr}.marketTillCard{padding:7px}.marketTillHead .sitelenGlyph{font-size:40px}.marketTillTarget{grid-template-columns:1fr;justify-items:center;gap:4px}.marketTillTarget>strong{white-space:normal}.marketTillTokens{grid-template-columns:repeat(3,minmax(0,1fr))}.marketToken{min-height:46px}
+  .coldControls,.coldGauges{grid-template-columns:1fr 1fr 1fr;gap:4px}.coldControl{min-height:58px}.coldGauge{padding:4px}.coldGaugeCanvas{max-height:44px}
+  .textileRatioOptions{grid-template-columns:repeat(2,minmax(0,1fr))}.textileRatio{min-height:52px}
+}
+@media (max-width:390px){.marketTillTokens{grid-template-columns:repeat(2,minmax(0,1fr))}.marketTillHead .sitelenGlyph{font-size:36px}.marketTillCanvas{max-height:70px}.marketTillTarget .marketTillCanvas{max-height:78px}}
+@media (max-height:620px){
+  .marketTillWrap,.coldChainWrap,.textileMixerWrap{gap:5px}.marketTillCard{padding:4px}.marketTillHead .sitelenGlyph{font-size:34px}.marketTillCanvas{max-height:58px}.marketTillTarget .marketTillCanvas{max-height:64px}.marketTillTokens{gap:3px}.marketToken{min-height:38px}
+  .coldControl{min-height:46px}.coldGaugeCanvas{max-height:38px}.textileFormula{padding:5px}.textileFormula .sitelenGlyph{font-size:32px}.textileRatio{min-height:42px}
+}
+
+/* Level 11 — nocturnal wildlife sanctuary / field station. */
+.callTriangWrap{display:grid;gap:9px;width:min(100%,690px);justify-items:center;min-width:0}
+.callTriangLegend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%}
+.callTriangSensor{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:center;padding:6px 8px;border:1px solid rgba(17,17,17,.16);border-radius:9px;background:rgba(255,255,255,.3);min-width:0}
+.callTriangSensor>strong{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#111;color:#fff;font:900 12px/1 system-ui,sans-serif}
+.callTriangReading{display:flex;align-items:center;justify-content:flex-start;gap:6px;min-width:0;white-space:nowrap}
+.callTriangSensor .callTriangDistanceGlyph{font-family:"NasinNanpaGame",sans-serif;font-size:25px;font-weight:400;line-height:1;color:#111;flex:0 0 auto}
+.callTriangLatin{font:900 16px/1 system-ui,sans-serif;color:#111;flex:0 0 auto}
+.callTriangSensor small{font:800 8px/1 system-ui,sans-serif;color:var(--muted);white-space:nowrap}
+.callTriangGrid{display:grid;grid-template-columns:repeat(var(--tri-cols),58px);grid-template-rows:repeat(var(--tri-rows),58px);gap:4px}
+.callTriangCell{position:relative;width:58px;height:58px;min-height:58px;padding:0;border-radius:8px;display:grid;place-items:center;font:900 16px/1 system-ui,sans-serif}.callTriangCell.selected{outline:4px solid #111;outline-offset:1px;background:#d8ecd9}.callTriangCell.sensor{background:#ead9b7}.callTriangCell .sitelenGlyph{font-size:27px}.callTriangCoord{position:absolute;right:4px;bottom:3px;font:900 8px/1 system-ui,sans-serif;color:var(--muted);letter-spacing:.04em}
+.callTriangNote{font:800 9px/1.25 system-ui,sans-serif;color:var(--muted);text-align:center}
+
+.lineageWrap{display:grid;gap:8px;width:min(100%,760px);min-width:0}
+.lineagePairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lineagePair{display:grid;gap:4px;justify-items:center;padding:6px;border:1px solid rgba(17,17,17,.16);border-radius:9px;background:rgba(255,255,255,.28);min-width:0}.lineagePair strong{font:900 10px/1 system-ui,sans-serif}.lineageTraits{display:flex;gap:3px;justify-content:center;align-items:center;min-width:0}.lineageTraits .sitelenGlyph{font-size:25px}
+.lineageRows{display:grid;gap:5px}.lineageRow{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1.2fr);gap:7px;align-items:center;padding:5px 7px;border:1px solid rgba(17,17,17,.14);border-radius:9px;background:rgba(255,255,255,.22);min-width:0}.lineageHatchling{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:center;min-width:0}.lineageHatchling>strong{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#111;color:#fff;font:900 11px/1 system-ui,sans-serif}.lineageHatchling .lineageTraits{justify-content:flex-start}.lineageUnknown{display:grid;place-items:center;width:25px;height:25px;border:1px dashed rgba(17,17,17,.35);border-radius:5px;font:900 13px/1 system-ui,sans-serif;color:var(--muted)}
+.lineageChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.lineageChoice{min-height:40px;padding:3px;font:900 11px/1 system-ui,sans-serif}.lineageChoice.selected{background:#d8ecd9;outline:3px solid #3f784e}
+.lineageNote{font:800 9px/1.25 system-ui,sans-serif;color:var(--muted);text-align:center}
+
+.habitatTriageWrap{display:grid;gap:8px;width:min(100%,760px);min-width:0}
+.habitatRecords{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.habitatRecord{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:start;padding:6px 7px;border:1px solid rgba(17,17,17,.15);border-radius:9px;background:rgba(255,255,255,.28);min-width:0}.habitatRecord .sitelenGlyph{font-size:30px}.habitatRecordCopy{display:grid;gap:2px;min-width:0}.habitatRecordCopy strong{font:900 10px/1 system-ui,sans-serif}.habitatRecordCopy span{font:700 9px/1.2 system-ui,sans-serif;color:var(--muted)}
+.habitatSelectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.habitatSelector{display:grid;gap:5px;padding:7px;border:1px solid rgba(17,17,17,.15);border-radius:9px;background:rgba(255,255,255,.22);min-width:0}.habitatSelectorHead{display:flex;align-items:center;justify-content:center;gap:6px;font:900 10px/1 system-ui,sans-serif}.habitatSelectorHead .sitelenGlyph{font-size:31px}.habitatChoiceGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.habitatChoice{min-height:42px;padding:4px;font:900 9px/1.1 system-ui,sans-serif}.habitatChoice.selected{background:#d8ecd9;outline:3px solid #3f784e}
+.habitatTriageNote{font:800 9px/1.25 system-ui,sans-serif;color:var(--muted);text-align:center}
+
+@media (pointer:coarse), (max-width:600px){
+  .callTriangWrap{gap:6px}.callTriangLegend{gap:3px}.callTriangSensor{padding:4px 5px;gap:4px}.callTriangSensor>strong{width:24px;height:24px}.callTriangReading{gap:4px}.callTriangSensor .callTriangDistanceGlyph{font-size:21px}.callTriangLatin{font-size:14px}.callTriangGrid{grid-template-columns:repeat(var(--tri-cols),48px);grid-template-rows:repeat(var(--tri-rows),48px);gap:3px}.callTriangCell{width:48px;height:48px;min-height:48px}.callTriangCell .sitelenGlyph{font-size:23px}
+  .lineageWrap{gap:5px}.lineagePairs{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.lineagePair{padding:4px}.lineageTraits .sitelenGlyph{font-size:21px}.lineageRows{gap:3px}.lineageRow{grid-template-columns:minmax(120px,.75fr) minmax(0,1.25fr);gap:4px;padding:4px}.lineageHatchling>strong{width:24px;height:24px}.lineageChoices{gap:3px}.lineageChoice{min-height:34px;padding:2px}
+  .habitatTriageWrap{gap:5px}.habitatRecords{gap:4px}.habitatRecord{padding:4px 5px;gap:4px}.habitatRecord .sitelenGlyph{font-size:25px}.habitatRecordCopy span{font-size:8px}.habitatSelectors{gap:4px}.habitatSelector{padding:5px}.habitatSelectorHead .sitelenGlyph{font-size:27px}.habitatChoice{min-height:36px;padding:3px}
+}
+@media (max-width:390px){
+  .callTriangGrid{grid-template-columns:repeat(var(--tri-cols),43px);grid-template-rows:repeat(var(--tri-rows),43px)}.callTriangCell{width:43px;height:43px;min-height:43px}.callTriangCell .sitelenGlyph{font-size:21px}
+  .lineageRow{grid-template-columns:1fr;gap:3px}.lineageHatchling{justify-self:center}.lineageChoices{width:100%}
+  .habitatSelectors{grid-template-columns:1fr}.habitatRecords{grid-template-columns:repeat(2,minmax(0,1fr))}.habitatRecordCopy span{display:none}
+}
+@media (max-height:620px){
+  .callTriangLegend{gap:2px}.callTriangSensor{padding:2px 4px;gap:3px}.callTriangSensor>strong{width:22px;height:22px;font-size:10px}.callTriangReading{gap:3px}.callTriangSensor .callTriangDistanceGlyph{font-size:19px}.callTriangLatin{font-size:13px}.callTriangSensor small{font-size:7px}.callTriangGrid{grid-template-columns:repeat(var(--tri-cols),42px);grid-template-rows:repeat(var(--tri-rows),42px);gap:2px}.callTriangCell{width:42px;height:42px;min-height:42px}.callTriangCell .sitelenGlyph{font-size:20px}.callTriangNote{display:none}
+  .lineagePair{padding:3px}.lineagePair strong{font-size:8px}.lineageTraits .sitelenGlyph{font-size:19px}.lineageRow{padding:3px}.lineageChoice{min-height:30px}.lineageNote{display:none}
+  .habitatRecord{padding:3px}.habitatRecord .sitelenGlyph{font-size:22px}.habitatRecordCopy span{display:none}.habitatSelector{padding:3px}.habitatChoice{min-height:30px}.habitatTriageNote{display:none}
+}
+/* Level 11 markup refinements. */
+.callTriangSensor .callTriangDistanceGlyph{font-family:"NasinNanpaGame",sans-serif}
+.lineageTrait.unknown{display:grid;place-items:center;width:25px;height:25px;border:1px dashed rgba(17,17,17,.35);border-radius:5px;font:900 13px/1 system-ui,sans-serif;color:var(--muted)}
+.habitatRecord{grid-template-columns:1fr}.habitatRecord>strong{font:900 10px/1 system-ui,sans-serif}.habitatRecord ul{margin:0;padding-left:16px;font:700 9px/1.25 system-ui,sans-serif;color:var(--muted)}.habitatSelector>strong{text-align:center;font:900 10px/1 system-ui,sans-serif}
+@media (pointer:coarse), (max-width:600px){.callTriangSensor .callTriangDistanceGlyph{font-size:21px}.habitatRecord ul{font-size:8px}}
+@media (max-height:620px){.habitatRecord li:nth-child(n+2){display:none}}
+
+/* v0.40: neutral answer selection + explicit Level 11 evidence. */
+.lineageChoice.selected,.habitatChoice.selected{background:#e8e1d3;outline:3px solid #111;color:#111}
+.lineageEvidence{display:grid;gap:3px;padding:6px 8px;border:1px solid rgba(17,17,17,.18);border-radius:9px;background:rgba(255,255,255,.34);min-width:0}
+.lineageEvidence>strong{font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}
+.lineageEvidence ul{margin:0;padding-left:18px;font:750 9px/1.3 system-ui,sans-serif;color:#333}
+.habitatRoleBrief{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.habitatRoleRule{display:grid;gap:3px;padding:6px 8px;border:1px solid rgba(17,17,17,.18);border-radius:9px;background:rgba(255,255,255,.34);min-width:0}
+.habitatRoleRuleHead{display:flex;align-items:center;gap:6px;min-width:0}.habitatRoleRuleHead .sitelenGlyph{font-size:27px}.habitatRoleRuleHead strong{font:900 10px/1 system-ui,sans-serif}.habitatRoleRule>span{font:750 9px/1.25 system-ui,sans-serif;color:#333}
+@media (pointer:coarse), (max-width:600px){
+  .lineageEvidence{padding:4px 6px}.lineageEvidence ul{font-size:8px;line-height:1.2}
+  .habitatRoleBrief{gap:4px}.habitatRoleRule{padding:4px 5px}.habitatRoleRuleHead .sitelenGlyph{font-size:23px}.habitatRoleRule>span{font-size:8px}
+}
+@media (max-width:390px){.habitatRoleBrief{grid-template-columns:1fr}}
+@media (max-height:620px){
+  .lineageEvidence{padding:3px 5px;gap:2px}.lineageEvidence>strong{font-size:8px}.lineageEvidence ul{font-size:7px;line-height:1.15}
+  .habitatRoleBrief{gap:3px}.habitatRoleRule{padding:3px 4px;gap:2px}.habitatRoleRuleHead .sitelenGlyph{font-size:20px}.habitatRoleRuleHead strong{font-size:8px}.habitatRoleRule>span{font-size:7px;line-height:1.15}
+  .habitatRecord ul{font-size:7px;line-height:1.12}.habitatRecord li:nth-child(n+2){display:list-item}
+}
+
+/* Level 12 — final expert Sudoku. Keep the entire working board usable in the
+   fixed mechanism viewport. Desktop uses a board + side controls layout;
+   phones stack controls below a smaller square board. Digit glyphs are never
+   stretched and Latin fallbacks remain visible at every breakpoint. */
+.sudokuWrap{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 150px;
+  grid-template-rows:auto minmax(0,1fr);
+  gap:6px 12px;
+  width:min(100%,610px);
+  min-width:0;
+  align-items:center;
+  justify-items:center;
+}
+.sudokuLead{
+  grid-column:1/-1;
+  width:100%;
+  font:750 9px/1.2 system-ui,sans-serif;
+  color:#3f3a34;
+  text-align:center;
+}
+.sudokuGrid{
+  grid-column:1;
+  display:grid;
+  grid-template-columns:repeat(9,minmax(0,1fr));
+  width:min(100%,420px,42dvh);
+  aspect-ratio:1/1;
+  border:3px solid #171717;
+  background:#171717;
+  gap:1px;
+}
+.sudokuCell{position:relative;min-width:0;min-height:0;width:100%;height:100%;padding:0;border:0;border-radius:0;background:#f8ead0;display:grid;place-items:center;overflow:hidden}
+.sudokuCell.given{background:#e2d3b7;color:#111;opacity:1;cursor:default}
+.sudokuCell.selected{outline:4px solid #111;outline-offset:-4px;background:#fff4d7}
+.sudokuCell.boxRight{border-right:3px solid #171717}.sudokuCell.boxBottom{border-bottom:3px solid #171717}
+.sudokuGlyph{font-size:clamp(18px,3.4dvh,33px);line-height:1;display:block;transform:none}
+.sudokuLatin{position:absolute;right:2px;bottom:1px;font:900 7px/1 system-ui,sans-serif;color:#4b443b;background:rgba(248,234,208,.82);padding:1px;border-radius:2px}
+.sudokuCell.given .sudokuLatin{background:rgba(226,211,183,.86)}
+.sudokuNotes{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:92%;height:92%;align-items:center;justify-items:center}
+.sudokuNotes small{font:800 6px/1 system-ui,sans-serif;color:#514a41}
+.sudokuControls{
+  grid-column:2;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:6px;
+  width:100%;
+  min-width:0;
+  align-self:center;
+}
+.sudokuControls>button{min-height:40px;padding:5px 4px;font-size:12px}
+.sudokuMode.active{outline:3px solid #111;background:#e8e1d3}
+.sudokuKeypad{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;
+  width:100%;
+}
+.sudokuKey{min-width:0;min-height:42px;padding:2px;display:grid;place-items:center;gap:0}
+.sudokuKey .sitelenGlyph{font-size:20px;line-height:1}.sudokuKey small{font:900 7px/1 system-ui,sans-serif;color:#4b443b}
+/* Sudoku-specific modal compaction: its board is the primary content. */
+.puzzleCard.puzzleCard--mechanism:has(.sudokuWrap){gap:5px;padding:11px}
+.puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>#puzzleInstructions{font-size:14px;line-height:1.18;margin:0}
+.puzzleCard.puzzleCard--mechanism:has(.sudokuWrap) .puzzleSlots{gap:4px}
+.puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayButtonRow{gap:6px}
+.puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayButtonRow button{min-height:42px;padding:6px 10px}
+
+@media (pointer:coarse), (max-width:600px){
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap){padding:7px;gap:3px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>#puzzleInstructions{font-size:11px;line-height:1.15;max-height:3.45em;overflow:hidden}
+  .sudokuWrap{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:4px;width:100%}
+  .sudokuLead{grid-column:1;font-size:8px;line-height:1.15}
+  .sudokuGrid{grid-column:1;width:min(calc(100vw - 34px),340px,39dvh)}
+  .sudokuGlyph{font-size:clamp(16px,6vw,27px)}.sudokuLatin{font-size:6px;right:1px;bottom:1px}.sudokuNotes small{font-size:5.5px}
+  .sudokuControls{grid-column:1;grid-template-columns:1fr 1fr;gap:4px;width:min(100%,340px)}
+  .sudokuControls>button{min-height:34px;padding:3px 4px;font-size:11px}
+  .sudokuKeypad{grid-column:1/-1;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+  .sudokuKey{min-height:38px;padding:1px}.sudokuKey .sitelenGlyph{font-size:18px}.sudokuKey small{font-size:6px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayButtonRow{gap:4px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayButtonRow button{min-height:40px;padding:4px 5px;font-size:12px}
+}
+@media (max-width:390px){
+  .sudokuGrid{width:min(calc(100vw - 30px),320px,38dvh)}
+  .sudokuControls{width:min(100%,320px)}
+  .sudokuGlyph{font-size:clamp(15px,5.7vw,24px)}
+}
+@media (max-height:760px){
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap){padding:7px;gap:3px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayEyebrow{display:none}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>h2{font-size:17px;line-height:1.05}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>#puzzleInstructions{font-size:10.5px;line-height:1.12;max-height:2.3em;overflow:hidden}
+  .sudokuLead{display:none}
+  .sudokuGrid{width:min(100%,330px,37dvh)}
+  .sudokuControls{gap:3px}.sudokuControls>button{min-height:32px}
+  .sudokuKeypad{gap:2px}.sudokuKey{min-height:32px}.sudokuKey .sitelenGlyph{font-size:16px}.sudokuKey small{font-size:6px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap) .puzzleStatus{font-size:9px;line-height:1.1;min-height:1.1em}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap)>.overlayButtonRow button{min-height:36px;font-size:11px}
+}
+@media (max-height:620px){
+  .sudokuGrid{width:min(100%,260px,35dvh)}
+  .sudokuControls{gap:3px}
+  .sudokuControls>button{min-height:28px;font-size:10px}
+  .sudokuKey{min-height:28px;padding:1px}.sudokuKey .sitelenGlyph{font-size:14px}.sudokuKey small{font-size:5.5px}
+  .puzzleCard.puzzleCard--mechanism:has(.sudokuWrap) .puzzleStatus{display:none}
+}
+.dualMirrorBeam.beam3{stroke:#2f7b59;stroke-dasharray:4 7}

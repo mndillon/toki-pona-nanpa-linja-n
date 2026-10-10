@@ -1,0 +1,1170 @@
+(function (root) {
+  'use strict';
+
+  const STANDARD_120 = [
+    'a','akesi','ala','alasa','ale','anpa','ante','anu','awen','e','en','esun','ijo','ike','ilo','insa','jaki','jan','jelo','jo',
+    'kala','kalama','kama','kasi','ken','kepeken','kili','kiwen','ko','kon','kule','kulupu','kute','la','lape','laso','lawa','len','lete','li',
+    'lili','linja','lipu','loje','lon','luka','lukin','lupa','ma','mama','mani','meli','mi','mije','moku','moli','monsi','mu','mun','musi',
+    'mute','nanpa','nasa','nasin','nena','ni','nimi','noka','o','olin','ona','open','pakala','pali','palisa','pan','pana','pi','pilin','pimeja',
+    'pini','pipi','poka','poki','pona','pu','sama','seli','selo','seme','sewi','sijelo','sike','sin','sina','sinpin','sitelen','sona','soweli','suli',
+    'suno','supa','suwi','tan','taso','tawa','telo','tenpo','toki','tomo','tu','unpa','uta','utala','walo','wan','waso','wawa','weka','wile'
+  ];
+
+  const COMMON_2026_BASELINE_GLYPHS = [
+    'namako','kin','oko','kipisi','leko','monsuta','tonsi','jasima','kijetesantakalu','soko','meso','epiku',
+    'kokosila','lanpan','n','misikeke','ku','pake','apeja','majuna','powe','linluwi','kiki','su'
+  ];
+
+  const foundationL1 = ['o','e','wan','tu','seli','awen','luka','nanpa','ona','ma'];
+  const foundationL2 = ['ijo','utala','mun','pipi','jo','en','kulupu','kala','nena','kiwen'];
+  const foundationL3 = ['tenpo','suno','toki','kasi','nasin','tawa','sitelen','sona','ilo','poka'];
+  const foundationL4 = ['telo','poki','palisa','supa','kule','lukin','sama','ante','open','pini'];
+  const foundationL5 = ['jan','soweli','pana','lupa','sewi','anpa','linja','lawa','kili','moku'];
+  const foundationL6 = ['musi','lipu','pali','ken','nimi','pu','noka','nasa','sike','lon'];
+  const foundationL7 = ['kalama','kute','kon','selo','sijelo','pilin','loje','jelo','pimeja','wawa'];
+  const foundationL8 = ['seme','ni','sinpin','monsi','ala','anu','kepeken','tan','weka','kama'];
+  const foundationL9 = ['alasa','insa','wile','taso','suli','lili','ike','pona','tomo','la'];
+  const foundationL10 = ['esun','mani','pan','suwi','lete','len','ko','jaki','laso','walo'];
+  const foundationL11 = ['mu','waso','lape','uta','mama','unpa','meli','mije','akesi','moli'];
+  const foundationL12 = ['a','ale','li','mi','mute','olin','pakala','pi','sin','sina'];
+
+  const blueprint = {
+    id: 'toki-pona-glyph-quest',
+    title: 'Toki Pona Glyph Quest',
+    status: 'draft',
+    standardGlyphs: STANDARD_120,
+    baselineGlyphs: COMMON_2026_BASELINE_GLYPHS,
+    baselineSymbols: [
+      '[',']','(',')','{','}',':','.',',','U+3000',
+      'cartouche-start','cartouche-end','cartouche-extension',
+      'stacking-joiner','scaling-joiner','long-start','long-end','reverse-long-start','reverse-long-end',
+      'middle-dot','colon','tally','left-corner','right-corner','ni-left','ni-up','ni-right','sewi-alt'
+    ],
+    rules: {
+      canonicalGlyphsPerLevel: 10,
+      canonicalGlyphTotal: 120,
+      allowDraftPartialCampaign: true,
+      bonusCanSatisfyMinimum: false,
+      requiredPuzzleRewardsConsumable: false
+    },
+    runtime: {
+      puzzlePresentation: 'fullscreen-until-complete-or-exit',
+      glyphOwnership: 'permanent-reusable-key',
+      saveSystem: 'indexeddb',
+      levelIntro: 'nanpa-linja-n-abbreviated-nanpa-format'
+    },
+    foundationMilestone: {
+      afterLevel: 'L02',
+      collectibleGlyphs: foundationL1.concat(foundationL2),
+      requiredInitials: ['A','E','I','J','K','L','M','N','O','P','S','T','U','W'],
+      numericAbbreviatedCollectibleGlyphs: ['ijo','wan','tu','seli','awen','luka','utala','mun','pipi','jo','nanpa','en','ona','o','kulupu','kala'],
+      numericAbbreviatedBaselineGlyphs: ['kin','kipisi'],
+      coordinateFoundationGlyphs: ['ma','kiwen'],
+      note: 'By the end of Level 2 the guaranteed inventory covers every Toki Pona initial and the collectible repertoire needed for ordinary abbreviated decimal nanpa-linja-n cartouches. kin and kipisi are baseline.'
+    },
+    levels: [
+      {
+        id: 'L01', ordinal: 1, title: 'nanpa open', canonicalGlyphs: foundationL1,
+        startArea: 'entry',
+        initialStates: {
+          workshopDoorOpen:false, mazeEntranceUnlocked:false, mazeExitReleased:false,
+          upperAccess:false, maintenanceAccess:false, powerOn:false,
+          innerMazeDoorUnlocked:false, observationDoorUnlocked:false, exitUnlocked:false
+        },
+        areas: [
+          { id:'entry', name:'Entry Chamber', floor:0, worldRef:'main', roomRef:'Entry Chamber' },
+          { id:'workshop', name:'Workshop', floor:0, worldRef:'main', roomRef:'Workshop' },
+          { id:'concourse', name:'Lower Concourse', floor:0, worldRef:'main', roomRef:'Lower Concourse' },
+          { id:'mazeHub', name:'Maze', floor:0, worldRef:'maze', roomRef:'Maze', tags:['maze'] },
+          { id:'mazeA', name:'Maze dead end A', floor:0, worldRef:'maze', roomRef:'Dead End A', tags:['maze','dead-end'] },
+          { id:'mazeB', name:'Maze dead end B', floor:0, worldRef:'maze', roomRef:'Dead End B', tags:['maze','dead-end'] },
+          { id:'mazeC', name:'Maze dead end C', floor:0, worldRef:'maze', roomRef:'Dead End C', tags:['maze','dead-end'] },
+          { id:'mazeInner', name:'Sealed maze chamber', floor:0, worldRef:'maze', roomRef:'Inner Chamber', tags:['maze','delayed-return'] },
+          { id:'upper', name:'Upper Gallery', floor:1, worldRef:'upper', roomRef:'Upper Gallery' },
+          { id:'maintenance', name:'Maintenance Level', floor:-1, worldRef:'lower', roomRef:'Maintenance Level' },
+          { id:'observation', name:'Observation Room', floor:1, worldRef:'upper', roomRef:'Observation Room' }
+        ],
+        connections: [
+          { id:'l1-entry-workshop', from:'entry', to:'workshop', bidirectional:true },
+          { id:'l1-workshop-concourse', from:'workshop', to:'concourse', bidirectional:true, kind:'door', requirements:{states:{workshopDoorOpen:true}} },
+          { id:'l1-maze-enter', from:'concourse', to:'mazeHub', bidirectional:false, kind:'maze-door', requirements:{states:{mazeEntranceUnlocked:true}} },
+          { id:'l1-maze-exit', from:'mazeHub', to:'concourse', bidirectional:false, kind:'maze-door-return', requirements:{states:{mazeExitReleased:true}} },
+          { id:'l1-maze-a', from:'mazeHub', to:'mazeA', bidirectional:true },
+          { id:'l1-maze-b', from:'mazeHub', to:'mazeB', bidirectional:true },
+          { id:'l1-maze-c', from:'mazeHub', to:'mazeC', bidirectional:true },
+          { id:'l1-maze-inner', from:'mazeHub', to:'mazeInner', bidirectional:true, requirements:{states:{innerMazeDoorUnlocked:true}} },
+          { id:'l1-concourse-upper', from:'concourse', to:'upper', bidirectional:true, requirements:{states:{upperAccess:true}} },
+          { id:'l1-upper-maintenance', from:'upper', to:'maintenance', bidirectional:true, requirements:{states:{maintenanceAccess:true}} },
+          { id:'l1-upper-observation', from:'upper', to:'observation', bidirectional:true, requirements:{states:{observationDoorUnlocked:true}} }
+        ],
+        puzzles: [
+          { id:'l1-intro-o', chain:'intro', type:'pickup', area:'entry', sourceClass:'canonical', rewards:{glyphs:['o']}, skipIfRewardsOwned:true, skipSafe:true, ui:{presentation:'world',title:'Recover o'} },
+          { id:'l1-intro-e', chain:'intro', type:'pickup', area:'entry', sourceClass:'canonical', rewards:{glyphs:['e']}, skipIfRewardsOwned:true, skipSafe:true, ui:{presentation:'world',title:'Recover e'} },
+          {
+            id:'l1-ball-table', chain:'workshop', type:'world-action', area:'workshop', sourceClass:'canonical',
+            requirements:{glyphs:['o','e']}, rewards:{glyphs:['wan','tu'],setStates:{workshopDoorOpen:true,mazeEntranceUnlocked:true}},
+            skipIfRewardsOwned:true, skipSafe:true, alreadyOwnedEffects:{setStates:{workshopDoorOpen:true,mazeEntranceUnlocked:true}},
+            ui:{presentation:'world',title:'o pana e sike lon supa',instructions:'Put the ball on the table. The mechanism releases two number glyphs.'}
+          },
+          { id:'l1-maze-seli', chain:'maze', type:'pickup', area:'mazeA', sourceClass:'canonical', rewards:{glyphs:['seli']}, skipIfRewardsOwned:true, skipSafe:true, ui:{presentation:'world',title:'Maze marker 1'} },
+          { id:'l1-maze-awen', chain:'maze', type:'pickup', area:'mazeB', sourceClass:'canonical', rewards:{glyphs:['awen']}, skipIfRewardsOwned:true, skipSafe:true, ui:{presentation:'world',title:'Maze marker 2'} },
+          { id:'l1-maze-luka', chain:'maze', type:'pickup', area:'mazeC', sourceClass:'canonical', rewards:{glyphs:['luka']}, skipIfRewardsOwned:true, skipSafe:true, ui:{presentation:'world',title:'Maze marker 3'} },
+          {
+            id:'l1-maze-code', chain:'maze', type:'glyph-key-code', area:'mazeHub', sourceClass:'canonical',
+            requirements:{glyphs:['seli','awen','luka']}, inputSequence:['seli','luka','awen'],
+            rewards:{glyphs:['nanpa'],setStates:{mazeExitReleased:true,upperAccess:true}}, skipIfRewardsOwned:true, skipSafe:true,
+            alreadyOwnedEffects:{setStates:{mazeExitReleased:true,upperAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Maze return code',instructions:'The three maze markers give the order. Build marker 1 → 3 → 2.'}
+          },
+          {
+            id:'l1-upper-number', chain:'number', type:'glyph-key-code', area:'upper', sourceClass:'canonical',
+            requirements:{glyphs:['nanpa','wan','tu','seli']}, inputSequence:['nanpa',':','wan','tu','seli','nanpa'],
+            rewards:{glyphs:['ona'],setStates:{maintenanceAccess:true}}, skipIfRewardsOwned:true, skipSafe:true,
+            alreadyOwnedEffects:{setStates:{maintenanceAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'First numeric cartouche',instructions:'Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.'}
+          },
+          {
+            id:'l1-maintenance-sequence', chain:'power', type:'glyph-key-code', area:'maintenance', sourceClass:'required-state',
+            requirements:{glyphs:['wan','tu','seli','awen','luka']}, inputSequence:['luka','awen','seli','tu','wan'],
+            rewards:{setStates:{powerOn:true,innerMazeDoorUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Power sequence',instructions:'Reverse the five digit glyphs you learned: 5 → 4 → 3 → 2 → 1.'}
+          },
+          {
+            id:'l1-inner-signed-number', chain:'return', type:'glyph-key-code', area:'mazeInner', sourceClass:'canonical',
+            requirements:{glyphs:['nanpa','ona','awen','o','luka'],states:{powerOn:true}},
+            inputSequence:['nanpa',':','ona','awen','o','luka','nanpa'],
+            rewards:{glyphs:['ma'],setStates:{observationDoorUnlocked:true}}, skipIfRewardsOwned:true, skipSafe:true,
+            alreadyOwnedEffects:{setStates:{observationDoorUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Sealed numeric chamber',instructions:'Construct the abbreviated nanpa-format cartouche for −4.5.'}
+          },
+          {
+            id:'l1-terminal', chain:'finale', type:'terminal', area:'observation', sourceClass:'story', storyCritical:false, requiredForMinimum:false,
+            requirements:{glyphs:['ma'],states:{powerOn:true}}, rewards:{setStates:{exitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Level 1 terminal',instructions:'Optional archive terminal. Level progression no longer depends on confirming it.'}
+          }
+        ],
+        completion:{ requirements:{states:{powerOn:true,observationDoorUnlocked:true}} },
+        runtime:{ geometryMode:'engine-authored', expectedFloors:[-1,0,1] }
+      },
+      {
+        id:'L02', ordinal:2, title:'nanpa tu', canonicalGlyphs:foundationL2,
+        startArea:'l2Atrium',
+        initialStates:{
+          l2ArchiveAccess:false, l2MapAccess:false, l2CartographyAccess:false,
+          cacheRevealed:false, l2LabAccess:false, l2VaultAccess:false, l2ExitUnlocked:false
+        },
+        areas:[
+          {id:'l2Atrium',name:'Second Atrium',floor:0,worldRef:'l2main',roomRef:'Second Atrium'},
+          {id:'l2Workshop',name:'Number Workshop',floor:0,worldRef:'l2main',roomRef:'Number Workshop'},
+          {id:'l2Cartography',name:'Cartography Room',floor:0,worldRef:'l2main',roomRef:'Cartography Room'},
+          {id:'l2Archive',name:'Lower Archive',floor:0,worldRef:'l2main',roomRef:'Lower Archive'},
+          {id:'l2Lab',name:'Notation Laboratory',floor:0,worldRef:'l2main',roomRef:'Notation Laboratory'},
+          {id:'l2Vault',name:'Foundation Vault',floor:0,worldRef:'l2main',roomRef:'Foundation Vault'}
+        ],
+        connections:[
+          {id:'l2-atrium-workshop',from:'l2Atrium',to:'l2Workshop',bidirectional:true},
+          {id:'l2-atrium-archive',from:'l2Atrium',to:'l2Archive',bidirectional:true,requirements:{states:{l2ArchiveAccess:true}}},
+          {id:'l2-workshop-cartography',from:'l2Workshop',to:'l2Cartography',bidirectional:true,requirements:{states:{l2CartographyAccess:true}}},
+          {id:'l2-archive-lab',from:'l2Archive',to:'l2Lab',bidirectional:true,requirements:{states:{l2LabAccess:true}}},
+          {id:'l2-lab-vault',from:'l2Lab',to:'l2Vault',bidirectional:true,requirements:{states:{l2VaultAccess:true}}},
+          {id:'l2-cartography-vault',from:'l2Cartography',to:'l2Vault',bidirectional:true,requirements:{states:{l2VaultAccess:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l2-digit-order',chain:'digits',type:'glyph-key-code',area:'l2Atrium',sourceClass:'canonical',
+            requirements:{glyphs:['wan','tu','seli','awen','luka']},inputSequence:['wan','tu','seli','awen','luka'],
+            rewards:{glyphs:['ijo','utala'],setStates:{l2ArchiveAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l2ArchiveAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Missing edge digits',instructions:'Place the five Level 1 digit glyphs in ascending order. The machine reveals the two edge digits.'}
+          },
+          {
+            id:'l2-country-kana',chain:'bonus-country',type:'country-cartouche',area:'l2Atrium',sourceClass:'bonus',requiredForMinimum:false,
+            rewards:{glyphs:['suno']},skipIfRewardsOwned:true,skipSafe:true,
+            ui:{presentation:'fullscreen',canExit:true,title:'ma seme?',instructions:'Identify the country, then spell its Toki Pona name using any owned glyph whose word begins with each required letter.',payload:{country:'Ghana',answer:'KANA',clueTp:'ma ni li lon poka suno weka Apika. ona li jo e poka telo suli.',clueEn:'This country is in western Africa. It has a coast on a large body of water.'}}
+          },
+          {
+            id:'l2-archive-sequence',chain:'digits',type:'glyph-key-code',area:'l2Archive',sourceClass:'canonical',
+            requirements:{glyphs:['ijo','utala','wan','tu']},inputSequence:['ijo','wan','tu','utala'],
+            rewards:{glyphs:['mun','pipi'],setStates:{l2MapAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l2MapAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Archive sequence',instructions:'Use the clue 0 → 1 → 2 → 6 to build the four-glyph sequence.'}
+          },
+          {
+            id:'l2-workshop-stones',chain:'material',type:'glyph-key-code',area:'l2Workshop',sourceClass:'canonical',
+            requirements:{glyphs:['ma','awen','tu','wan']},inputSequence:['ma','wan','tu','awen'],
+            rewards:{glyphs:['jo','kiwen'],setStates:{l2CartographyAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l2CartographyAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Stone index',instructions:'The placards read MA, then the odd positions 1, 2, 4. Enter that sequence to release the stone key.'}
+          },
+          {
+            id:'l2-map-cache',chain:'map',type:'coordinate-map',area:'l2Cartography',sourceClass:'required-state',
+            requirements:{glyphs:['ma','kiwen','nanpa','seli','jo'],states:{l2MapAccess:true}},
+            rewards:{setStates:{cacheRevealed:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Coordinate map',instructions:'Mark the grid cell shown by the abbreviated ma coordinate.',objective:'Solve the coordinate map in Cartography.',payload:{source:'ma:(3,9)',targetX:3,targetY:9,gridWidth:10,gridHeight:10}}
+          },
+          {
+            id:'l2-hidden-cache',chain:'map',type:'glyph-key-code',area:'l2Archive',sourceClass:'canonical',
+            requirements:{glyphs:['kiwen','ma'],states:{cacheRevealed:true}},inputSequence:['kiwen','ma','kiwen'],
+            rewards:{glyphs:['en'],setStates:{l2LabAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l2LabAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Revealed cache',instructions:'The cache displays three sitelen pona glyphs. Enter the same glyphs below in the same order.',objective:'Return to the Lower Archive and inspect the revealed cache.',payload:{displaySequence:['kiwen','ma','kiwen']}}
+          },
+          {
+            id:'l2-thousands',chain:'notation',type:'glyph-key-code',area:'l2Lab',sourceClass:'canonical',
+            requirements:{glyphs:['wan','tu','seli','awen']},inputSequence:['wan','tu','seli','awen'],
+            rewards:{glyphs:['kulupu']},skipIfRewardsOwned:true,skipSafe:true,
+            ui:{presentation:'fullscreen',canExit:true,title:'Thousands grouping',instructions:'Arrange 1, 2, 3, 4 in order. The grouping mechanism reveals the thousands marker.'}
+          },
+          {
+            id:'l2-scientific',chain:'notation',type:'glyph-key-code',area:'l2Lab',sourceClass:'canonical',
+            requirements:{glyphs:['nanpa','wan','o','luka','seli','kulupu']},inputSequence:['nanpa',':','wan','o','luka','seli','nanpa'],
+            rewards:{glyphs:['kala']},skipIfRewardsOwned:true,skipSafe:true,
+            ui:{presentation:'fullscreen',canExit:true,title:'Notation laboratory',instructions:'Build the abbreviated numeric shell shown by the lab clue: 1.53. The solved apparatus reveals the scientific marker.'}
+          },
+          {
+            id:'l2-full-form-bridge',chain:'notation',type:'glyph-key-code',area:'l2Lab',sourceClass:'canonical',
+            requirements:{glyphs:['e','en','nanpa','kala']},inputSequence:['e','en','e','nanpa'],
+            rewards:{glyphs:['nena'],setStates:{l2VaultAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l2VaultAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Full-form bridge',instructions:'The full-form diagram labels four surviving positions E → EN → E → NANPA. Reconstruct them.'}
+          },
+          {
+            id:'l2-vault-terminal',chain:'finale',type:'terminal',area:'l2Vault',sourceClass:'story',storyCritical:false,requiredForMinimum:false,
+            requirements:{glyphs:['ijo','utala','mun','pipi','jo','en','kulupu','kala','nena','kiwen']},
+            rewards:{setStates:{l2ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Foundation complete',instructions:'Optional foundation terminal. The level is already complete once all required glyphs and mandatory world-state objectives are satisfied.'}
+          }
+        ],
+        completion:{requirements:{states:{cacheRevealed:true,l2LabAccess:true,l2VaultAccess:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L03', ordinal:3, title:'nanpa seli', canonicalGlyphs:foundationL3,
+        startArea:'l3Chronology',
+        initialStates:{
+          l3RelayAccess:false, l3NavigationAccess:false, l3ObservationAccess:false,
+          l3WorkshopAccess:false, l3CoreAccess:false, l3ExitUnlocked:false
+        },
+        areas:[
+          {id:'l3Chronology',name:'Chronology Hall',floor:0,worldRef:'l3main',roomRef:'Chronology Hall'},
+          {id:'l3Relay',name:'Relay Gallery',floor:0,worldRef:'l3main',roomRef:'Relay Gallery'},
+          {id:'l3Navigation',name:'Navigation Floor',floor:0,worldRef:'l3main',roomRef:'Navigation Floor'},
+          {id:'l3Observation',name:'Observation Chamber',floor:0,worldRef:'l3main',roomRef:'Observation Chamber'},
+          {id:'l3Workshop',name:'Instrument Workshop',floor:0,worldRef:'l3main',roomRef:'Instrument Workshop'},
+          {id:'l3Core',name:'Synchronization Core',floor:0,worldRef:'l3main',roomRef:'Synchronization Core'}
+        ],
+        connections:[
+          {id:'l3-chronology-relay',from:'l3Chronology',to:'l3Relay',bidirectional:true,requirements:{states:{l3RelayAccess:true}}},
+          {id:'l3-relay-navigation',from:'l3Relay',to:'l3Navigation',bidirectional:true,requirements:{states:{l3NavigationAccess:true}}},
+          {id:'l3-navigation-observation',from:'l3Navigation',to:'l3Observation',bidirectional:true,requirements:{states:{l3ObservationAccess:true}}},
+          {id:'l3-observation-workshop',from:'l3Observation',to:'l3Workshop',bidirectional:true,requirements:{states:{l3WorkshopAccess:true}}},
+          {id:'l3-workshop-core',from:'l3Workshop',to:'l3Core',bidirectional:true,requirements:{states:{l3CoreAccess:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l3-clock-alignment',chain:'time',type:'dial-bank',area:'l3Chronology',sourceClass:'canonical',
+            rewards:{glyphs:['tenpo','suno'],setStates:{l3RelayAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l3RelayAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Clock alignment',instructions:'Set the three clock dials so all three clues are true. This is a deduction puzzle; the dials can be changed independently.',payload:{startValues:[0,0,0],targetValues:[4,3,2],clues:['left + middle = 7','middle + right = 5','left + right = 6']}}
+          },
+          {
+            id:'l3-relay-routing',chain:'signal',type:'route-board',area:'l3Relay',sourceClass:'canonical',
+            requirements:{states:{l3RelayAccess:true}},
+            rewards:{glyphs:['toki','kasi'],setStates:{l3NavigationAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l3NavigationAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Relay routing',instructions:'Rotate the relay pieces to make one continuous signal path from the left input to the right output.',payload:{width:4,height:4,sourceRow:1,sinkRow:2,tiles:[{x:0,y:1,type:'straight',rotation:1},{x:1,y:1,type:'corner',rotation:3},{x:1,y:2,type:'straight',rotation:0},{x:1,y:3,type:'corner',rotation:1},{x:2,y:3,type:'straight',rotation:1},{x:3,y:3,type:'corner',rotation:0},{x:3,y:2,type:'corner',rotation:2}]}}
+          },
+          {
+            id:'l3-path-circuit',chain:'navigation',type:'path-grid',area:'l3Navigation',sourceClass:'canonical',
+            requirements:{states:{l3NavigationAccess:true}},
+            rewards:{glyphs:['nasin','tawa'],setStates:{l3ObservationAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l3ObservationAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Beacon route',instructions:'Move the marker through checkpoints A, B, C in that order, then reach the exit. Dark cells are blocked.',payload:{width:5,height:5,start:[0,4],exit:[4,0],checkpoints:[[0,2],[2,1],[4,2]],blocks:[[1,4],[2,4],[3,4],[1,3],[3,3],[1,1],[3,1]]}}
+          },
+          {
+            id:'l3-lights-pattern',chain:'observation',type:'lights-out',area:'l3Observation',sourceClass:'canonical',
+            requirements:{states:{l3ObservationAccess:true}},
+            rewards:{glyphs:['sitelen','sona'],setStates:{l3WorkshopAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l3WorkshopAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Observation lights',instructions:'Make all nine lamps glow. Tapping a lamp also changes its orthogonal neighbours.',payload:{size:3,initial:[0,1,1,1,0,1,1,1,0],target:1}}
+          },
+          {
+            id:'l3-balance-machine',chain:'instrument',type:'balance-scale',area:'l3Workshop',sourceClass:'canonical',
+            requirements:{states:{l3WorkshopAccess:true}},
+            rewards:{glyphs:['ilo','poka'],setStates:{l3CoreAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l3CoreAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Balance machine',instructions:'Select a combination of the four available weights that exactly balances the target mass. Each weight can be used once.',payload:{weights:[1,2,4,8],target:11}}
+          },
+          {
+            id:'l3-context-match',chain:'finale',type:'context-match',area:'l3Core',sourceClass:'required-state',
+            requirements:{glyphs:['tenpo','suno','toki','kasi'],states:{l3CoreAccess:true}},
+            rewards:{setStates:{l3ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Synchronization core',instructions:'The wall display is explicitly a time: 03:09. Choose the rendered cartouche that belongs on the time circuit.',payload:{choices:[{source:'03:09'},{source:'--03-09'},{source:'3.09'}],correctIndex:0}}
+          }
+        ],
+        completion:{requirements:{states:{l3ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L04', ordinal:4, title:'pali pi sama ante', canonicalGlyphs:foundationL4,
+        startArea:'l4Pump',
+        initialStates:{
+          l4BranchAccess:false, l4StackDone:false, l4CodeDone:false,
+          l4RatioDone:false, l4ExitUnlocked:false
+        },
+        areas:[
+          {id:'l4Pump',name:'Pump Hall',floor:0,worldRef:'l4main',roomRef:'Pump Hall'},
+          {id:'l4Junction',name:'Machine Junction',floor:0,worldRef:'l4main',roomRef:'Machine Junction'},
+          {id:'l4Stack',name:'Stackworks',floor:0,worldRef:'l4main',roomRef:'Stackworks'},
+          {id:'l4Code',name:'Codebreaker Lab',floor:0,worldRef:'l4main',roomRef:'Codebreaker Lab'},
+          {id:'l4Ratio',name:'Equivalence Gallery',floor:0,worldRef:'l4main',roomRef:'Equivalence Gallery'},
+          {id:'l4Schedule',name:'Schedule Archive',floor:0,worldRef:'l4main',roomRef:'Schedule Archive'}
+        ],
+        connections:[
+          {id:'l4-pump-junction',from:'l4Pump',to:'l4Junction',bidirectional:true,requirements:{states:{l4BranchAccess:true}}},
+          {id:'l4-junction-stack',from:'l4Junction',to:'l4Stack',bidirectional:true,requirements:{states:{l4BranchAccess:true}}},
+          {id:'l4-pump-code',from:'l4Pump',to:'l4Code',bidirectional:true,requirements:{states:{l4BranchAccess:true}}},
+          {id:'l4-junction-ratio',from:'l4Junction',to:'l4Ratio',bidirectional:true,requirements:{states:{l4StackDone:true,l4CodeDone:true}}},
+          {id:'l4-ratio-schedule',from:'l4Ratio',to:'l4Schedule',bidirectional:true,requirements:{states:{l4RatioDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l4-jug-transfer',chain:'reservoir',type:'jug-transfer',area:'l4Pump',sourceClass:'canonical',
+            rewards:{glyphs:['telo','poki'],setStates:{l4BranchAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l4BranchAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Reservoir measure',instructions:'Measure exactly 4 units of water. You have a 3-unit vessel and a 5-unit vessel; fill, empty, or pour between them.',payload:{capacities:[3,5],target:4}}
+          },
+          {
+            id:'l4-hanoi-stack',chain:'stack',type:'hanoi-stack',area:'l4Stack',sourceClass:'canonical',
+            requirements:{states:{l4BranchAccess:true}},
+            rewards:{glyphs:['palisa','supa'],setStates:{l4StackDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l4StackDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Stackworks',instructions:'Move the three discs from the left post to the right post. Move one disc at a time; a larger disc may never sit on a smaller one.',payload:{discCount:3,startRod:0,targetRod:2}}
+          },
+          {
+            id:'l4-codebreaker',chain:'code',type:'codebreaker',area:'l4Code',sourceClass:'canonical',
+            requirements:{states:{l4BranchAccess:true}},
+            rewards:{glyphs:['kule','lukin'],setStates:{l4CodeDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l4CodeDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Signal codebreaker',instructions:'Find the four-glyph code. Each test reports how many glyphs are in the exact position and how many are correct but in the wrong position. The four available sitelen pona glyphs are randomized for each new game.',payload:{symbolCount:4,randomizeGlyphs:true,randomizeOrder:true,maxHistory:5}}
+          },
+          {
+            id:'l4-equivalence',chain:'ratio',type:'equivalence-grid',area:'l4Ratio',sourceClass:'canonical',
+            requirements:{states:{l4StackDone:true,l4CodeDone:true}},
+            rewards:{glyphs:['sama','ante'],setStates:{l4RatioDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l4RatioDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Equivalent quantities',instructions:'Make each row show the same value as a fraction, decimal, and percentage. Tap two cards in the same movable column to swap them.',payload:{
+              fractions:[{source:'1/2',value:0.5},{source:'3/4',value:0.75},{source:'1/4',value:0.25}],
+              decimals:[{source:'0.25',value:0.25},{source:'0.5',value:0.5},{source:'0.75',value:0.75}],
+              percents:[{source:'75%',value:0.75},{source:'25%',value:0.25},{source:'50%',value:0.5}],
+              decimalOrder:[0,1,2],percentOrder:[0,1,2]
+            }}
+          },
+          {
+            id:'l4-schedule-order',chain:'schedule',type:'schedule-order',area:'l4Schedule',sourceClass:'canonical',
+            requirements:{states:{l4RatioDone:true}},
+            rewards:{glyphs:['open','pini'],setStates:{l4ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l4ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Schedule archive',instructions:'Put the four events in chronological order, earliest at the top. Read both the suno date cartouche and the tenpo time cartouche.',payload:{
+              events:[
+                {id:'A',sort:'2026-04-03T09:15',dateSource:'2026-04-03',timeSource:'09:15'},
+                {id:'B',sort:'2026-04-03T14:30',dateSource:'2026-04-03',timeSource:'14:30'},
+                {id:'C',sort:'2026-04-05T08:00',dateSource:'2026-04-05',timeSource:'08:00'},
+                {id:'D',sort:'2026-04-10T17:45',dateSource:'2026-04-10',timeSource:'17:45'}
+              ],
+              initialOrder:[2,0,3,1],targetOrder:[0,1,2,3]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l4ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L05', ordinal:5, title:'nasin pi tawa ijo', canonicalGlyphs:foundationL5,
+        startArea:'l5River',
+        initialStates:{
+          l5BranchAccess:false, l5FreightDone:false, l5SlideDone:false,
+          l5StrategyDone:false, l5ExitUnlocked:false
+        },
+        areas:[
+          {id:'l5River',name:'River Dock',floor:0,worldRef:'l5main',roomRef:'River Dock'},
+          {id:'l5Junction',name:'Transit Junction',floor:0,worldRef:'l5main',roomRef:'Transit Junction'},
+          {id:'l5Slide',name:'Sliding Gallery',floor:0,worldRef:'l5main',roomRef:'Sliding Gallery'},
+          {id:'l5Freight',name:'Freight Bay',floor:0,worldRef:'l5main',roomRef:'Freight Bay'},
+          {id:'l5Strategy',name:'Strategy Room',floor:0,worldRef:'l5main',roomRef:'Strategy Room'},
+          {id:'l5Pantry',name:'Pantry Observatory',floor:0,worldRef:'l5main',roomRef:'Pantry Observatory'}
+        ],
+        connections:[
+          {id:'l5-river-junction',from:'l5River',to:'l5Junction',bidirectional:true,requirements:{states:{l5BranchAccess:true}}},
+          {id:'l5-junction-slide',from:'l5Junction',to:'l5Slide',bidirectional:true,requirements:{states:{l5BranchAccess:true}}},
+          {id:'l5-river-freight',from:'l5River',to:'l5Freight',bidirectional:true,requirements:{states:{l5BranchAccess:true}}},
+          {id:'l5-junction-strategy',from:'l5Junction',to:'l5Strategy',bidirectional:true,requirements:{states:{l5FreightDone:true,l5SlideDone:true}}},
+          {id:'l5-strategy-pantry',from:'l5Strategy',to:'l5Pantry',bidirectional:true,requirements:{states:{l5StrategyDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l5-river-crossing',chain:'river',type:'river-crossing',area:'l5River',sourceClass:'canonical',
+            rewards:{glyphs:['jan','soweli'],setStates:{l5BranchAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l5BranchAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'River crossing',instructions:'Get jan, pan, waso and soweli to the far bank. Move the raft up or down to align with a bank object, then load or unload it. The raft carries jan and at most one passenger. If jan is away, pan cannot stay with waso, and waso cannot stay with soweli.',payload:{targetSide:1,travellers:[{label:'pan',glyph:'pan'},{label:'waso',glyph:'waso'},{label:'soweli',glyph:'soweli'}],forbiddenPairs:[[0,1],[1,2]],dangerLabels:['pan + waso','waso + soweli']}}
+          },
+          {
+            id:'l5-sokoban-freight',chain:'freight',type:'sokoban',area:'l5Freight',sourceClass:'canonical',
+            requirements:{states:{l5BranchAccess:true}},
+            rewards:{glyphs:['pana','lupa'],setStates:{l5FreightDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l5FreightDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Freight bay',instructions:'Push both crates onto the two marked bays. Crates can be pushed but not pulled.',payload:{rows:['######','# .  #','# $$ #','#  @ #','# .  #','######']}}
+          },
+          {
+            id:'l5-sliding-grid',chain:'slide',type:'sliding-grid',area:'l5Slide',sourceClass:'canonical',
+            requirements:{states:{l5BranchAccess:true}},
+            rewards:{glyphs:['sewi','anpa'],setStates:{l5SlideDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l5SlideDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Sliding gallery',instructions:'Restore the 3 × 3 number panel. Tap a tile next to the empty space to slide it.',payload:{size:3,initial:[8,6,2,1,0,3,5,4,7],target:[1,2,3,4,5,6,7,8,0]}}
+          },
+          {
+            id:'l5-peg-line',chain:'strategy',type:'peg-solitaire',area:'l5Strategy',sourceClass:'canonical',
+            requirements:{states:{l5FreightDone:true,l5SlideDone:true}},
+            rewards:{glyphs:['linja','lawa'],setStates:{l5StrategyDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l5StrategyDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Strategy line',instructions:'Leave exactly one peg. A peg moves by jumping over one adjacent peg into an empty hole; the jumped peg is removed.',payload:{initial:[1,1,1,0,1,1,1,1]}}
+          },
+          {
+            id:'l5-pantry-nonogram',chain:'observation',type:'nonogram',area:'l5Pantry',sourceClass:'canonical',
+            requirements:{states:{l5StrategyDone:true}},
+            rewards:{glyphs:['kili','moku'],setStates:{l5ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l5ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Pantry inventory',instructions:'Reconstruct the 6 × 6 inventory pattern. Each clue gives the lengths of consecutive filled runs in that row or column, in order.',payload:{target:['001000','011100','111110','110111','111110','011100']}}
+          }
+        ],
+        completion:{requirements:{states:{l5ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+
+      },
+      {
+        id:'L06', ordinal:6, title:'lipu pi nanpa nasa', canonicalGlyphs:foundationL6,
+        startArea:'l6Cards',
+        initialStates:{
+          l6BranchAccess:false, l6CalculatorDone:false, l6CrosswordDone:false,
+          l6BasesDone:false, l6ExitUnlocked:false
+        },
+        areas:[
+          {id:'l6Cards',name:'Card Archive',floor:0,worldRef:'l6main',roomRef:'Card Archive'},
+          {id:'l6Junction',name:'Records Junction',floor:0,worldRef:'l6main',roomRef:'Records Junction'},
+          {id:'l6Crossword',name:'Country Index',floor:0,worldRef:'l6main',roomRef:'Country Index'},
+          {id:'l6Calculator',name:'Calculation Bench',floor:0,worldRef:'l6main',roomRef:'Calculation Bench'},
+          {id:'l6Bases',name:'Number Systems Lab',floor:0,worldRef:'l6main',roomRef:'Number Systems Lab'},
+          {id:'l6Vault',name:'Position Vault',floor:0,worldRef:'l6main',roomRef:'Position Vault'}
+        ],
+        connections:[
+          {id:'l6-cards-junction',from:'l6Cards',to:'l6Junction',bidirectional:true,requirements:{states:{l6BranchAccess:true}}},
+          {id:'l6-junction-crossword',from:'l6Junction',to:'l6Crossword',bidirectional:true,requirements:{states:{l6BranchAccess:true}}},
+          {id:'l6-cards-calculator',from:'l6Cards',to:'l6Calculator',bidirectional:true,requirements:{states:{l6BranchAccess:true}}},
+          {id:'l6-junction-bases',from:'l6Junction',to:'l6Bases',bidirectional:true,requirements:{states:{l6CalculatorDone:true,l6CrosswordDone:true}}},
+          {id:'l6-bases-vault',from:'l6Bases',to:'l6Vault',bidirectional:true,requirements:{states:{l6BasesDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l6-card-order',chain:'cards',type:'card-sort',area:'l6Cards',sourceClass:'canonical',
+            rewards:{glyphs:['musi','lipu'],setStates:{l6BranchAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l6BranchAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Card archive',instructions:'Put the five cards in ascending rank. Tap one card, then another, to swap them. Use the sitelen rank glyphs only; the suit is irrelevant.',payload:{
+              cards:[
+                {rank:8,suit:'♠'},
+                {rank:2,suit:'♣'},
+                {rank:9,suit:'♦'},
+                {rank:5,suit:'♠'},
+                {rank:7,suit:'♣'}
+              ],
+              initialOrder:[0,2,1,4,3],
+              targetOrder:[1,3,4,0,2]
+            }}
+          },
+          {
+            id:'l6-calculator',chain:'calculation',type:'calculator-sequence',area:'l6Calculator',sourceClass:'canonical',
+            requirements:{states:{l6BranchAccess:true}},
+            rewards:{glyphs:['pali','ken'],setStates:{l6CalculatorDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l6CalculatorDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Calculation bench',instructions:'Solve all three calculations. Use the keypad as a calculator: enter the calculation shown, then press Enter. Numbers render as nanpa-linja-n cartouches; addition uses en and subtraction uses lape.',payload:{
+              problems:[
+                {a:'73',op:'−',b:'28',answer:'45'},
+                {a:'15',op:'−',b:'27',answer:'-12'},
+                {a:'-3.5',op:'+',b:'8.25',answer:'4.75'}
+              ]
+            }}
+          },
+          {
+            id:'l6-country-crossword',chain:'index',type:'country-crossword',area:'l6Crossword',sourceClass:'canonical',
+            requirements:{states:{l6BranchAccess:true}},
+            rewards:{glyphs:['nimi','pu'],setStates:{l6CrosswordDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l6CrosswordDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Country index',instructions:'Solve the four country clues and fill the crossing proper names. Each cell takes any owned sitelen pona glyph whose word starts with the required letter. Crossings share one cell.',payload:{
+              width:6,height:6,
+              entries:[
+                {number:1,direction:'across',row:2,col:0,length:6,acceptedAnswers:['KANATA','MEWIKA'],clueTp:'ma ni li lon sewi Amelika. ona li jo e poka telo suli.',clueEn:'This country is in the northern part of the Americas. It has a coast on a large body of water.'},
+                {number:2,direction:'down',row:1,col:1,length:4,acceptedAnswers:['KANA','KINE','TOKO'],clueTp:'ma ni li lon poka suno weka Apika. ona li jo e poka telo suli.',clueEn:'This country is in western Africa. It has a coast on a large body of water.'},
+                {number:3,direction:'across',row:3,col:1,length:5,acceptedAnswers:['NIJON'],clueTp:'ma ni li lon poka suno kama Asija. telo suli li sike e ona.',clueEn:'This country is in eastern Asia. Large bodies of water surround it.'},
+                {number:4,direction:'down',row:2,col:4,length:4,acceptedAnswers:['PISI','TONA'],clueTp:'ma ni li lon Osejanija. telo suli li sike e ona.',clueEn:'This country is in Oceania. Large bodies of water surround it.'}
+              ]
+            }}
+          },
+          {
+            id:'l6-base-match',chain:'bases',type:'base-match',area:'l6Bases',sourceClass:'canonical',
+            requirements:{states:{l6CalculatorDone:true,l6CrosswordDone:true}},
+            rewards:{glyphs:['noka','nasa'],setStates:{l6BasesDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l6BasesDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Number systems lab',instructions:'Choose one equivalent Noka or Nasa cartouche for each of three decimal targets. Your first choice for each target is accepted immediately; correctness is revealed only after all three choices. If the set is wrong, a new set of numbers is loaded.',payload:{
+              kinds:['binary','hex','binary'],
+              seed:60421
+            }}
+          },
+          {
+            id:'l6-position-rings',chain:'position',type:'ring-lock',area:'l6Vault',sourceClass:'canonical',
+            requirements:{states:{l6BasesDone:true}},
+            rewards:{glyphs:['sike','lon'],setStates:{l6ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l6ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Position rings',instructions:'Rotate the four markers to satisfy all four relative-position clues. Each ring has eight positions; clockwise advances one position.',payload:{
+              markers:['suno','mun','ma','toki'],
+              startPositions:[6,2,0,3],
+              targetPositions:[1,4,2,5],
+              clues:[
+                'suno is one step clockwise from the top.',
+                'mun is three steps clockwise from suno.',
+                'ma is two steps anti-clockwise from mun.',
+                'toki is three steps clockwise from ma.'
+              ]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l6ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L07', ordinal:7, title:'tomo pi kalama en wawa', canonicalGlyphs:foundationL7,
+        startArea:'l7Echo',
+        initialStates:{
+          l7BranchAccess:false, l7AirflowDone:false, l7PulseDone:false,
+          l7SpectrumDone:false, l7ExitUnlocked:false
+        },
+        areas:[
+          {id:'l7Echo',name:'Resonance Hall',floor:0,worldRef:'l7main',roomRef:'Resonance Hall'},
+          {id:'l7Junction',name:'Sensor Junction',floor:0,worldRef:'l7main',roomRef:'Sensor Junction'},
+          {id:'l7Airflow',name:'Airflow Gallery',floor:0,worldRef:'l7main',roomRef:'Airflow Gallery'},
+          {id:'l7Pulse',name:'Pulse Chamber',floor:0,worldRef:'l7main',roomRef:'Pulse Chamber'},
+          {id:'l7Spectrum',name:'Spectrum Laboratory',floor:0,worldRef:'l7main',roomRef:'Spectrum Laboratory'},
+          {id:'l7Power',name:'Blackout Substation',floor:0,worldRef:'l7main',roomRef:'Blackout Substation'}
+        ],
+        connections:[
+          {id:'l7-echo-junction',from:'l7Echo',to:'l7Junction',bidirectional:true,requirements:{states:{l7BranchAccess:true}}},
+          {id:'l7-junction-airflow',from:'l7Junction',to:'l7Airflow',bidirectional:true,requirements:{states:{l7BranchAccess:true}}},
+          {id:'l7-echo-pulse',from:'l7Echo',to:'l7Pulse',bidirectional:true,requirements:{states:{l7BranchAccess:true}}},
+          {id:'l7-junction-spectrum',from:'l7Junction',to:'l7Spectrum',bidirectional:true,requirements:{states:{l7AirflowDone:true,l7PulseDone:true}}},
+          {id:'l7-spectrum-power',from:'l7Spectrum',to:'l7Power',bidirectional:true,requirements:{states:{l7SpectrumDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l7-tone-sequence',chain:'resonance',type:'tone-sequence',area:'l7Echo',sourceClass:'canonical',
+            rewards:{glyphs:['kalama','kute'],setStates:{l7BranchAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l7BranchAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Resonance memory',instructions:'Play the five-tone pattern, then repeat it on the four pads. The pads also flash, so the pattern can be followed visually.',payload:{
+              frequencies:[262,330,392,523],
+              sequence:[2,0,3,1,2]
+            }}
+          },
+          {
+            id:'l7-airflow-network',chain:'airflow',type:'airflow-network',area:'l7Airflow',sourceClass:'canonical',
+            requirements:{states:{l7BranchAccess:true}},
+            rewards:{glyphs:['kon','selo'],setStates:{l7AirflowDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l7AirflowDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Airflow gallery',instructions:'Rotate the duct sections so air from the left inlet reaches both right-side vents. Both outlets must be connected at the same time.',payload:{
+              width:4,height:4,source:{x:0,y:1,edge:'W'},sinks:[{x:3,y:0,edge:'E'},{x:3,y:3,edge:'E'}],
+              tiles:[
+                {x:0,y:1,type:'tee',rotation:0},
+                {x:1,y:1,type:'corner',rotation:1},
+                {x:1,y:0,type:'corner',rotation:2},
+                {x:2,y:0,type:'straight',rotation:1},
+                {x:3,y:0,type:'straight',rotation:1},
+                {x:0,y:2,type:'straight',rotation:0},
+                {x:0,y:3,type:'corner',rotation:2},
+                {x:1,y:3,type:'straight',rotation:1},
+                {x:2,y:3,type:'straight',rotation:1},
+                {x:3,y:3,type:'straight',rotation:1}
+              ]
+            }}
+          },
+          {
+            id:'l7-pulse-sync',chain:'pulse',type:'pulse-sync',area:'l7Pulse',sourceClass:'canonical',
+            requirements:{states:{l7BranchAccess:true}},
+            rewards:{glyphs:['sijelo','pilin'],setStates:{l7PulseDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l7PulseDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Pulse synchronizer',instructions:'Shift the three pulse lanes until every lane has a pulse in the marked gate column. Each adjustment also shifts the next lane one step in the opposite direction.',payload:{
+              periods:[3,4,6],startPhases:[0,1,4],targetColumn:11,columns:12
+            }}
+          },
+          {
+            id:'l7-spectrum-order',chain:'spectrum',type:'spectrum-order',area:'l7Spectrum',sourceClass:'canonical',
+            requirements:{states:{l7AirflowDone:true,l7PulseDone:true}},
+            rewards:{glyphs:['loje','jelo'],setStates:{l7SpectrumDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l7SpectrumDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Spectrum filters',instructions:'Arrange the five filters so every positional clue is true. Tap one filter, then another, to swap them.',payload:{
+              filters:[
+                {id:'black',label:'black'},
+                {id:'red',label:'red'},
+                {id:'yellow',label:'yellow'},
+                {id:'blue',label:'blue'},
+                {id:'white',label:'white'}
+              ],
+              initialOrder:['yellow','white','black','blue','red'],
+              targetOrder:['black','red','yellow','blue','white'],
+              clues:[
+                'Black is at one end.',
+                'White is farther right than blue.',
+                'Yellow is directly between red and blue.',
+                'Red is closer to black than blue is.',
+                'White is not next to yellow.',
+                'Black is left of white.'
+              ]
+            }}
+          },
+          {
+            id:'l7-power-balance',chain:'power',type:'power-balance',area:'l7Power',sourceClass:'canonical',
+            requirements:{states:{l7SpectrumDone:true}},
+            rewards:{glyphs:['pimeja','wawa'],setStates:{l7ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l7ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Blackout substation',instructions:'Restore exactly the required load. Toggle breakers until the active nanpa-linja-n loads add to the target.',payload:{
+              loads:[2,5,7,11,13],target:23
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l7ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L08', ordinal:8, title:'tomo pi sona suli', canonicalGlyphs:foundationL8,
+        startArea:'l8Deduction',
+        initialStates:{
+          l8BranchAccess:false, l8MirrorDone:false, l8TruthDone:false,
+          l8ScheduleDone:false, l8ExitUnlocked:false
+        },
+        areas:[
+          {id:'l8Deduction',name:'Deduction Chamber',floor:0,worldRef:'l8main',roomRef:'Deduction Chamber'},
+          {id:'l8Junction',name:'Constraint Junction',floor:0,worldRef:'l8main',roomRef:'Constraint Junction'},
+          {id:'l8Mirror',name:'Dual Mirror Array',floor:0,worldRef:'l8main',roomRef:'Dual Mirror Array'},
+          {id:'l8Truth',name:'Truth Gate Rack',floor:0,worldRef:'l8main',roomRef:'Truth Gate Rack'},
+          {id:'l8Schedule',name:'Dependency Scheduler',floor:0,worldRef:'l8main',roomRef:'Dependency Scheduler'},
+          {id:'l8Transit',name:'Transit Vault',floor:0,worldRef:'l8main',roomRef:'Transit Vault'}
+        ],
+        connections:[
+          {id:'l8-deduction-junction',from:'l8Deduction',to:'l8Junction',bidirectional:true,requirements:{states:{l8BranchAccess:true}}},
+          {id:'l8-junction-mirror',from:'l8Junction',to:'l8Mirror',bidirectional:true,requirements:{states:{l8BranchAccess:true}}},
+          {id:'l8-deduction-truth',from:'l8Deduction',to:'l8Truth',bidirectional:true,requirements:{states:{l8BranchAccess:true}}},
+          {id:'l8-junction-schedule',from:'l8Junction',to:'l8Schedule',bidirectional:true,requirements:{states:{l8MirrorDone:true,l8TruthDone:true}}},
+          {id:'l8-schedule-transit',from:'l8Schedule',to:'l8Transit',bidirectional:true,requirements:{states:{l8ScheduleDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l8-deduction-order',chain:'deduction',type:'deduction-order',area:'l8Deduction',sourceClass:'canonical',
+            rewards:{glyphs:['seme','ni'],setStates:{l8BranchAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l8BranchAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Deduction chamber',instructions:'Use all seven clues to determine the only possible left-to-right order. Tap one token, then another, to swap them.',payload:{
+              tokens:['mun','telo','suno','kasi','ma'],
+              initialOrder:['suno','ma','telo','mun','kasi'],
+              targetOrder:['mun','telo','suno','kasi','ma'],
+              clues:[
+                'mun is somewhere left of suno.',
+                'telo is immediately right of mun.',
+                'kasi is immediately right of suno.',
+                'ma is at one end.',
+                'suno is not at an end.',
+                'ma is not next to telo.',
+                'ma is right of suno.'
+              ]
+            }}
+          },
+          {
+            id:'l8-dual-mirror',chain:'mirror',type:'dual-mirror',area:'l8Mirror',sourceClass:'canonical',
+            requirements:{states:{l8BranchAccess:true}},
+            rewards:{glyphs:['sinpin','monsi'],setStates:{l8MirrorDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l8MirrorDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Dual mirror array',instructions:'Rotate the seven mirrors so both beams reach their marked exits at the same time. Every mirror is used by the solution.',payload:{
+              width:5,height:5,
+              sources:[{edge:'W',index:1,label:'A'},{edge:'W',index:3,label:'B'}],
+              targets:[{edge:'S',index:3,label:'A'},{edge:'E',index:1,label:'B'}],
+              mirrors:[
+                {x:4,y:4},{x:1,y:0},{x:3,y:1},{x:3,y:3},{x:3,y:0},{x:4,y:3},{x:1,y:4}
+              ],
+              initialOrientations:[1,1,1,1,0,0,0],
+              targetOrientations:[0,0,0,0,1,1,1]
+            }}
+          },
+          {
+            id:'l8-truth-gates',chain:'truth',type:'truth-gates',area:'l8Truth',sourceClass:'canonical',
+            requirements:{states:{l8BranchAccess:true}},
+            rewards:{glyphs:['ala','anu'],setStates:{l8TruthDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l8TruthDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Truth gate rack',instructions:'Choose AND, OR or XOR for each unknown gate so the circuit matches all eight rows of the truth table. The output must match every row at once.',payload:{
+              gateOptions:['AND','OR','XOR'],
+              initialGates:['AND','AND','AND'],
+              targetGates:['XOR','OR','XOR'],
+              rows:[
+                {a:0,b:0,c:0,y:0},{a:0,b:0,c:1,y:1},{a:0,b:1,c:0,y:0},{a:0,b:1,c:1,y:0},
+                {a:1,b:0,c:0,y:1},{a:1,b:0,c:1,y:0},{a:1,b:1,c:0,y:1},{a:1,b:1,c:1,y:1}
+              ]
+            }}
+          },
+          {
+            id:'l8-dependency-schedule',chain:'schedule',type:'dependency-order',area:'l8Schedule',sourceClass:'canonical',
+            requirements:{states:{l8MirrorDone:true,l8TruthDone:true}},
+            rewards:{glyphs:['kepeken','tan'],setStates:{l8ScheduleDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l8ScheduleDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Dependency scheduler',instructions:'Arrange the seven operations from first to last. Every dependency clue must be true simultaneously.',payload:{
+              tasks:['telo','kasi','ilo','suno','ma','toki','mun'],
+              initialOrder:['ma','ilo','telo','mun','suno','kasi','toki'],
+              targetOrder:['telo','kasi','ilo','suno','ma','toki','mun'],
+              clues:[
+                'telo happens before kasi.',
+                'kasi is immediately before ilo.',
+                'suno is exactly three positions after telo.',
+                'ma is immediately after suno.',
+                'toki is after ma but before mun.',
+                'mun is last.',
+                'ilo is before suno.'
+              ]
+            }}
+          },
+          {
+            id:'l8-transit-vault',chain:'transit',type:'exact-path',area:'l8Transit',sourceClass:'canonical',
+            requirements:{states:{l8ScheduleDone:true}},
+            rewards:{glyphs:['weka','kama'],setStates:{l8ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l8ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Transit vault',instructions:'Start at the upper-left and reach the lower-right in exactly eight moves without revisiting a cell. The values of all nine visited cells must total the target.',payload:{
+              width:4,height:4,start:[0,0],end:[3,3],moves:8,targetSum:40,
+              values:[
+                [3,8,2,3],
+                [8,8,4,5],
+                [5,8,2,9],
+                [6,4,5,3]
+              ]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l8ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[0]}
+      },
+      {
+        id:'L09', ordinal:9, title:'tomo nasa pi sewi en anpa', canonicalGlyphs:foundationL9,
+        startArea:'l9Survey',
+        initialStates:{
+          l9SphinxReady:false, l9LowerAccess:false, l9CarryDone:false,
+          l9ShortcutActive:false, l9PolarityDone:false, l9VaultAccess:false,
+          l9ExitUnlocked:false
+        },
+        areas:[
+          {id:'l9Survey',name:'Survey Gallery',floor:1,worldRef:'l9upper',roomRef:'Survey Gallery'},
+          {id:'l9Loft',name:'Counterweight Loft',floor:1,worldRef:'l9upper',roomRef:'Counterweight Loft'},
+          {id:'l9Maze',name:'Vertical Labyrinth',floor:0,worldRef:'l9maze',roomRef:'Vertical Labyrinth'},
+          {id:'l9Sphinx',name:'Sphinx Court',floor:0,worldRef:'l9maze',roomRef:'Sphinx Court'},
+          {id:'l9Weights',name:'Counterweight Chamber',floor:-1,worldRef:'l9lower',roomRef:'Counterweight Chamber'},
+          {id:'l9Vault',name:'Alignment Vault',floor:-1,worldRef:'l9lower',roomRef:'Alignment Vault'}
+        ],
+        connections:[
+          {id:'l9-survey-loft',from:'l9Survey',to:'l9Loft',bidirectional:true},
+          {id:'l9-survey-maze',from:'l9Survey',to:'l9Maze',bidirectional:true},
+          {id:'l9-maze-sphinx',from:'l9Maze',to:'l9Sphinx',bidirectional:true},
+          {id:'l9-sphinx-weights',from:'l9Sphinx',to:'l9Weights',bidirectional:true,requirements:{states:{l9LowerAccess:true}}},
+          {id:'l9-weights-loft',from:'l9Weights',to:'l9Loft',bidirectional:true,requirements:{states:{l9ShortcutActive:true}}},
+          {id:'l9-loft-vault',from:'l9Loft',to:'l9Vault',bidirectional:true,requirements:{states:{l9VaultAccess:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l9-maze-survey',chain:'maze',type:'maze-survey',area:'l9Maze',sourceClass:'canonical',
+            rewards:{glyphs:['alasa','insa'],setStates:{l9SphinxReady:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l9SphinxReady:true}},
+            ui:{presentation:'physical',canExit:true,title:'Labyrinth survey',instructions:'Find and inspect all three survey markers hidden in distant dead ends of the labyrinth. Interaction prompts are proximity-based: when you are close enough, E/USE remains available even if the marker is outside your current view. The Sphinx will answer only after all three markers are inspected.',payload:{
+              markerIds:['north-marker','west-marker','south-marker']
+            }}
+          },
+          {
+            id:'l9-sphinx-riddles',chain:'sphinx',type:'sphinx-riddles',area:'l9Sphinx',sourceClass:'canonical',
+            requirements:{states:{l9SphinxReady:true}},
+            rewards:{glyphs:['wile','taso'],setStates:{l9LowerAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l9LowerAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Sphinx memory trial',instructions:'The Sphinx now tests things you already did in Levels 1–8. One earlier encounter is chosen from each era of the journey, and both the three riddles and their answer positions are shuffled for each new trial. Answer all three in one run; a wrong answer returns you to the first riddle.',payload:{
+              selectCount:3,
+              riddles:[
+                {sourceLevel:'L01',sourcePuzzleId:'l1-ball-table',band:'early',text:'At the very beginning, you opened the way by carrying one object to a table. What was that object?',answer:'sike',choices:['kiwen','sike','poki','kili']},
+                {sourceLevel:'L02',sourcePuzzleId:'l2-hidden-cache',band:'early',text:'The coordinate map led you to a hidden cache. Its three-glyph panel had ma in the middle and the same material glyph at both ends. Which glyph was repeated?',answer:'kiwen',choices:['kala','nena','kiwen','kulupu']},
+                {sourceLevel:'L03',sourcePuzzleId:'l3-context-match',band:'early',text:'In the Synchronization Core, you had to distinguish 03:09 from a date and a decimal. Which glyph identifies that reading as a time?',answer:'tenpo',choices:['tenpo','suno','nanpa','ma']},
+                {sourceLevel:'L04',sourcePuzzleId:'l4-equivalence',band:'middle',text:'In the Equivalence Gallery, 1/2, 0.5 and 50% belonged in one row because they had what relationship?',answer:'sama',choices:['ante','open','sama','pini']},
+                {sourceLevel:'L05',sourcePuzzleId:'l5-river-crossing',band:'middle',text:'At the river crossing, who had to travel with the raft every time while carrying at most one passenger?',answer:'jan',choices:['soweli','jan','pana','lawa']},
+                {sourceLevel:'L06',sourcePuzzleId:'l6-base-match',band:'middle',text:'In the Number Systems Lab, you matched decimal targets to Noka cartouches and one other non-decimal cartouche type. Which glyph named the other type?',answer:'nasa',choices:['noka','tenpo','nasa','nanpa']},
+                {sourceLevel:'L07',sourcePuzzleId:'l7-airflow-network',band:'late',text:'In the Airflow Gallery, what had to be routed from the left inlet to both right-side vents at the same time?',answer:'kon',choices:['telo','linja','wawa','kon']},
+                {sourceLevel:'L08',sourcePuzzleId:'l8-deduction-order',band:'late',text:'In the Deduction Chamber, one clue put a token immediately to the right of suno. Which token was it?',answer:'kasi',choices:['mun','telo','kasi','ma']}
+              ]
+            }}
+          },
+          {
+            id:'l9-counterweight',chain:'objects',type:'carry-placement',area:'l9Weights',sourceClass:'canonical',
+            requirements:{states:{l9LowerAccess:true}},
+            rewards:{glyphs:['suli','lili'],setStates:{l9CarryDone:true,l9ShortcutActive:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l9CarryDone:true,l9ShortcutActive:true}},
+            ui:{presentation:'physical',canExit:true,title:'Counterweight relics',instructions:'Carry the three relics between floors and place each on the pedestal described by its clue. You can carry only one relic at a time, and a placed relic can be picked up again.',payload:{
+              relics:[
+                {id:'orb',word:'sike',origin:'upper'},
+                {id:'stone',word:'kiwen',origin:'maze'},
+                {id:'vessel',word:'poki',origin:'lower'}
+              ],
+              pedestals:[
+                {id:'west',accept:'stone',clue:'The west pedestal wants the relic made from stone.'},
+                {id:'center',accept:'vessel',clue:'The centre pedestal wants the thing that can hold water.'},
+                {id:'east',accept:'orb',clue:'The east pedestal wants the relic that can roll.'}
+              ]
+            }}
+          },
+          {
+            id:'l9-route-polarity',chain:'navigation',type:'coupled-switches',area:'l9Loft',sourceClass:'canonical',
+            requirements:{states:{l9CarryDone:true}},
+            rewards:{glyphs:['ike','pona'],setStates:{l9PolarityDone:true,l9VaultAccess:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l9PolarityDone:true,l9VaultAccess:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Shaft polarity',instructions:'Match the six route lamps to the safe pattern. Each lever flips three lamps, so fixing one route can break another. When the pattern is correct, a new trapdoor appears on the upper floor.',payload:{
+              start:[0,1,0,1,1,0],
+              target:[1,0,1,1,0,1],
+              masks:[[1,2,3],[0,1,2],[2,4,5],[0,1,4],[1,3,5]]
+            }}
+          },
+          {
+            id:'l9-layer-alignment',chain:'alignment',type:'layer-alignment',area:'l9Vault',sourceClass:'canonical',
+            requirements:{states:{l9VaultAccess:true}},
+            rewards:{glyphs:['tomo','la'],setStates:{l9ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l9ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Three-floor alignment',instructions:'Rotate the three floor plans until shafts A, B and C all occupy the marked coordinates on every floor. Each floor rotates independently by quarter turns.',payload:{
+              size:5,
+              targetMarkers:{A:[1,0],B:[4,2],C:[2,4]},
+              layers:[
+                {id:'upper',label:'upper',markers:{A:[1,0],B:[4,2],C:[2,4]},startRotation:2,targetRotation:0},
+                {id:'middle',label:'maze',markers:{A:[0,3],B:[2,0],C:[4,2]},startRotation:0,targetRotation:1},
+                {id:'lower',label:'lower',markers:{A:[4,1],B:[2,4],C:[0,2]},startRotation:1,targetRotation:3}
+              ]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l9ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[-1,0,1]}
+      },
+      {
+        id:'L10', ordinal:10, title:'esun pi lete en mani', canonicalGlyphs:foundationL10,
+        startArea:'l10Receiving',
+        initialStates:{
+          l10PowerOn:false,l10DeliveryDone:false,l10BasementOpen:false,
+          l10ColdStable:false,l10UpperLift:false,l10DyeReady:false,
+          l10TextileDone:false,l10AwningOpen:false,l10ExitUnlocked:false
+        },
+        areas:[
+          {id:'l10Receiving',name:'Receiving Bay',floor:0,worldRef:'l10ground',roomRef:'Receiving Bay'},
+          {id:'l10Market',name:'Central Market Arcade',floor:0,worldRef:'l10ground',roomRef:'Central Market Arcade'},
+          {id:'l10Dispatch',name:'Dispatch Bay',floor:0,worldRef:'l10ground',roomRef:'Dispatch Bay'},
+          {id:'l10Textile',name:'Textile / Dye Loft',floor:1,worldRef:'l10upper',roomRef:'Textile / Dye Loft'},
+          {id:'l10Ledger',name:'Ledger Office',floor:1,worldRef:'l10upper',roomRef:'Ledger Office'},
+          {id:'l10Cold',name:'Cold Store',floor:-1,worldRef:'l10lower',roomRef:'Cold Store'},
+          {id:'l10Quarantine',name:'Quarantine',floor:-1,worldRef:'l10lower',roomRef:'Quarantine'}
+        ],
+        connections:[
+          {id:'l10-receiving-market',from:'l10Receiving',to:'l10Market',bidirectional:true},
+          {id:'l10-market-dispatch',from:'l10Market',to:'l10Dispatch',bidirectional:true},
+          {id:'l10-market-cold',from:'l10Market',to:'l10Cold',bidirectional:true,requirements:{states:{l10BasementOpen:true}}},
+          {id:'l10-cold-quarantine',from:'l10Cold',to:'l10Quarantine',bidirectional:true},
+          {id:'l10-cold-textile',from:'l10Cold',to:'l10Textile',bidirectional:true,requirements:{states:{l10UpperLift:true}}},
+          {id:'l10-textile-ledger',from:'l10Textile',to:'l10Ledger',bidirectional:true},
+          {id:'l10-textile-market',from:'l10Textile',to:'l10Market',bidirectional:true,requirements:{states:{l10AwningOpen:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l10-market-till',chain:'permit',type:'market-till',area:'l10Market',sourceClass:'canonical',
+            rewards:{glyphs:['esun','mani'],setStates:{l10PowerOn:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l10PowerOn:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Market permit till',objective:'Balance the market transaction to power the freight spine.',instructions:'The price cards reuse earlier number forms. Pay the exact final amount using the physical mani tokens: pan costs 2.40; suwi costs 1.20 with a 25% discount. Select tokens totalling the exact combined price.',payload:{
+              items:[{word:'pan',price:'2.40'},{word:'suwi',price:'1.20',discount:'25%',final:'0.90'}],
+              targetCents:330,tokens:[200,100,50,20,10,5]
+            }}
+          },
+          {
+            id:'l10-delivery-routing',chain:'delivery',type:'delivery-routing',area:'l10Receiving',sourceClass:'canonical',
+            requirements:{states:{l10PowerOn:true}},
+            rewards:{glyphs:['pan','suwi'],setStates:{l10DeliveryDone:true,l10BasementOpen:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l10DeliveryDone:true,l10BasementOpen:true}},
+            ui:{presentation:'physical',canExit:true,title:'Delivery manifest / conveyor',objective:'Use the powered cart to route both Receiving crates to their correct stalls.',instructions:'Load the two bulk crates into the delivery cart, send the cart to the Market Arcade, and unload each crate at the stall whose manifest matches its stock identifier, time and date. Wrong placements are recoverable.',payload:{
+              parcels:[
+                {id:'bread',word:'pan',stockId:'0042',time:'08:30',date:'2026-10-10',destination:'bakery'},
+                {id:'sweet',word:'suwi',stockId:'0017',time:'09:15',date:'2026-10-11',destination:'sweet-stall'}
+              ],
+              stands:[{id:'bakery',accept:'bread'},{id:'sweet-stall',accept:'sweet'}]
+            }}
+          },
+          {
+            id:'l10-cold-chain',chain:'cold',type:'cold-chain',area:'l10Cold',sourceClass:'canonical',
+            requirements:{states:{l10DeliveryDone:true}},
+            rewards:{glyphs:['lete','ko'],setStates:{l10ColdStable:true,l10UpperLift:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l10ColdStable:true,l10UpperLift:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Cold-chain control',objective:'Stabilize all three coupled cold-chain readings.',instructions:'Adjust compressor A, valve B and gel pump C. Each setting changes more than one reading. Reach freezer −18.0, chilled store +4.0 and gel loop +0.5 at the same time.',payload:{levels:[0,1,2],start:[0,0,0],targetReadings:{freezer:-18.0,chill:4.0,gel:0.5}}}
+          },
+          {
+            id:'l10-textile-mixer',chain:'textile',type:'textile-mixer',area:'l10Textile',sourceClass:'required-state',
+            requirements:{states:{l10ColdStable:true}},
+            rewards:{setStates:{l10DyeReady:true}},skipIfRewardsOwned:false,skipSafe:false,
+            ui:{presentation:'fullscreen',canExit:true,title:'Dye mixture',objective:'Prepare the loft dye bath before placing the cloth batches.',instructions:'The batch card calls for 50% laso dye, 25% water and 25% binder. Set the four equal measures to the matching 2:1:1 ratio.',payload:{options:[[1,1,1],[2,1,1],[2,2,1],[3,1,0]],correctIndex:1}}
+          },
+          {
+            id:'l10-textile-routing',chain:'textile',type:'textile-routing',area:'l10Textile',sourceClass:'canonical',
+            requirements:{states:{l10DyeReady:true}},
+            rewards:{glyphs:['len','laso'],setStates:{l10TextileDone:true,l10AwningOpen:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l10TextileDone:true,l10AwningOpen:true}},
+            ui:{presentation:'physical',canExit:true,title:'Textile batch routing',objective:'Place both cloth batches at the correct loft stations.',instructions:'Carry the two cloth batches to the processing stations. The laso batch belongs at the dye frame; the walo batch belongs at the clean finishing table. A wrong placement can be picked up again.',payload:{
+              batches:[{id:'blue-cloth',word:'laso',destination:'dye-frame'},{id:'white-cloth',word:'walo',destination:'finish-table'}],
+              stations:[{id:'dye-frame',accept:'blue-cloth'},{id:'finish-table',accept:'white-cloth'}]
+            }}
+          },
+          {
+            id:'l10-inspection-audit',chain:'inspection',type:'inspection-audit',area:'l10Ledger',sourceClass:'canonical',
+            requirements:{states:{l10TextileDone:true}},
+            rewards:{glyphs:['jaki','walo'],setStates:{l10ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l10ExitUnlocked:true}},
+            ui:{presentation:'physical',canExit:true,title:'Inspection / quarantine',objective:'Use the Level 10 records to quarantine the bad sample and dispatch the clean one.',instructions:'The Ledger Office releases two inspection samples from deliveries already handled. The suwi sample records an unsafe +8.5 cold-history excursion and must go to Quarantine. The pan sample remained within limits and must go to Dispatch. Both samples are recoverable after a wrong placement.',payload:{
+              samples:[{id:'bread-sample',word:'pan',result:'clean',destination:'dispatch'},{id:'sweet-sample',word:'suwi',result:'bad',destination:'quarantine'}]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l10ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[-1,0,1]}
+      },
+      {
+        id:'L11', ordinal:11, title:'tomo soweli pi tenpo pimeja', canonicalGlyphs:foundationL11,
+        startArea:'l11Field',
+        initialStates:{
+          l11CallsLogged:false,l11CanopyOpen:false,l11RoostDone:false,l11IncubatorOpen:false,
+          l11LineageDone:false,l11BandsReleased:false,l11PairDone:false,l11RecoveryOpen:false,l11ExitUnlocked:false
+        },
+        areas:[
+          {id:'l11Field',name:'Field Station',floor:0,worldRef:'l11ground',roomRef:'Field Station'},
+          {id:'l11Hub',name:'Habitat Hub',floor:0,worldRef:'l11ground',roomRef:'Habitat Hub'},
+          {id:'l11Recovery',name:'Recovery Ward',floor:0,worldRef:'l11ground',roomRef:'Recovery Ward'},
+          {id:'l11Aviary',name:'Aviary Walk',floor:1,worldRef:'l11canopy',roomRef:'Aviary Walk'},
+          {id:'l11Nest',name:'Nest Observatory',floor:1,worldRef:'l11canopy',roomRef:'Nest Observatory'},
+          {id:'l11Incubator',name:'Incubator Service',floor:-1,worldRef:'l11lower',roomRef:'Incubator Service'},
+          {id:'l11Registry',name:'Lineage Registry',floor:-1,worldRef:'l11lower',roomRef:'Lineage Registry'}
+        ],
+        connections:[
+          {id:'l11-field-hub',from:'l11Field',to:'l11Hub',bidirectional:true},
+          {id:'l11-hub-canopy',from:'l11Hub',to:'l11Aviary',bidirectional:true,requirements:{states:{l11CanopyOpen:true}}},
+          {id:'l11-aviary-nest',from:'l11Aviary',to:'l11Nest',bidirectional:true},
+          {id:'l11-aviary-incubator',from:'l11Aviary',to:'l11Incubator',bidirectional:true,requirements:{states:{l11IncubatorOpen:true}}},
+          {id:'l11-incubator-registry',from:'l11Incubator',to:'l11Registry',bidirectional:true},
+          {id:'l11-nest-recovery',from:'l11Nest',to:'l11Recovery',bidirectional:true,requirements:{states:{l11RecoveryOpen:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l11-call-survey',chain:'calls',type:'world-action',area:'l11Field',sourceClass:'required-state',
+            rewards:{setStates:{l11CallsLogged:true}},skipIfRewardsOwned:false,skipSafe:false,
+            ui:{presentation:'physical',title:'Three call pylons',objective:'Record all three acoustic pylons before using the habitat map.',instructions:'Walk the Field Station and Habitat Hub and inspect pylons A, B and C. Proximity is enough to expose the USE / E prompt.'}
+          },
+          {
+            id:'l11-call-triangulation',chain:'calls',type:'call-triangulation',area:'l11Hub',sourceClass:'canonical',
+            requirements:{states:{l11CallsLogged:true}},
+            rewards:{glyphs:['mu','waso'],setStates:{l11CanopyOpen:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l11CanopyOpen:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Call triangulation',objective:'Use the three recorded call distances to locate the night roost.',instructions:'Each pylon reports Manhattan distance to the same roost. Select the single map cell whose distance matches A, B and C simultaneously.',payload:{
+              width:5,height:5,target:[3,2],
+              sensors:[{id:'A',x:0,y:0,distance:5},{id:'B',x:4,y:0,distance:3},{id:'C',x:0,y:4,distance:5}]
+            }}
+          },
+          {
+            id:'l11-roost-schedule',chain:'roost',type:'schedule-order',area:'l11Aviary',sourceClass:'canonical',
+            requirements:{states:{l11CanopyOpen:true}},
+            rewards:{glyphs:['lape','uta'],setStates:{l11RoostDone:true,l11IncubatorOpen:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l11RoostDone:true,l11IncubatorOpen:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Roost and feeding cycle',objective:'Restore the overnight roost checks in chronological order.',instructions:'These four roost/feeding records cross midnight. Put them in true earliest-to-latest order. The times and dates reuse the schedule rules learned earlier.',payload:{
+              events:[
+                {id:'A',dateSource:'2042-03-01',timeSource:'19:40'},
+                {id:'B',dateSource:'2042-03-01',timeSource:'23:10'},
+                {id:'C',dateSource:'2042-03-02',timeSource:'00:30'},
+                {id:'D',dateSource:'2042-03-02',timeSource:'05:15'}
+              ],
+              initialOrder:[2,0,3,1],targetOrder:[0,1,2,3]
+            }}
+          },
+          {
+            id:'l11-lineage-match',chain:'lineage',type:'lineage-match',area:'l11Registry',sourceClass:'canonical',
+            requirements:{states:{l11RoostDone:true}},
+            rewards:{glyphs:['mama','unpa'],setStates:{l11LineageDone:true,l11BandsReleased:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l11LineageDone:true,l11BandsReleased:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Lineage registry',objective:'Resolve the one-to-one parent assignment from partial traits and cross-record evidence.',instructions:'Each hatchling shows only one recorded inherited trait, so no row can be solved by itself. Every parent pair is used exactly once. Use the two cross-record observations as constraints, assign all four hatchlings, then press Try answer.',payload:{
+              pairs:[
+                {id:'A',traits:['loje','sike','seli'],colour:'loje',middle:'sike'},
+                {id:'B',traits:['loje','linja','telo'],colour:'loje',middle:'linja'},
+                {id:'C',traits:['laso','sike','telo'],colour:'laso',middle:'sike'},
+                {id:'D',traits:['laso','linja','seli'],colour:'laso',middle:'linja'}
+              ],
+              hatchlings:[
+                {id:'K',traits:['loje',null,null]},
+                {id:'M',traits:[null,'sike',null]},
+                {id:'P',traits:[null,null,'telo']},
+                {id:'S',traits:['laso',null,null]}
+              ],
+              constraints:[
+                {id:'km-middle',type:'same-middle',hatchlings:['K','M'],text:'K and M came from parent pairs with the same middle trait.'},
+                {id:'ps-middle',type:'same-middle',hatchlings:['P','S'],text:'P and S came from parent pairs with the same middle trait.'}
+              ],
+              targetAssignments:['A','C','B','D'],
+              bands:[{id:'red-band',word:'loje',destination:'west-perch'},{id:'blue-band',word:'laso',destination:'east-perch'}]
+            }}
+          },
+          {
+            id:'l11-parent-bands',chain:'lineage',type:'band-placement',area:'l11Nest',sourceClass:'canonical',
+            requirements:{states:{l11BandsReleased:true}},
+            rewards:{glyphs:['meli','mije'],setStates:{l11PairDone:true,l11RecoveryOpen:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l11PairDone:true,l11RecoveryOpen:true}},
+            ui:{presentation:'physical',canExit:true,title:'Parent-band placement',objective:'Place both released lineage bands on their correct nest perches.',instructions:'The registry releases two recoverable tags into the Nest Observatory: loje belongs on the west perch; laso belongs on the east perch. Wrong placements can always be picked back up.',payload:{
+              bands:[{id:'red-band',word:'loje',destination:'west-perch'},{id:'blue-band',word:'laso',destination:'east-perch'}],
+              perches:[{id:'west-perch',accept:'red-band'},{id:'east-perch',accept:'blue-band'}]
+            }}
+          },
+          {
+            id:'l11-habitat-triage',chain:'recovery',type:'habitat-triage',area:'l11Recovery',sourceClass:'canonical',
+            requirements:{states:{l11RecoveryOpen:true}},
+            rewards:{glyphs:['akesi','moli'],setStates:{l11ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l11ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Habitat recovery triage',objective:'Use the field evidence to identify one reptile habitat and one failed environmental sensor.',instructions:'Choose one station for each role, then press Try answer. For akesi, find the station with no bird call, a warm substrate and a fresh low ground track. For moli, identify the sensor that is dead/faulted: independent signs show current animal activity, but its environmental reading is frozen. Here moli describes the failed sensor, not a dead animal.',payload:{
+              roles:[
+                {id:'akesi',label:'akesi habitat',rule:'no bird call + warm substrate + fresh low ground track'},
+                {id:'moli',label:'moli sensor',rule:'current activity independently confirmed + environmental reading frozen'}
+              ],
+              stations:[
+                {id:'A',label:'station A',facts:['waso call confirmed','overnight roost schedule active','probe changes with the night cycle']},
+                {id:'B',label:'station B',facts:['parent bands confirmed','incubation pulse active','probe changes during feeding']},
+                {id:'C',label:'station C',facts:['no waso call','ground temperature +27.0','fresh low ground track']},
+                {id:'D',label:'station D',facts:['animal call confirmed independently','feed mass changed twice','environmental probe stuck at +12.0 for 6 h']}
+              ],
+              target:{akesi:'C',moli:'D'}
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l11ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[-1,0,1]}
+      },
+      {
+        id:'L12', ordinal:12, title:'tomo sona pini pi ale', canonicalGlyphs:foundationL12,
+        startArea:'l12Entry',
+        initialStates:{
+          l12SpineOnline:false,l12IdentityDone:false,l12CipherDone:false,
+          l12RelationDone:false,l12ExitUnlocked:false
+        },
+        areas:[
+          {id:'l12Entry',name:'Final Archive Vestibule',floor:0,worldRef:'l12ground',roomRef:'Final Archive Vestibule'},
+          {id:'l12Core',name:'Fracture Core',floor:0,worldRef:'l12ground',roomRef:'Fracture Core'},
+          {id:'l12Identity',name:'Identity Gallery',floor:1,worldRef:'l12upper',roomRef:'Identity Gallery'},
+          {id:'l12Relation',name:'Relation Observatory',floor:1,worldRef:'l12upper',roomRef:'Relation Observatory'},
+          {id:'l12Cipher',name:'Totality Cipher Vault',floor:-1,worldRef:'l12lower',roomRef:'Totality Cipher Vault'},
+          {id:'l12Final',name:'Final Sudoku Chamber',floor:-2,worldRef:'l12final',roomRef:'Final Sudoku Chamber'}
+        ],
+        connections:[
+          {id:'l12-entry-core',from:'l12Entry',to:'l12Core',bidirectional:true},
+          {id:'l12-core-identity',from:'l12Core',to:'l12Identity',bidirectional:true,requirements:{states:{l12SpineOnline:true}}},
+          {id:'l12-core-cipher',from:'l12Core',to:'l12Cipher',bidirectional:true,requirements:{states:{l12SpineOnline:true}}},
+          {id:'l12-identity-relation',from:'l12Identity',to:'l12Relation',bidirectional:true,requirements:{states:{l12IdentityDone:true}}},
+          {id:'l12-cipher-final',from:'l12Cipher',to:'l12Final',bidirectional:true,requirements:{states:{l12IdentityDone:true,l12CipherDone:true,l12RelationDone:true}}}
+        ],
+        puzzles:[
+          {
+            id:'l12-parity-core',chain:'fracture',type:'coupled-switches',area:'l12Core',sourceClass:'canonical',
+            rewards:{glyphs:['pakala','sin'],setStates:{l12SpineOnline:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l12SpineOnline:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Fracture parity core',objective:'Repair the ten-line archive spine by solving the coupled parity network.',instructions:'Ten switches affect heavily overlapping sets of ten route lamps. Every lamp is controlled by several switches, and every switch is binary: pressing it twice cancels itself. Match the complete route pattern, then press Try answer. There is exactly one switch subset that repairs the spine.',payload:{
+              start:[0,0,0,0,0,0,0,0,0,0],
+              target:[0,1,1,0,0,0,1,1,1,0],
+              masks:[[1,3,6,7,8,9],[0,2,5,6],[1,2,5,6,7,8],[2,3,7,8,9],[3,4,5,6,9],[2,4,7,8,9],[1,2,3,4,7],[0,5,8,9],[0,1,2,3,5],[0,4,5,6,7,9]]
+            }}
+          },
+          {
+            id:'l12-identity-order',chain:'identity',type:'deduction-order',area:'l12Identity',sourceClass:'canonical',
+            requirements:{states:{l12SpineOnline:true}},
+            rewards:{glyphs:['mi','sina'],setStates:{l12IdentityDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l12IdentityDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Identity permutation',objective:'Resolve one unique eight-glyph ordering from all constraints simultaneously.',instructions:'No single clue determines the row. Rearrange all eight glyph records until all nine positional statements can be true at once, then press Try answer.',payload:{
+              tokens:['kiwen','jan','waso','mani','tenpo','nasin','telo','suno'],
+              initialOrder:['suno','kiwen','tenpo','jan','waso','telo','mani','nasin'],
+              targetOrder:['telo','jan','nasin','kiwen','suno','mani','waso','tenpo'],
+              clues:[
+                'suno is somewhere between nasin and waso.',
+                'tenpo is exactly four slots to the right of kiwen.',
+                'nasin is somewhere between telo and waso.',
+                'kiwen is somewhere between nasin and mani.',
+                'jan is somewhere between telo and tenpo.',
+                'jan is somewhere left of nasin.',
+                'nasin is not at either end.',
+                'waso is exactly two slots to the right of suno.',
+                'mani is somewhere between suno and waso.'
+              ]
+            }}
+          },
+          {
+            id:'l12-master-code',chain:'totality',type:'codebreaker',area:'l12Cipher',sourceClass:'canonical',
+            requirements:{states:{l12SpineOnline:true}},
+            rewards:{glyphs:['ale','mute'],setStates:{l12CipherDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l12CipherDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Six-glyph totality cipher',objective:'Deduce the persisted six-glyph permutation from exact/misplaced feedback.',instructions:'Six previously recovered glyphs are chosen for this save and each is used exactly once in the hidden code. Build a six-position guess, test it, and use exact/misplaced feedback. The hidden code does not change on reload.',payload:{symbolCount:6,maxHistory:12}}
+          },
+          {
+            id:'l12-relation-mirrors',chain:'relation',type:'dual-mirror',area:'l12Relation',sourceClass:'canonical',
+            requirements:{states:{l12IdentityDone:true}},
+            rewards:{glyphs:['olin','pi'],setStates:{l12RelationDone:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l12RelationDone:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Triple relation mirror array',objective:'Route all three beams to their own exits simultaneously.',instructions:'Ten mirrors are shared by three beams. Rotate them so A, B and C each reach the matching marked exit at the same time. Every mirror participates in the unique solution.',payload:{
+              width:7,height:7,
+              sources:[{edge:'W',index:4,label:'A'},{edge:'N',index:2,label:'B'},{edge:'S',index:2,label:'C'}],
+              targets:[{edge:'E',index:5,label:'A'},{edge:'N',index:4,label:'B'},{edge:'E',index:0,label:'C'}],
+              mirrors:[{x:0,y:0},{x:5,y:3},{x:1,y:1},{x:2,y:2},{x:0,y:2},{x:4,y:1},{x:5,y:2},{x:1,y:5},{x:1,y:4},{x:1,y:3}],
+              initialOrientations:[1,1,1,0,0,1,0,0,0,0],
+              targetOrientations:[0,0,0,1,1,0,1,1,1,1]
+            }}
+          },
+          {
+            id:'l12-final-sudoku',chain:'final',type:'sudoku',area:'l12Final',sourceClass:'canonical',
+            requirements:{states:{l12IdentityDone:true,l12CipherDone:true,l12RelationDone:true}},
+            rewards:{glyphs:['a','li'],setStates:{l12ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
+            alreadyOwnedEffects:{setStates:{l12ExitUnlocked:true}},
+            ui:{presentation:'fullscreen',canExit:true,title:'Final 9×9 nanpa-linja-n Sudoku',objective:'Complete the final expert Sudoku. This is the last puzzle of the campaign.',instructions:'Fill every row, column and 3×3 box with 1–9 exactly once. The puzzle is deliberately expert-level and has exactly one solution. All entries use nanpa-linja-n digit glyphs with a small Latin fallback. Notes are available; correctness is revealed only when you press Try answer.',payload:{
+              puzzle:[
+                1,0,0,0,0,7,0,9,0,
+                0,3,0,0,2,0,0,0,8,
+                0,0,9,6,0,0,5,0,0,
+                0,0,5,3,0,0,9,0,0,
+                0,1,0,0,8,0,0,0,2,
+                6,0,0,0,0,4,0,0,0,
+                3,0,0,0,0,0,0,1,0,
+                0,4,0,0,0,0,0,0,7,
+                0,0,7,0,0,0,3,0,0
+              ],
+              solution:[
+                1,6,2,8,5,7,4,9,3,
+                5,3,4,1,2,9,6,7,8,
+                7,8,9,6,4,3,5,2,1,
+                4,7,5,3,1,2,9,8,6,
+                9,1,3,5,8,6,7,4,2,
+                6,2,8,7,9,4,1,3,5,
+                3,5,6,4,7,8,2,1,9,
+                2,4,1,9,3,5,8,6,7,
+                8,9,7,2,6,1,3,5,4
+              ]
+            }}
+          }
+        ],
+        completion:{requirements:{states:{l12ExitUnlocked:true}}},
+        runtime:{geometryMode:'engine-authored',expectedFloors:[-1,0,1]}
+      }
+    ]
+  };
+
+  const ctor = root.TokiPonaCampaignConstructor;
+  root.TOKI_PONA_CAMPAIGN_BLUEPRINT = blueprint;
+  root.TOKI_PONA_CAMPAIGN = ctor ? ctor.constructCampaign(blueprint) : blueprint;
+  if (typeof module === 'object' && module.exports) module.exports = { blueprint, campaign:root.TOKI_PONA_CAMPAIGN };
+})(typeof globalThis !== 'undefined' ? globalThis : this);
