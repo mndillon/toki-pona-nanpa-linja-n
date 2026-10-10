@@ -1076,6 +1076,7 @@
   let selectedPuzzleSlotIndex = null;
   let puzzleMechanismState = null;
   let puzzleDrag = null;
+  const PUZZLE_DRAG_THRESHOLD = 8;
   let levelRendererPromise = null;
   let pendingGlyphRewards = [];
   let externalSaveConflictShown = false;
@@ -3059,6 +3060,7 @@
       key.title = token;
       key.setAttribute('aria-label', selectedPuzzleFamily === 'PUNCT' ? `Punctuation ${token}` : `Glyph key ${token}`);
       key.addEventListener('click', () => choosePuzzleGlyph(token));
+      key.addEventListener('pointerup', directChoosePuzzleGlyphFromEvent);
       key.addEventListener('pointerdown', beginPuzzleGlyphDrag, { passive:false });
       drawerKeys.appendChild(key);
     }
@@ -5317,7 +5319,7 @@
     puzzleCompleteBtn.hidden=false; puzzleResetBtn.hidden=false; puzzleTrayWrap.hidden=false;
     puzzleCompleteBtn.disabled=false;
     puzzleCompleteBtn.textContent='Try answer';
-    puzzleStatus.textContent='Tap a slot, choose a letter, then choose a glyph. Press Try answer when ready; correctness is checked only after submission.';
+    puzzleStatus.textContent='Tap a slot, choose a letter, then tap or drag a glyph. Press Try answer when ready; correctness is checked only after submission.';
   }
 
 
@@ -5515,7 +5517,7 @@
     renderGlyphFamilyPicker();
     puzzleCompleteBtn.disabled = false;
     puzzleCompleteBtn.textContent = 'Try answer';
-    puzzleStatus.textContent = `Tap a slot, choose a letter, then choose a glyph. Fill all ${seq.length} positions and press Try answer. Correctness is checked only after submission.`;
+    puzzleStatus.textContent = `Tap a slot, choose a letter, then tap or drag a glyph. Fill all ${seq.length} positions and press Try answer. Correctness is checked only after submission.`;
   }
 
   function openCampaignPuzzleHost(puzzle) {
@@ -5623,29 +5625,57 @@
     return best;
   }
 
+  function directChoosePuzzleGlyphFromEvent(e) {
+    if (!isCoarsePointer()) return;
+    const token = e.currentTarget?.dataset?.word;
+    if (!token) return;
+    choosePuzzleGlyph(token);
+  }
+
   function beginPuzzleGlyphDrag(e) {
     if (isCoarsePointer()) return;
     if (e.button != null && e.button !== 0) return;
     const key = e.currentTarget;
     const word = key.dataset.word;
     if (!word) return;
-    e.preventDefault();
-    selectedPuzzleGlyph = word;
-    const ghost = document.createElement('div');
-    ghost.className = 'puzzleDragGhost';
-    ghost.textContent = displayPuzzleToken(word);
-    document.body.appendChild(ghost);
-    puzzleDrag = { pointerId:e.pointerId, word, ghost, source:key };
+    puzzleDrag = {
+      pointerId: e.pointerId,
+      word,
+      source: key,
+      startX: e.clientX,
+      startY: e.clientY,
+      dragStarted: false,
+      ghost: null
+    };
     key.setPointerCapture?.(e.pointerId);
-    movePuzzleGlyphDrag(e);
     key.addEventListener('pointermove', movePuzzleGlyphDrag, { passive:false });
     key.addEventListener('pointerup', endPuzzleGlyphDragFromEvent, { passive:false, once:true });
     key.addEventListener('pointercancel', endPuzzleGlyphDragFromEvent, { passive:false, once:true });
   }
 
+  function ensurePuzzleDragGhost() {
+    if (!puzzleDrag || puzzleDrag.ghost) return;
+    const ghost = document.createElement('div');
+    ghost.className = 'puzzleDragGhost';
+    ghost.textContent = displayPuzzleToken(puzzleDrag.word);
+    document.body.appendChild(ghost);
+    puzzleDrag.ghost = ghost;
+  }
+
   function movePuzzleGlyphDrag(e) {
     if (!puzzleDrag || puzzleDrag.pointerId !== e.pointerId) return;
-    e.preventDefault();
+    const dx = e.clientX - puzzleDrag.startX;
+    const dy = e.clientY - puzzleDrag.startY;
+    if (!puzzleDrag.dragStarted) {
+      if (Math.hypot(dx, dy) < PUZZLE_DRAG_THRESHOLD) return;
+      e.preventDefault();
+      selectedPuzzleGlyph = puzzleDrag.word;
+      puzzleDrag.dragStarted = true;
+      ensurePuzzleDragGhost();
+    } else {
+      e.preventDefault();
+    }
+    if (!puzzleDrag.dragStarted || !puzzleDrag.ghost) return;
     puzzleDrag.ghost.style.left = `${e.clientX}px`;
     puzzleDrag.ghost.style.top = `${e.clientY}px`;
     for (const slot of puzzleSlots.querySelectorAll('.puzzleSlot')) slot.classList.remove('selectedTarget');
@@ -5655,24 +5685,28 @@
 
   function endPuzzleGlyphDragFromEvent(e) {
     if (!puzzleDrag || puzzleDrag.pointerId !== e.pointerId) return;
-    e.preventDefault();
-    const target = findGenerousPuzzleDropSlot(e.clientX, e.clientY);
-    const word = puzzleDrag.word;
-    if (target) {
-      const index = Number(target.dataset.slotIndex);
-      if (Number.isFinite(index)) {
-        puzzleSlotValues[index] = word;
-        selectedPuzzleGlyph = null;
-        selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(index);
+    if (puzzleDrag.dragStarted) {
+      e.preventDefault();
+      const target = findGenerousPuzzleDropSlot(e.clientX, e.clientY);
+      const word = puzzleDrag.word;
+      if (target) {
+        const index = Number(target.dataset.slotIndex);
+        if (Number.isFinite(index)) {
+          puzzleSlotValues[index] = word;
+          selectedPuzzleGlyph = null;
+          selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(index);
+        }
       }
+      endPuzzleGlyphDrag();
+      renderCampaignPuzzle();
+      return;
     }
     endPuzzleGlyphDrag();
-    renderCampaignPuzzle();
   }
 
   function endPuzzleGlyphDrag() {
     if (!puzzleDrag) return;
-    try { puzzleDrag.ghost.remove(); } catch (_) {}
+    try { puzzleDrag.ghost?.remove(); } catch (_) {}
     puzzleDrag = null;
     for (const slot of puzzleSlots.querySelectorAll('.puzzleSlot')) slot.classList.remove('selectedTarget');
   }
