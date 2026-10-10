@@ -3113,8 +3113,10 @@
       key.textContent = displayPuzzleToken(token);
       key.title = token;
       key.setAttribute('aria-label', selectedPuzzleFamily === 'PUNCT' ? `Punctuation ${token}` : `Glyph key ${token}`);
+      // One physical tap/click must produce exactly one placement.  Touch browsers
+      // synthesize a click after pointerup, so direct insertion is handled only by
+      // click; pointer events are reserved for the optional fine-pointer drag path.
       key.addEventListener('click', () => choosePuzzleGlyph(token));
-      key.addEventListener('pointerup', directChoosePuzzleGlyphFromEvent);
       key.addEventListener('pointerdown', beginPuzzleGlyphDrag, { passive:false });
       drawerKeys.appendChild(key);
     }
@@ -5792,13 +5794,6 @@
       if (d < bestDist) { bestDist = d; best = slot; }
     }
     return best;
-  }
-
-  function directChoosePuzzleGlyphFromEvent(e) {
-    if (!isCoarsePointer()) return;
-    const token = e.currentTarget?.dataset?.word;
-    if (!token) return;
-    choosePuzzleGlyph(token);
   }
 
   function beginPuzzleGlyphDrag(e) {
