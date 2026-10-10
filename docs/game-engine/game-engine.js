@@ -1057,7 +1057,10 @@
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
   const MOBILE_JOYSTICK_MOVE_MAX = 2.65;
   const MOBILE_JOYSTICK_TURN_MAX = 1.65;
-  const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, path:[], pathIndex:0 };
+  const MOBILE_JOYSTICK_CATCHUP_THRESHOLD = 1.0;
+  const MOBILE_JOYSTICK_MAX_FRAME_DT = 0.16;
+  const MOBILE_JOYSTICK_MAX_SIM_STEP = 1 / 60;
+  const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, targetPoint:null, direction:null, path:[], pathIndex:0 };
   let lastTime = performance.now();
   let messageTimer = 0;
   let currentTarget = null;
@@ -2000,15 +2003,21 @@
         mapCtx.restore();
       }
     }
-    if (mobileMapSteer.active && mobileMapSteer.levelId === state.levelId && mobileMapSteer.path.length) {
-      mapCtx.save();
-      mapCtx.strokeStyle='rgba(243,223,192,0.72)';mapCtx.lineWidth=Math.max(1.5,cell*0.12);mapCtx.setLineDash([Math.max(2,cell*0.28),Math.max(2,cell*0.22)]);
-      mapCtx.beginPath();mapCtx.moveTo(ox+state.x*cell,oy+state.y*cell);
-      for(let i=mobileMapSteer.pathIndex;i<mobileMapSteer.path.length;i+=1){const point=mobileMapSteer.path[i];mapCtx.lineTo(ox+point.x*cell,oy+point.y*cell);}
-      mapCtx.stroke();mapCtx.setLineDash([]);
-      const target=mobileMapSteer.path[mobileMapSteer.path.length-1];
-      mapCtx.strokeStyle='#f3dfc0';mapCtx.lineWidth=Math.max(1.8,cell*0.16);mapCtx.beginPath();mapCtx.arc(ox+target.x*cell,oy+target.y*cell,Math.max(4,cell*0.34),0,Math.PI*2);mapCtx.stroke();
-      mapCtx.restore();
+    if (mobileMapSteer.active && mobileMapSteer.levelId === state.levelId && mobileMapSteer.targetPoint) {
+      // The map touch expresses direction even when the touched destination is
+      // still under fog-of-war. Only draw guidance through cells the player has
+      // already revealed so the steering UI never exposes hidden maze geometry.
+      const preview = mobileMapSteer.direction ? mapSteerPreviewDirection(mobileMapSteer.direction.x, mobileMapSteer.direction.y) : [];
+      mobileMapSteer.path = preview;
+      mobileMapSteer.pathIndex = 0;
+      if (preview.length) {
+        mapCtx.save();
+        mapCtx.strokeStyle='rgba(243,223,192,0.72)';mapCtx.lineWidth=Math.max(1.5,cell*0.12);mapCtx.setLineDash([Math.max(2,cell*0.28),Math.max(2,cell*0.22)]);
+        mapCtx.beginPath();mapCtx.moveTo(ox+state.x*cell,oy+state.y*cell);
+        for(const point of preview)mapCtx.lineTo(ox+point.x*cell,oy+point.y*cell);
+        mapCtx.stroke();mapCtx.setLineDash([]);
+        mapCtx.restore();
+      }
     }
     mapCtx.fillStyle = '#f3dfc0'; mapCtx.beginPath(); mapCtx.arc(ox + state.x*cell, oy + state.y*cell, Math.max(2.5, cell*0.22), 0, Math.PI*2); mapCtx.fill();
     mapCtx.strokeStyle = '#f3dfc0'; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(ox + state.x*cell, oy + state.y*cell); mapCtx.lineTo(ox + (state.x + Math.cos(state.angle)*0.9)*cell, oy + (state.y + Math.sin(state.angle)*0.9)*cell); mapCtx.stroke();
@@ -6039,51 +6048,72 @@
     window.setTimeout(() => showLevelIntro(), 40);
   }
 
+  function mobileJoystickCatchUpActive() {
+    return mobileMove.moveStrength > MOBILE_JOYSTICK_CATCHUP_THRESHOLD || mobileMove.turnStrength > MOBILE_JOYSTICK_CATCHUP_THRESHOLD;
+  }
+
+  function mobileJoystickSimulationTiming(dt) {
+    const normalDt = Math.min(0.05, Math.max(0, dt));
+    const catchUp = mobileJoystickCatchUpActive();
+    const controlDt = catchUp ? Math.min(MOBILE_JOYSTICK_MAX_FRAME_DT, Math.max(0, dt)) : normalDt;
+    const simSteps = catchUp ? Math.max(1, Math.ceil(controlDt / MOBILE_JOYSTICK_MAX_SIM_STEP)) : 1;
+    return {normalDt, catchUp, controlDt, simSteps, stepDt:simSteps ? controlDt / simSteps : 0};
+  }
+
   function update(dt) {
     if (modalOpen) {
       currentTarget = null; promptEl.textContent = ''; updateHUD(); return;
     }
 
-    const mapSteering = updateMapSteering(dt);
+    // Preserve the historical 50 ms simulation cap for every existing control
+    // path. Only a strongly deflected mobile joystick may consume more elapsed
+    // time after a slow render frame, and that catch-up is split into small
+    // collision-safe simulation steps below.
+    const timing = mobileJoystickSimulationTiming(dt);
+    const mapSteering = updateMapSteering(timing.normalDt);
     if (!mapSteering) {
-      let turn = 0;
-      if (keys.ArrowLeft) turn -= 1;
-      if (keys.ArrowRight) turn += 1;
-      if (mobileMove.turnLeft) turn -= mobileMove.turnStrength;
-      if (mobileMove.turnRight) turn += mobileMove.turnStrength;
-      state.angle = normalizeAngle(state.angle + turn * ROTATE_SPEED * dt);
+      const {simSteps,stepDt} = timing;
 
-      let forward = 0, strafe = 0;
-      if (keys.KeyW || keys.ArrowUp) forward += 1;
-      if (keys.KeyS || keys.ArrowDown) forward -= 1;
-      if (mobileMove.forward) forward += mobileMove.moveStrength;
-      if (mobileMove.back) forward -= mobileMove.moveStrength;
-      if (viewportMove.mode === 'forward') forward += viewportMove.strength;
-      if (viewportMove.mode === 'back') forward -= viewportMove.strength;
-      if (keys.KeyA) strafe -= 1;
-      if (keys.KeyD) strafe += 1;
+      for (let simStep = 0; simStep < simSteps; simStep += 1) {
+        let turn = 0;
+        if (keys.ArrowLeft) turn -= 1;
+        if (keys.ArrowRight) turn += 1;
+        if (mobileMove.turnLeft) turn -= mobileMove.turnStrength;
+        if (mobileMove.turnRight) turn += mobileMove.turnStrength;
+        state.angle = normalizeAngle(state.angle + turn * ROTATE_SPEED * stepDt);
 
-      if (forward || strafe) {
-        const coarse = isCoarsePointer();
-        const joystickDriving = mobileMove.forward || mobileMove.back;
-        const mobileMovement = coarse || joystickDriving;
-        if (mobileMovement) {
-          // Joystick travel is intentionally allowed to exceed 1.0 at larger
-          // radii. Key this to active joystick input as well as coarse-pointer
-          // detection so hybrid/mobile browsers cannot accidentally normalize
-          // the outer-rim speed boost away.
-          forward = Math.max(-MOBILE_JOYSTICK_MOVE_MAX, Math.min(MOBILE_JOYSTICK_MOVE_MAX, forward));
-          strafe = Math.max(-1, Math.min(1, strafe));
-        } else {
-          const len = Math.max(1, Math.hypot(forward, strafe));
-          forward /= len; strafe /= len;
+        let forward = 0, strafe = 0;
+        if (keys.KeyW || keys.ArrowUp) forward += 1;
+        if (keys.KeyS || keys.ArrowDown) forward -= 1;
+        if (mobileMove.forward) forward += mobileMove.moveStrength;
+        if (mobileMove.back) forward -= mobileMove.moveStrength;
+        if (viewportMove.mode === 'forward') forward += viewportMove.strength;
+        if (viewportMove.mode === 'back') forward -= viewportMove.strength;
+        if (keys.KeyA) strafe -= 1;
+        if (keys.KeyD) strafe += 1;
+
+        if (forward || strafe) {
+          const coarse = isCoarsePointer();
+          const joystickDriving = mobileMove.forward || mobileMove.back;
+          const mobileMovement = coarse || joystickDriving;
+          if (mobileMovement) {
+            // Joystick travel is intentionally allowed to exceed 1.0 at larger
+            // radii. Key this to active joystick input as well as coarse-pointer
+            // detection so hybrid/mobile browsers cannot accidentally normalize
+            // the outer-rim speed boost away.
+            forward = Math.max(-MOBILE_JOYSTICK_MOVE_MAX, Math.min(MOBILE_JOYSTICK_MOVE_MAX, forward));
+            strafe = Math.max(-1, Math.min(1, strafe));
+          } else {
+            const len = Math.max(1, Math.hypot(forward, strafe));
+            forward /= len; strafe /= len;
+          }
+          const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
+          const ms = mobileMovement ? MOBILE_MOVE_SPEED : MOVE_SPEED;
+          const ss = mobileMovement ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
+          const dx = (cos * forward * ms + -sin * strafe * ss) * stepDt;
+          const dy = (sin * forward * ms + cos * strafe * ss) * stepDt;
+          movePlayer(dx, dy, mobileMovement);
         }
-        const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
-        const ms = mobileMovement ? MOBILE_MOVE_SPEED : MOVE_SPEED;
-        const ss = mobileMovement ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
-        const dx = (cos * forward * ms + -sin * strafe * ss) * dt;
-        const dy = (sin * forward * ms + cos * strafe * ss) * dt;
-        movePlayer(dx, dy, mobileMovement);
       }
     }
 
@@ -6093,7 +6123,10 @@
   }
 
   function frame(now) {
-    const dt = Math.min(0.05, Math.max(0, (now - lastTime) / 1000));
+    // Pass real elapsed time into update (with a conservative resume cap).
+    // update() still applies the old 50 ms cap except for outer-rim joystick
+    // catch-up, so slow drawing no longer makes strong mobile input crawl.
+    const dt = Math.min(0.20, Math.max(0, (now - lastTime) / 1000));
     lastTime = now; update(dt); renderScene(); requestAnimationFrame(frame);
   }
 
@@ -6330,49 +6363,43 @@
     return { map, cell, ox:(w - map[0].length * cell) / 2, oy:(h - map.length * cell) / 2 };
   }
 
-  function mapSteerCellWalkable(x, y) {
+  function mapSteerCellRevealed(x, y) {
     const map = level().map;
     if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return false;
     const explored = state.explored[state.levelId] || {};
     const isCurrent = x === Math.floor(state.x) && y === Math.floor(state.y);
-    if (!isCurrent && !explored[`${x},${y}`]) return false;
-    const c = map[y][x];
+    return isCurrent || Boolean(explored[`${x},${y}`]);
+  }
+
+  function mapSteerRevealedWalkable(x, y) {
+    if (!mapSteerCellRevealed(x, y)) return false;
+    const c = level().map[y][x];
     if (c === '#') return false;
     if (c === 'D' || c === 'P') {
       const door = doorAtCell(x, y);
       if (!door?.open) return false;
     }
-    return canOccupy(x + 0.5, y + 0.5);
+    return true;
   }
 
-  function mapSteerPathTo(targetX, targetY) {
-    const sx = Math.floor(state.x), sy = Math.floor(state.y);
-    if (!mapSteerCellWalkable(targetX, targetY)) return [];
-    const key = (x,y) => `${x},${y}`;
-    const startKey = key(sx,sy), targetKey = key(targetX,targetY);
-    if (startKey === targetKey) return [{x:targetX + 0.5, y:targetY + 0.5}];
-    const queue = [[sx,sy]], prev = new Map([[startKey,null]]);
-    for (let i=0; i<queue.length; i+=1) {
-      const [x,y] = queue[i];
-      for (const [nx,ny] of [[x+1,y],[x-1,y],[x,y+1],[x,y-1]]) {
-        const k = key(nx,ny);
-        if (prev.has(k) || !mapSteerCellWalkable(nx,ny)) continue;
-        prev.set(k,key(x,y));
-        if (k === targetKey) {
-          const cells = [[nx,ny]];
-          let cursor = key(x,y);
-          while (cursor && cursor !== startKey) {
-            const [cx,cy] = cursor.split(',').map(Number);
-            cells.push([cx,cy]);
-            cursor = prev.get(cursor);
-          }
-          cells.reverse();
-          return cells.map(([cx,cy]) => ({x:cx+0.5,y:cy+0.5}));
-        }
-        queue.push([nx,ny]);
-      }
+  function mapSteerPreviewDirection(dirX, dirY) {
+    const mag = Math.hypot(dirX, dirY);
+    if (!Number.isFinite(mag) || mag < 0.001) return [];
+    const ux = dirX / mag, uy = dirY / mag;
+    const map = level().map;
+    const maxDist = Math.hypot(map[0]?.length || 0, map.length) + 2;
+    const step = 0.20;
+    const points = [];
+    for (let d = step; d <= maxDist; d += step) {
+      const x = state.x + ux * d, y = state.y + uy * d;
+      const cx = Math.floor(x), cy = Math.floor(y);
+      // Stop the visible dotted guide at the first fogged or blocked cell.
+      // Do not inspect hidden-cell geometry before the fog check.
+      if (!mapSteerCellRevealed(cx, cy)) break;
+      if (!mapSteerRevealedWalkable(cx, cy)) break;
+      points.push({x,y});
     }
-    return [];
+    return points;
   }
 
   function mapSteerCellFromPointer(e) {
@@ -6389,24 +6416,28 @@
 
   function retargetMapSteering(e) {
     const cell = mapSteerCellFromPointer(e);
-    if (!cell || !mapSteerCellWalkable(cell.x,cell.y)) {
+    if (!cell) {
       mobileMapSteer.targetCell = null;
+      mobileMapSteer.targetPoint = null;
+      mobileMapSteer.direction = null;
       mobileMapSteer.path = [];
       mobileMapSteer.pathIndex = 0;
       miniMap.classList.remove('isSteering');
       return false;
     }
-    const path = mapSteerPathTo(cell.x,cell.y);
-    if (!path.length) {
-      mobileMapSteer.targetCell = null;
-      mobileMapSteer.path = [];
-      mobileMapSteer.pathIndex = 0;
-      miniMap.classList.remove('isSteering');
-      return false;
-    }
+    // A minimap touch is a direction command, not a request to pathfind to a
+    // known cell. It is valid even when the touched cell is still unrevealed
+    // (or later turns out to be a wall); normal world collision remains the
+    // authority on how far the player can actually move.
+    const targetPoint = {x:cell.x + 0.5, y:cell.y + 0.5};
+    const dx = targetPoint.x - state.x, dy = targetPoint.y - state.y;
+    const dist = Math.hypot(dx,dy);
+    if (dist < 0.05) return false;
     mobileMapSteer.levelId = state.levelId;
     mobileMapSteer.targetCell = cell;
-    mobileMapSteer.path = path;
+    mobileMapSteer.targetPoint = targetPoint;
+    mobileMapSteer.direction = {x:dx/dist, y:dy/dist};
+    mobileMapSteer.path = mapSteerPreviewDirection(mobileMapSteer.direction.x, mobileMapSteer.direction.y);
     mobileMapSteer.pathIndex = 0;
     miniMap.classList.add('isSteering');
     return true;
@@ -6420,31 +6451,24 @@
     mobileMapSteer.pointerId = null;
     mobileMapSteer.levelId = null;
     mobileMapSteer.targetCell = null;
+    mobileMapSteer.targetPoint = null;
+    mobileMapSteer.direction = null;
     mobileMapSteer.path = [];
     mobileMapSteer.pathIndex = 0;
     miniMap?.classList.remove('isSteering');
   }
 
   function updateMapSteering(dt) {
-    if (!mobileMapSteer.active || mobileMapSteer.levelId !== state.levelId || !mobileMapSteer.path.length) return false;
-    while (mobileMapSteer.pathIndex < mobileMapSteer.path.length) {
-      const waypoint = mobileMapSteer.path[mobileMapSteer.pathIndex];
-      const dx = waypoint.x - state.x, dy = waypoint.y - state.y;
-      if (Math.hypot(dx,dy) > 0.11) break;
-      mobileMapSteer.pathIndex += 1;
-    }
-    if (mobileMapSteer.pathIndex >= mobileMapSteer.path.length) return true;
-    const waypoint = mobileMapSteer.path[mobileMapSteer.pathIndex];
-    const dx = waypoint.x - state.x, dy = waypoint.y - state.y;
-    const dist = Math.max(0.0001,Math.hypot(dx,dy));
-    const desired = Math.atan2(dy,dx);
+    if (!mobileMapSteer.active || mobileMapSteer.levelId !== state.levelId || !mobileMapSteer.direction) return false;
+    const dir = mobileMapSteer.direction;
+    const desired = Math.atan2(dir.y,dir.x);
     const diff = normalizeAngle(desired - state.angle);
     const maxTurn = ROTATE_SPEED * 1.15 * dt;
     state.angle = normalizeAngle(state.angle + Math.max(-maxTurn,Math.min(maxTurn,diff)));
     const facing = Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(diff))));
     if (facing > 0.15) {
-      const step = Math.min(dist, MOBILE_MOVE_SPEED * (0.30 + 0.70*facing) * dt);
-      movePlayer((dx/dist)*step,(dy/dist)*step,true);
+      const step = MOBILE_MOVE_SPEED * (0.30 + 0.70*facing) * dt;
+      movePlayer(dir.x*step,dir.y*step,true);
     }
     return true;
   }
