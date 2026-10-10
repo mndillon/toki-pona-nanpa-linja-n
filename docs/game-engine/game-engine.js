@@ -1048,6 +1048,7 @@
   let saveTimer = 0;
   let keys = Object.create(null);
   const mobileMove = { forward: false, back: false, turnLeft: false, turnRight: false, moveStrength: 0, turnStrength: 0 };
+  const mobileJoystickGesture = { drive:'idle', steeringAngle:0, lastPointerAngle:null };
   const viewportMove = { mode:'idle', strength:0 };
   const VIEWPORT_MOVE_THRESHOLD = 0.36;
   const VIEWPORT_MOVE_EXPONENT = 1.7;
@@ -1057,6 +1058,8 @@
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
   const MOBILE_JOYSTICK_MOVE_MAX = 2.65;
   const MOBILE_JOYSTICK_TURN_MAX = 1.65;
+  const MOBILE_JOYSTICK_STEER_FULL_ANGLE = Math.PI / 3;
+  const MOBILE_JOYSTICK_STEER_DEADBAND = Math.PI / 8;
   const MOBILE_JOYSTICK_CATCHUP_THRESHOLD = 1.0;
   const MOBILE_JOYSTICK_MAX_FRAME_DT = 0.16;
   const MOBILE_JOYSTICK_MAX_SIM_STEP = 1 / 60;
@@ -6322,8 +6325,83 @@
     };
   }
 
+  function resetMobileJoystickGesture(gesture = mobileJoystickGesture) {
+    gesture.drive = 'idle';
+    gesture.steeringAngle = 0;
+    gesture.lastPointerAngle = null;
+  }
+
+  function mobileJoystickSignedAngle(angle) {
+    let a = Number(angle) || 0;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    return a;
+  }
+
+  function mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, gesture = mobileJoystickGesture) {
+    const radius = Math.hypot(dx, dy);
+    const absoluteIntent = mobileJoystickIntent(dx, dy, deadRadius);
+    const strength = mobileJoystickStrength(radius, deadRadius, outerRadius);
+    if (!Number.isFinite(radius) || radius <= deadRadius) {
+      gesture.lastPointerAngle = null;
+      return { intent:'idle', moveStrength:0, turnStrength:0, drive:gesture.drive, steering:0, strength };
+    }
+
+    const pointerAngle = Math.atan2(dx, -dy); // clockwise from north
+    if (gesture.drive === 'idle') {
+      if (absoluteIntent.includes('N')) {
+        gesture.drive = 'forward';
+        gesture.steeringAngle = mobileJoystickSignedAngle(pointerAngle);
+        gesture.lastPointerAngle = pointerAngle;
+      } else if (absoluteIntent.includes('S')) {
+        gesture.drive = 'back';
+        // Screen-left/right should keep their familiar meaning while reversing.
+        gesture.steeringAngle = -mobileJoystickSignedAngle(pointerAngle - Math.PI);
+        gesture.lastPointerAngle = pointerAngle;
+      } else {
+        gesture.lastPointerAngle = pointerAngle;
+        return {
+          intent:absoluteIntent,
+          moveStrength:strength.move,
+          turnStrength:strength.turn,
+          drive:'idle',
+          steering:absoluteIntent.includes('W') ? -1 : absoluteIntent.includes('E') ? 1 : 0,
+          strength
+        };
+      }
+    } else if (gesture.lastPointerAngle == null) {
+      gesture.lastPointerAngle = pointerAngle;
+    } else {
+      const angularDrag = mobileJoystickSignedAngle(pointerAngle - gesture.lastPointerAngle);
+      // Once forward/backward drive is established, sweeping around the ring acts
+      // like steering a wheel. Crossing another absolute sector never flips the
+      // latched travel direction; release is required before a new drive mode.
+      gesture.steeringAngle += gesture.drive === 'back' ? -angularDrag : angularDrag;
+      gesture.steeringAngle = Math.max(-Math.PI * 2, Math.min(Math.PI * 2, gesture.steeringAngle));
+      gesture.lastPointerAngle = pointerAngle;
+    }
+
+    const steerAbs = Math.abs(gesture.steeringAngle);
+    const steerRatio = Math.max(0, Math.min(1,
+      (steerAbs - MOBILE_JOYSTICK_STEER_DEADBAND) /
+      Math.max(0.001, MOBILE_JOYSTICK_STEER_FULL_ANGLE - MOBILE_JOYSTICK_STEER_DEADBAND)
+    ));
+    const steering = steerRatio <= 0 ? 0 : (gesture.steeringAngle < 0 ? -steerRatio : steerRatio);
+    const driveNorth = gesture.drive === 'forward';
+    const intent = steering < 0 ? (driveNorth ? 'NW' : 'SW') : steering > 0 ? (driveNorth ? 'NE' : 'SE') : (driveNorth ? 'N' : 'S');
+    return {
+      intent,
+      moveStrength:strength.move,
+      turnStrength:strength.turn * Math.abs(steering),
+      drive:gesture.drive,
+      steering,
+      strength
+    };
+  }
+
   function resetMobileJoystickVisual() {
     setMobileJoystickIntent('idle');
+    resetMobileJoystickGesture();
     if (mobileMovePad) { mobileMovePad.dataset.sector = 'idle'; mobileMovePad.style.setProperty('--joystick-strength', '0'); }
     if (mobileJoystickThumb) {
       mobileJoystickThumb.style.left = '50%';
@@ -6340,11 +6418,10 @@
     const dy = e.clientY - cy;
     const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
     const deadRadius = outerRadius * MOBILE_JOYSTICK_DEAD_RATIO;
-    const intent = mobileJoystickIntent(dx, dy, deadRadius);
-    const strength = mobileJoystickStrength(Math.hypot(dx, dy), deadRadius, outerRadius);
-    setMobileJoystickIntent(intent, strength.move, strength.turn);
-    mobileMovePad.dataset.sector = intent;
-    mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, strength.move).toFixed(3));
+    const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius);
+    setMobileJoystickIntent(command.intent, command.moveStrength, command.turnStrength);
+    mobileMovePad.dataset.sector = command.intent;
+    mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, command.strength.move).toFixed(3));
     if (mobileJoystickThumb) {
       const radius = Math.hypot(dx, dy) || 1;
       const maxThumbRadius = outerRadius * 0.68;
@@ -6402,21 +6479,24 @@
     return points;
   }
 
-  function mapSteerCellFromPointer(e) {
+  function mapSteerPointFromPointer(e) {
     if (!miniMap || !state.mapVisible) return null;
     const rect = miniMap.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     const px = (e.clientX - rect.left) * (miniMap.width / rect.width);
     const py = (e.clientY - rect.top) * (miniMap.height / rect.height);
-    const {map,cell,ox,oy} = miniMapGeometry();
-    const x = Math.floor((px - ox) / cell), y = Math.floor((py - oy) / cell);
-    if (y < 0 || y >= map.length || x < 0 || x >= map[y].length) return null;
-    return {x,y};
+    const {cell,ox,oy} = miniMapGeometry();
+    // Deliberately do not clamp this point to the actual maze/floor-plan grid.
+    // pointerdown begins on the minimap canvas, and pointer capture keeps later
+    // drag events coming even when the finger moves beyond the canvas. In both
+    // cases the pointer expresses a direction, not a destination that must be
+    // inside known floor geometry.
+    return {x:(px - ox) / cell, y:(py - oy) / cell};
   }
 
   function retargetMapSteering(e) {
-    const cell = mapSteerCellFromPointer(e);
-    if (!cell) {
+    const targetPoint = mapSteerPointFromPointer(e);
+    if (!targetPoint) {
       mobileMapSteer.targetCell = null;
       mobileMapSteer.targetPoint = null;
       mobileMapSteer.direction = null;
@@ -6426,19 +6506,22 @@
       return false;
     }
     // A minimap touch is a direction command, not a request to pathfind to a
-    // known cell. It is valid even when the touched cell is still unrevealed
-    // (or later turns out to be a wall); normal world collision remains the
-    // authority on how far the player can actually move.
-    const targetPoint = {x:cell.x + 0.5, y:cell.y + 0.5};
+    // known cell. It remains valid in fog, over wall/background areas, and—
+    // after a drag begins on the map—even beyond the map/canvas bounds.
+    // Normal world collision remains the authority on how far movement goes.
     const dx = targetPoint.x - state.x, dy = targetPoint.y - state.y;
     const dist = Math.hypot(dx,dy);
     if (dist < 0.05) return false;
+    const direction = {x:dx/dist, y:dy/dist};
     mobileMapSteer.levelId = state.levelId;
-    mobileMapSteer.targetCell = cell;
+    mobileMapSteer.targetCell = {x:Math.floor(targetPoint.x), y:Math.floor(targetPoint.y)};
     mobileMapSteer.targetPoint = targetPoint;
-    mobileMapSteer.direction = {x:dx/dist, y:dy/dist};
-    mobileMapSteer.path = mapSteerPreviewDirection(mobileMapSteer.direction.x, mobileMapSteer.direction.y);
+    mobileMapSteer.direction = direction;
+    mobileMapSteer.path = mapSteerPreviewDirection(direction.x, direction.y);
     mobileMapSteer.pathIndex = 0;
+    // Point at the requested direction immediately. This makes a map touch a
+    // direct steering gesture rather than a slow-turn command.
+    state.angle = Math.atan2(direction.y, direction.x);
     miniMap.classList.add('isSteering');
     return true;
   }
@@ -6461,15 +6544,11 @@
   function updateMapSteering(dt) {
     if (!mobileMapSteer.active || mobileMapSteer.levelId !== state.levelId || !mobileMapSteer.direction) return false;
     const dir = mobileMapSteer.direction;
-    const desired = Math.atan2(dir.y,dir.x);
-    const diff = normalizeAngle(desired - state.angle);
-    const maxTurn = ROTATE_SPEED * 1.15 * dt;
-    state.angle = normalizeAngle(state.angle + Math.max(-maxTurn,Math.min(maxTurn,diff)));
-    const facing = Math.max(0,Math.cos(Math.min(Math.PI/2,Math.abs(diff))));
-    if (facing > 0.15) {
-      const step = MOBILE_MOVE_SPEED * (0.30 + 0.70*facing) * dt;
-      movePlayer(dir.x*step,dir.y*step,true);
-    }
+    // Keep the player facing the active touch direction exactly while held.
+    // Collision still decides how much of that requested movement is possible.
+    state.angle = Math.atan2(dir.y,dir.x);
+    const step = MOBILE_MOVE_SPEED * dt;
+    movePlayer(dir.x*step,dir.y*step,true);
     return true;
   }
 
@@ -6526,6 +6605,7 @@
       cancelMapSteering(true);
       resetViewportGesture(true);
       joystickPointerId = e.pointerId;
+      resetMobileJoystickGesture();
       mobileMovePad.setPointerCapture?.(e.pointerId);
       updateMobileJoystickFromPointer(e);
     }, { passive: false });
