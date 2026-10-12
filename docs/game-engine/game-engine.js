@@ -6981,7 +6981,8 @@
     speed:1, includeOptional:true, focusPuzzleId:null, lastAction:'idle',
     actionNo:0, runPromise:null, inPlaybackAction:false, badge:null, statusText:null, pauseBtn:null,
     stepBtn:null, runBtn:null, restartBtn:null, stopBtn:null, slowerBtn:null, fasterBtn:null, ignoreBtn:null,
-    hotspot:null, lastHotspotTapAt:0, touchPanelOpen:false
+    hotspot:null, lastHotspotTapAt:0, touchPanelOpen:false,
+    suppressTouchControlClickPointerId:null, suppressTouchControlClickUntil:0
   };
 
   const QA_TRANSITION_DESTINATIONS = Object.freeze({
@@ -7060,16 +7061,50 @@
     return true;
   }
 
+  function qaHandleHotspotPointerDown(e) {
+    if(!QA_MODE) return;
+    // Keep the QA gesture out of the normal viewport drag handler. That handler
+    // captures pointers on pointerdown, which would retarget pointerup away from
+    // this hotspot and make the mobile double-tap impossible to complete.
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function qaHandleHotspotPointerUp(e) {
     if(!QA_MODE) return;
+    e.preventDefault();
+    e.stopPropagation();
     const now=window.performance?.now?.() ?? Date.now();
     const gap=now-qaState.lastHotspotTapAt;
     qaState.lastHotspotTapAt=now;
     if(gap>0&&gap<=360){
       qaState.lastHotspotTapAt=0;
-      e.preventDefault(); e.stopPropagation();
+      // Chromium can synthesize the tap's click after pointerup. In short-landscape
+      // layout the newly revealed control strip appears beneath that same finger,
+      // so consume only that originating click instead of accidentally activating
+      // whichever QA button now occupies the hotspot coordinates.
+      qaState.suppressTouchControlClickPointerId=Number.isFinite(e.pointerId)?e.pointerId:null;
+      qaState.suppressTouchControlClickUntil=now+500;
       qaRevealTouchControls();
     }
+  }
+
+  function qaHandleTouchControlCaptureClick(e) {
+    if(!QA_MODE || !qaState.suppressTouchControlClickUntil) return;
+    const now=window.performance?.now?.() ?? Date.now();
+    if(now>qaState.suppressTouchControlClickUntil){
+      qaState.suppressTouchControlClickPointerId=null;
+      qaState.suppressTouchControlClickUntil=0;
+      return;
+    }
+    const clickPointerId=Number.isFinite(e.pointerId)?e.pointerId:null;
+    const sameOrigin=qaState.suppressTouchControlClickPointerId===null || clickPointerId===null || clickPointerId===qaState.suppressTouchControlClickPointerId;
+    if(!sameOrigin) return;
+    qaState.suppressTouchControlClickPointerId=null;
+    qaState.suppressTouchControlClickUntil=0;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
   }
 
   function qaUpdateBadge() {
@@ -7096,9 +7131,10 @@
     const slower=document.createElement('button'); slower.type='button'; slower.className='qaMiniButton'; slower.title='Slow QA playback ([)'; slower.setAttribute('aria-label','Slow QA playback'); slower.textContent='−';
     const faster=document.createElement('button'); faster.type='button'; faster.className='qaMiniButton'; faster.title='Speed up QA playback (])'; faster.setAttribute('aria-label','Speed up QA playback'); faster.textContent='+';
     const ignore=document.createElement('button'); ignore.type='button'; ignore.className='qaMiniButton qaIgnoreButton'; ignore.title='Hide QA touch controls'; ignore.setAttribute('aria-label','Hide QA touch controls'); ignore.textContent='Ignore';
-    controls.append(restart,pause,run,step,stop,slower,faster,ignore); panel.append(text,controls); viewportWrap?.appendChild(panel);
+    controls.append(pause,run,step,stop,slower,faster,ignore,restart); panel.append(text,controls); viewportWrap?.appendChild(panel);
     const hotspot=document.createElement('div'); hotspot.className='qaHotspot'; hotspot.setAttribute('aria-label','QA controls: double tap'); hotspot.setAttribute('role','button'); hotspot.setAttribute('tabindex','-1'); viewportWrap?.appendChild(hotspot);
     qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
+    controls.addEventListener('click',qaHandleTouchControlCaptureClick,true);
     pause.addEventListener('click',()=>qaTogglePause());
     step.addEventListener('click',()=>qaStep().catch(err=>qaFail(err)));
     run.addEventListener('click',()=>qaRunCampaign().catch(err=>qaFail(err)));
@@ -7107,6 +7143,7 @@
     slower.addEventListener('click',()=>qaSetSpeed(qaState.speed/1.35));
     faster.addEventListener('click',()=>qaSetSpeed(qaState.speed*1.35));
     ignore.addEventListener('click',()=>qaIgnoreTouchControls());
+    hotspot.addEventListener('pointerdown',qaHandleHotspotPointerDown,{passive:false});
     hotspot.addEventListener('pointerup',qaHandleHotspotPointerUp,{passive:false});
     qaSetTouchPanelOpen(!qaTouchControlsPreferred());
     qaUpdateBadge();
