@@ -484,6 +484,12 @@ kbd {
     font-weight: 900;
     touch-action: none;
   }
+  .mobileUseBtn.tpProse {
+    font-size: 38px;
+    font-weight: 400;
+    line-height: 1;
+    padding: 0;
+  }
   /* Lower-left is a permanently reserved gameplay-control zone on touch devices. */
   .interactionPrompt { bottom: calc(var(--mobile-joystick-size) + 20px); max-width: min(72%, 520px); }
   .viewportWrap.modalActive .mobileMovePad,

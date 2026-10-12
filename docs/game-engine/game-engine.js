@@ -206,7 +206,7 @@
     set('resetConfirmText','resetWarning');
     set('resetConfirmCancelBtn','cancel');
     set('resetConfirmStartBtn','yesNewGame');
-    set('mobileUseBtn','use',{sitelen:false});
+    set('mobileUseBtn','use');
     set('mazeQuickExitBtn','leaveMaze');
     const home = document.querySelector('.pageHomeLink');
     if (home) { home.setAttribute('aria-label', uiText('home')); home.title = uiText('home'); }

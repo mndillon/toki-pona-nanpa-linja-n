@@ -67,7 +67,7 @@
     cancel: { en: 'Cancel', tp: 'o weka' },
     yesNewGame: { en: 'Yes, start new game', tp: 'lon. o open e musi sin' },
     languageLabel: { en: 'Language', tp: 'toki' },
-    use: { en: 'USE', tp: 'KEPEKEN' },
+    use: { en: 'USE', tp: 'kepeken' },
     leaveMaze: { en: 'Leave maze', tp: 'o tawa weka' },
     noFieldNotes: { en: 'No field notes yet.', tp: 'lipu sona li lon ala.' },
     loadingCampaign: { en: 'Loading campaign…', tp: 'musi li kama…' },
@@ -778,7 +778,16 @@
     const before = start > 0 ? text[start-1] : '';
     const after = end < text.length ? text[end] : '';
     const blocked = ch => !!ch && /[A-Za-z0-9_.:,+\-−]/.test(ch);
-    return !blocked(before) && !blocked(after);
+    if (blocked(before)) return false;
+    // A sentence-ending full stop is punctuation, not part of the numeric token.
+    // Keep a dot blocked only when it is followed by another digit, which protects
+    // decimal syntax while allowing a final value such as `... 1 → 3 → 2.` to
+    // receive the same numeric-cartouche treatment as the earlier values.
+    if (after === '.') {
+      const next = end + 1 < text.length ? text[end+1] : '';
+      return !/\d/.test(next);
+    }
+    return !blocked(after);
   }
 
   function appendTpText(parent, text) {
