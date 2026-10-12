@@ -3449,38 +3449,44 @@
     renderCampaignPuzzle();
   }
 
-  function renderGlyphFamilyPicker() {
-    puzzleTray.textContent = '';
-    const families = puzzleFamilyMap();
-    const familyRow = document.createElement('div');
-    familyRow.className = 'puzzleFamilyRow';
+  function appendPuzzleFamilyButtons(container, families, { insideDrawer = false } = {}) {
+    const chooseFamily = family => {
+      selectedPuzzleFamily = insideDrawer ? family : (selectedPuzzleFamily === family ? null : family);
+      selectedPuzzleGlyph = null;
+      renderCampaignPuzzle();
+    };
+
     for (const letter of TOKI_PONA_LETTERS) {
       const words = families.get(letter) || [];
       if (!words.length) continue;
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `puzzleFamilyKey${selectedPuzzleFamily === letter ? ' isSelected' : ''}`;
+      btn.className = `puzzleFamilyKey${insideDrawer ? ' puzzleGlyphDrawerFamilyKey' : ''}${selectedPuzzleFamily === letter ? ' isSelected' : ''}`;
       btn.textContent = letter;
       btn.setAttribute('aria-label', `${letter} glyph family, ${words.length} available`);
-      btn.addEventListener('click', () => {
-        selectedPuzzleFamily = selectedPuzzleFamily === letter ? null : letter;
-        selectedPuzzleGlyph = null;
-        renderCampaignPuzzle();
-      });
-      familyRow.appendChild(btn);
+      btn.setAttribute('aria-pressed', String(selectedPuzzleFamily === letter));
+      btn.addEventListener('click', () => chooseFamily(letter));
+      container.appendChild(btn);
     }
+
     const punctuation = document.createElement('button');
     punctuation.type = 'button';
-    punctuation.className = `puzzleFamilyKey punctuation${selectedPuzzleFamily === 'PUNCT' ? ' isSelected' : ''}`;
+    punctuation.className = `puzzleFamilyKey punctuation${insideDrawer ? ' puzzleGlyphDrawerFamilyKey' : ''}${selectedPuzzleFamily === 'PUNCT' ? ' isSelected' : ''}`;
     punctuation.textContent = '·';
     punctuation.title = 'Punctuation / structural symbols';
     punctuation.setAttribute('aria-label','Punctuation and structural symbols');
-    punctuation.addEventListener('click', () => {
-      selectedPuzzleFamily = selectedPuzzleFamily === 'PUNCT' ? null : 'PUNCT';
-      selectedPuzzleGlyph = null;
-      renderCampaignPuzzle();
-    });
-    familyRow.appendChild(punctuation);
+    punctuation.setAttribute('aria-pressed', String(selectedPuzzleFamily === 'PUNCT'));
+    punctuation.addEventListener('click', () => chooseFamily('PUNCT'));
+    container.appendChild(punctuation);
+  }
+
+  function renderGlyphFamilyPicker() {
+    puzzleTray.textContent = '';
+    const families = puzzleFamilyMap();
+    const familyRow = document.createElement('div');
+    familyRow.className = 'puzzleFamilyRow';
+    appendPuzzleFamilyButtons(familyRow, families);
+    if (selectedPuzzleFamily) familyRow.setAttribute('aria-hidden','true');
     puzzleTray.appendChild(familyRow);
 
     if (!selectedPuzzleFamily) return;
@@ -3508,6 +3514,14 @@
     drawerHeader.append(drawerTitle, drawerClose);
     drawer.appendChild(drawerHeader);
 
+    // Keep every available letter family inside the open drawer.  This lets the
+    // player jump directly A → K → N etc. without closing and reopening the picker.
+    const drawerFamilies = document.createElement('div');
+    drawerFamilies.className = 'puzzleGlyphDrawerFamilies';
+    drawerFamilies.setAttribute('aria-label','Glyph letter families');
+    appendPuzzleFamilyButtons(drawerFamilies, families, { insideDrawer:true });
+    drawer.appendChild(drawerFamilies);
+
     const drawerKeys = document.createElement('div');
     drawerKeys.className = 'puzzleGlyphDrawerKeys';
     const tokens = selectedPuzzleFamily === 'PUNCT' ? PUZZLE_PUNCTUATION : (families.get(selectedPuzzleFamily) || []);
@@ -3519,7 +3533,7 @@
       key.textContent = displayPuzzleToken(token);
       key.title = token;
       key.setAttribute('aria-label', selectedPuzzleFamily === 'PUNCT' ? `Punctuation ${token}` : `Glyph key ${token}`);
-      // One physical tap/click must produce exactly one placement.  Touch browsers
+      // One physical tap/click must produce exactly one placement. Touch browsers
       // synthesize a click after pointerup, so direct insertion is handled only by
       // click; pointer events are reserved for the optional fine-pointer drag path.
       key.addEventListener('click', () => choosePuzzleGlyph(token));
@@ -5996,11 +6010,15 @@
     renderLocalized(puzzleStatus,isTpLanguage()?'o luka e poki ma lon lon sama sona sewi.':'Tap the cell at the coordinate shown above.');
   }
 
+  function protectCountryProperNames(text) {
+    return String(text || '').replace(/\b(Amelika|Apika|Asija|Osejanija)\b/g, '[[$1]]');
+  }
+
   function renderCountryPuzzle(puzzle) {
     const answer = String(puzzle.ui?.payload?.answer || '').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
     const clueBox=document.createElement('div'); clueBox.className='countryClueBox';
     const clue=document.createElement('div'); clue.className=isTpLanguage()?'countryClueTp':'countryClueEn';
-    renderLocalized(clue, isTpLanguage() ? (puzzle.ui?.payload?.clueTp || '') : (puzzle.ui?.payload?.clueEn || ''), {sitelen:isTpLanguage()});
+    renderLocalized(clue, isTpLanguage() ? protectCountryProperNames(puzzle.ui?.payload?.clueTp || '') : (puzzle.ui?.payload?.clueEn || ''), {sitelen:isTpLanguage()});
     clueBox.append(clue); puzzleSlots.appendChild(clueBox);
     if (!Array.isArray(puzzleSlotValues) || puzzleSlotValues.length!==answer.length) puzzleSlotValues=Array(answer.length).fill(null);
     if (selectedPuzzleSlotIndex == null && answer.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
@@ -6117,7 +6135,7 @@
       head.append(num,dir);
       const clueText=document.createElement(isTpLanguage()?'span':'small');
       clueText.className=isTpLanguage()?'countryClueTp':'countryClueEn';
-      renderLocalized(clueText,isTpLanguage()?(entry.clueTp||''):(entry.clueEn||''),{sitelen:isTpLanguage()});
+      renderLocalized(clueText,isTpLanguage()?protectCountryProperNames(entry.clueTp||''):(entry.clueEn||''),{sitelen:isTpLanguage()});
       clue.append(head,clueText);clues.appendChild(clue);
     });
 

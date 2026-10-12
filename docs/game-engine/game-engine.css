@@ -778,8 +778,10 @@ kbd {
   margin: 1px auto 0;
 }
 
-/* Shared glyph-family picker. The family row stays in-flow; actual glyphs open
-   as a temporary bottom sheet so the puzzle viewport never grows. */
+/* Shared glyph-family picker. The launcher row stays in-flow. Once opened, the
+   picker becomes a full-width bottom drawer that covers the puzzle action row and
+   contains BOTH every available letter family and the glyphs for the active family.
+   The player can therefore jump between letters without repeatedly closing the drawer. */
 .puzzleFamilyRow {
   display: flex;
   flex-wrap: nowrap;
@@ -811,45 +813,62 @@ kbd {
 .puzzleFamilyKey.punctuation { font-size: 22px; }
 .puzzleGlyphDrawer {
   position: absolute;
-  z-index: 40;
-  left: 12px;
-  right: 12px;
-  bottom: 61px;
-  max-height: min(34dvh, 220px);
+  z-index: 60;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(64dvh, 330px);
   overflow: hidden;
-  padding: 8px;
-  border: 1px solid rgba(17,17,17,.28);
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(17,17,17,.34);
   border-radius: 14px;
   background: #FAECD7;
-  box-shadow: 0 -8px 28px rgba(0,0,0,.24);
+  box-shadow: 0 -10px 34px rgba(0,0,0,.30);
 }
 .puzzleGlyphDrawerHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 2px 5px;
 }
 .puzzleGlyphDrawerTitle {
   font: 800 13px/1 system-ui,sans-serif;
 }
 .puzzleGlyphDrawerClose {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   padding: 0;
   border-radius: 9px;
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1;
 }
+.puzzleGlyphDrawerFamilies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(34px, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin: 0 0 7px;
+}
+.puzzleGlyphDrawerFamilyKey {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  min-height: 38px;
+  max-width: none;
+  font-size: 13px;
+}
+.puzzleGlyphDrawerFamilyKey.punctuation { font-size: 19px; }
 .puzzleGlyphDrawerKeys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(46px, 58px));
+  gap: 6px;
   align-content: flex-start;
-  max-height: calc(min(34dvh, 220px) - 47px);
+  justify-content: start;
+  max-height: calc(min(64dvh, 330px) - 92px);
   overflow: auto;
   padding: 2px;
 }
@@ -914,14 +933,16 @@ kbd {
     padding: 4px;
   }
   .puzzleGlyphDrawer {
-    left: 8px;
-    right: 8px;
-    bottom: 56px;
-    max-height: min(33dvh, 205px);
-    padding: 7px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: min(70dvh, 310px);
+    padding: 6px 7px 8px;
   }
-  .puzzleGlyphDrawerKeys { max-height: calc(min(33dvh, 205px) - 45px); }
-  .puzzleKey { width: 54px; height: 54px; font-size: 36px; }
+  .puzzleGlyphDrawerFamilies { grid-template-columns: repeat(auto-fit, minmax(32px, 1fr)); gap: 3px; margin-bottom:5px; }
+  .puzzleGlyphDrawerFamilyKey { height:35px; min-height:35px; font-size:12px; }
+  .puzzleGlyphDrawerKeys { grid-template-columns:repeat(auto-fit,minmax(42px,52px)); gap:5px; max-height:calc(min(70dvh, 310px) - 82px); }
+  .puzzleKey { width: 50px; height: 50px; font-size: 33px; }
   .puzzleStatus { font-size: 11px; }
   .puzzleCard.puzzleCard--keys > .overlayButtonRow { gap: 5px; }
   .puzzleCard.puzzleCard--keys > .overlayButtonRow button { min-height: 44px; padding: 6px 5px; font-size: 12px; }
@@ -933,7 +954,9 @@ kbd {
   .puzzleSlotGlyph { font-size: 31px; min-height: 33px; }
   .puzzleFamilyRow { grid-template-rows: repeat(2, 42px); grid-auto-columns: 42px; }
   .puzzleFamilyKey { width: 42px; min-width: 42px; height: 42px; min-height: 42px; }
-  .puzzleKey { width: 50px; height: 50px; font-size: 33px; }
+  .puzzleGlyphDrawerFamilies { grid-template-columns:repeat(8,minmax(0,1fr)); }
+  .puzzleGlyphDrawerFamilyKey { height:33px; min-height:33px; }
+  .puzzleKey { width: 46px; height: 46px; font-size: 31px; }
 }
 
 /* Very short landscape phone viewports: retain the no-scroll contract by
@@ -974,9 +997,13 @@ kbd {
   .puzzleFamilyKey { flex: 0 0 40px; width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
   .puzzleStatus { display: none; }
   .puzzleCard.puzzleCard--keys > .overlayButtonRow button { min-height: 38px; }
-  .puzzleGlyphDrawer { bottom: 47px; max-height: min(44dvh, 150px); }
-  .puzzleGlyphDrawerKeys { max-height: calc(min(44dvh, 150px) - 42px); }
-  .puzzleKey { width: 46px; height: 46px; font-size: 30px; }
+  .puzzleGlyphDrawer { bottom:0; max-height:min(82dvh, 230px); padding:5px 7px 6px; }
+  .puzzleGlyphDrawerHeader { min-height:28px; padding-bottom:3px; }
+  .puzzleGlyphDrawerClose { width:28px; height:28px; min-width:28px; min-height:28px; font-size:20px; }
+  .puzzleGlyphDrawerFamilies { grid-template-columns:repeat(auto-fit,minmax(30px,1fr)); gap:3px; margin-bottom:4px; }
+  .puzzleGlyphDrawerFamilyKey { height:30px; min-height:30px; font-size:11px; }
+  .puzzleGlyphDrawerKeys { grid-template-columns:repeat(auto-fit,minmax(38px,46px)); gap:4px; max-height:calc(min(82dvh, 230px) - 70px); }
+  .puzzleKey { width: 42px; height: 42px; font-size: 28px; }
 }
 
 /* Country-name bonus puzzle */
@@ -2153,4 +2180,26 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   letter-spacing:0;
   font-size:18px;
   line-height:1.1;
+}
+
+/* Short landscape mobile: puzzle rewards must not become a tall blocking card.
+   The recovered sitelen is still prominent, but scales with viewport height. */
+@media (max-height: 520px) and (pointer: coarse), (max-height: 520px) and (max-width: 760px) {
+  #glyphPopup.overlayScreen { padding: 6px; }
+  .glyphRewardCard {
+    width: min(460px, 100%);
+    max-height: calc(100dvh - 12px);
+    padding: 8px 12px;
+    overflow: auto;
+  }
+  .glyphRewardCard .overlayEyebrow { font-size: 9px; }
+  .glyphRewardCard .rewardGlyph {
+    font-size: clamp(48px, 16dvh, 66px);
+    line-height: .95;
+    margin: 1px 0 0;
+  }
+  .glyphRewardCard h2 { margin: 1px 0 3px; font-size: 16px; line-height: 1.05; }
+  .glyphRewardCard p { margin: 2px 0 4px; font-size: 11px; line-height: 1.15; }
+  .glyphRewardCard .overlayProgress { margin: 3px 0 5px; font-size: 11px; line-height: 1.1; }
+  .glyphRewardCard button { min-width: 132px; min-height: 34px; padding: 5px 10px; font-size: 12px; }
 }

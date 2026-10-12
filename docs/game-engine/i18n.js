@@ -92,7 +92,7 @@
     'l1-terminal': { title:'ilo sona pi ma musi 1', instructions:'ilo ni li namako. sina ken pini e ma musi 1 kepeken ilo ni ala.' },
 
     'l2-digit-order': { title:'sitelen nanpa pini', instructions:'o pana e sitelen nanpa luka pi ma musi 1 lon nasin tan lili tawa suli. ilo li pana e sitelen nanpa pini tu.' },
-    'l2-country-kana': { title:'[[ma seme?]]', instructions:'o sona e ma. o sitelen e nimi Toki Pona ona. poki ale li wile e sitelen jo wan. nimi pi sitelen ni o open kepeken sitelen kalama wile.' },
+    'l2-country-kana': { title:'[[ma seme?]]', instructions:'o sona e ma. o sitelen e nimi [[Toki Pona]] ona. poki ale li wile e sitelen jo wan. nimi pi sitelen ni o open kepeken sitelen kalama wile.' },
     'l2-archive-sequence': { title:'linja pi tomo lipu', instructions:'sona ni li lon: 0 → 1 → 2 → 6. o pali e linja sitelen tu tu.' },
     'l2-workshop-stones': { title:'nanpa kiwen', instructions:'lipu lili li pana e linja ni: [[MA]] → 1 → 2 → 4. o pana e linja sama tawa ilo. ni la sitelen kiwen li kama.' },
     'l2-map-cache': { title:'sitelen ma nanpa', objective:'o pini e musi sitelen ma lon tomo sitelen ma.', instructions:'poki nanpa [[ma]] li pana e lon ma. o luka e poki ma lon lon sama.' },
@@ -123,7 +123,7 @@
 
     'l6-card-order': { title:'lipu musi lon nasin', instructions:'o pana e lipu luka lon nasin nanpa tan lili tawa suli. o luka e lipu wan. o luka e lipu ante la lipu tu li ante ma. sitelen nanpa taso li suli; kule lipu li suli ala.' },
     'l6-calculator': { title:'ilo nanpa', instructions:'o pini e pali nanpa tu wan ale. o pana e pali tawa ilo. o luka e [[Enter]]. nanpa li kama lon poki [[nanpa-linja-n]]. [[en]] li toki e pana; [[lape]] li toki e weka.' },
-    'l6-country-crossword': { title:'nimi ma lon linja', instructions:'o sona e ma tu tu. o sitelen e nimi Toki Pona ona lon linja. poki ale li wile e sitelen jo wan; nimi pi sitelen ni o open kepeken sitelen kalama wile. lon ma pi linja tu la sitelen wan taso o pona tawa tu.' },
+    'l6-country-crossword': { title:'nimi ma lon linja', instructions:'o sona e ma tu tu. o sitelen e nimi [[Toki Pona]] ona lon linja. poki ale li wile e sitelen jo wan; nimi pi sitelen ni o open kepeken sitelen kalama wile. lon ma pi linja tu la sitelen wan taso o pona tawa tu.' },
     'l6-base-match': { title:'nasin nanpa ante', instructions:'nanpa pi nasin 10 tu wan li lon. tawa nanpa ale la o anu e poki [[Noka]] anu [[Nasa]] li sama tawa ona. sina anu e poki wan lon tenpo wan. pini la ilo li toki e pona anu ike. ike la kulupu nanpa sin li kama.' },
     'l6-position-rings': { title:'sike ma', instructions:'o sike e sitelen tu tu. sona tu tu ale o lon. sike wan li jo e ma 8; tawa sike → li tawa ma wan.' },
 
@@ -492,7 +492,7 @@
     'Use the row and column clues to reconstruct the pantry inventory pattern.':'o kepeken nanpa linja en nanpa sewi tawa sitelen sin e sitelen poki moku.',
     'Sort the five sitelen playing cards by rank.':'o pana e lipu musi luka lon nasin nanpa.',
     'Solve three renderer-backed calculations, including negative and decimal values.':'o pini e pali nanpa tu wan. nanpa pi poka {{−}} en nanpa pi sitelen . li lon.',
-    'Solve the crossing country proper names with reusable glyph initials.':'o pali e nimi Toki Pona pi ma tu tu lon linja kama sama. poki ale li kepeken sitelen jo; nimi ona o open kepeken sitelen kalama wile.',
+    'Solve the crossing country proper names with reusable glyph initials.':'o pali e nimi [[Toki Pona]] pi ma tu tu lon linja kama sama. poki ale li kepeken sitelen jo; nimi ona o open kepeken sitelen kalama wile.',
     'Match decimal values to binary Noka and hexadecimal Nasa cartouches.':'o sama e nanpa pi nasin 10 tawa poki [[Noka]] pi nasin tu anu poki [[Nasa]] pi nasin 16.',
     'Use the relative-position clues to align four eight-position rings.':'o kepeken sona ma tawa sike tu tu pi ma 8.',
     'Listen to the five-tone pattern and repeat it.':'o kute e kalama luka. o pana sin e ona.',
