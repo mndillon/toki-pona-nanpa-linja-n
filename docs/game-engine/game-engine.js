@@ -30,6 +30,30 @@
   const MOBILE_INTERACT_DISTANCE = 1.78;
   const MAX_RAY_DISTANCE = 24;
   const NASIN_NANPA_FONT = 'NasinNanpaGame';
+  const I18N = window.TokiPonaRoomsI18n || null;
+  let uiLanguage = I18N?.getLanguage?.() || 'tp';
+
+  function isTpLanguage() { return uiLanguage !== 'en'; }
+  function uiText(key) { return I18N?.ui?.(key, uiLanguage) ?? key; }
+  function puzzleText(puzzle, field) {
+    const fallback = puzzle?.ui?.[field] ?? '';
+    return I18N?.puzzle?.(puzzle?.id, field, fallback, uiLanguage) ?? fallback;
+  }
+  function exactText(source) { return I18N?.exact?.(source, uiLanguage) ?? String(source ?? ''); }
+  function roomNameText(source) { return I18N?.roomName?.(source, uiLanguage) ?? String(source ?? ''); }
+  function roomHintText(source) { return I18N?.roomHint?.(source, uiLanguage) ?? String(source ?? ''); }
+  function termLabelText(source) { return I18N?.termLabel?.(source, uiLanguage) ?? String(source ?? ''); }
+  function renderLocalized(el, text, options = {}) {
+    if (!el) return;
+    if (I18N?.render) I18N.render(el, text, { lang:uiLanguage, ...options });
+    else el.textContent = String(text ?? '');
+    // Inline numeric cartouches must go through the shared nanpa-linja-n renderer.
+    // The source notation such as [nanpa1/2 :1/2 awen nanpa1/2] is parser input,
+    // not text for the font to display directly.
+    if (isTpLanguage() && options.sitelen !== false) hydrateInlineNumericCartouches(el);
+  }
+  function renderExact(el, source, options = {}) { renderLocalized(el, exactText(source), options); }
+
 
   const STANDARD_120 = [
     'a','akesi','ala','alasa','ale','anpa','ante','anu','awen','e','en','esun','ijo','ike','ilo','insa','jaki','jan','jelo','jo',
@@ -109,6 +133,7 @@
   const levelIntroOverlay = document.getElementById('levelIntroOverlay');
   const levelIntroTitle = document.getElementById('levelIntroTitle');
   const levelIntroCartouche = document.getElementById('levelIntroCartouche');
+  const levelIntroLatinNumber = document.getElementById('levelIntroLatinNumber');
   const levelIntroHint = document.getElementById('levelIntroHint');
   const levelIntroStartBtn = document.getElementById('levelIntroStartBtn');
 
@@ -132,6 +157,75 @@
   const mobileJoystickThumb = document.getElementById('mobileJoystickThumb');
   const mobileUseBtn = document.getElementById('mobileUseBtn');
   const mazeQuickExitBtn = document.getElementById('mazeQuickExitBtn');
+  const languageSelect = document.getElementById('languageSelect');
+
+  function applyStaticLanguage() {
+    document.documentElement.lang = isTpLanguage() ? 'tok' : 'en';
+    document.title = uiText('pageTitle');
+    const set = (id,key,opts={}) => renderLocalized(document.getElementById(id), uiText(key), opts);
+    set('skipLink','skipToGame');
+    set('pageTitle','pageTitle');
+    set('languageLabel','languageLabel',{sitelen:false});
+    set('introHelp','intro');
+    set('localInstructionLabel','hudLocalInstruction');
+    set('currentObjectiveLabel','hudCurrentObjective');
+    set('controlsTitle','controlsTitle');
+    set('mouseHint','mouseHint');
+    set('collectionTitleLabel','glyphCollection');
+    set('collectionBtnLabel','glyphCollection');
+    set('controlLegend','controlsLegend');
+    set('glyphHelpText','glyphHelp');
+    set('referenceLabel','reference');
+    set('cheatSheetLink','cheatSheet');
+    set('fieldNotesSummary','fieldNotes');
+    set('levelIntroEyebrow','level');
+    set('levelIntroHint','tapStart');
+    set('levelIntroStartBtn','start');
+    set('glyphRecoveredEyebrow','glyphRecovered');
+    set('glyphPopupClose','continue');
+    set('collectionEyebrow','gameQuest');
+    set('collectionHelp','collectionHelp');
+    set('collectionClose','close');
+    set('sentenceEyebrow','glyphInscription');
+    set('sentenceTitle','incompleteSentence');
+    set('sentenceCompleteBtn','completeSentence');
+    set('sentenceCloseBtn','leaveInscription');
+    set('puzzleEyebrow','glyphKeyPuzzle');
+    set('currentCartoucheLabel','currentCartouche');
+    set('availableGlyphKeysLabel','availableGlyphKeys');
+    set('puzzleResetBtn','clear');
+    set('puzzleCompleteBtn','tryAnswer');
+    set('puzzleCloseBtn','leavePuzzle');
+    set('levelCompleteEyebrow','levelCompleteEyebrow');
+    set('levelCompleteTitle','levelComplete');
+    set('levelCompleteText','levelObjectivesComplete');
+    set('campaignCompleteBadge','campaignComplete');
+    set('stayLevelBtn','stayHere');
+    set('resetConfirmEyebrow','confirmNewGame');
+    set('resetConfirmTitle','startNewGameQ');
+    set('resetConfirmText','resetWarning');
+    set('resetConfirmCancelBtn','cancel');
+    set('resetConfirmStartBtn','yesNewGame');
+    set('mobileUseBtn','use',{sitelen:false});
+    set('mazeQuickExitBtn','leaveMaze');
+    const home = document.querySelector('.pageHomeLink');
+    if (home) { home.setAttribute('aria-label', uiText('home')); home.title = uiText('home'); }
+    document.querySelector('.gameFrame')?.setAttribute('aria-label', isTpLanguage() ? 'musi tomo pi lukin jan' : 'First-person room explorer');
+    canvas?.setAttribute('aria-label', isTpLanguage() ? 'lukin musi pi jan lon tomo' : 'First-person game view');
+    miniMap?.setAttribute('aria-label', isTpLanguage()
+      ? 'sitelen ma alasa. lon ilo luka la o luka e sitelen ma, o awen e luka. ni la jan li lukin li tawa lon nasin pi ma luka. sina ken luka e ma pi kama lukin ala. sitelen nasin li pini lon poka pi ma lukin.'
+      : 'Explored map. On touch devices, touch and hold anywhere on the map to point and travel in that direction, including unrevealed or non-floor areas. If the drag starts on the map, it may continue beyond the map while steering. Guidance dots stop at the revealed frontier.');
+    mobileMovePad?.setAttribute('aria-label', isTpLanguage() ? 'ilo sike tawa: o tawa e sike kepeken luka. ni li tawa li sike e jan' : 'Movement joystick: drag to move and steer');
+    mobileUseBtn?.setAttribute('aria-label', isTpLanguage() ? 'o kepeken e ijo poka' : 'Use or interact');
+    mazeQuickExitBtn?.setAttribute('aria-label', isTpLanguage() ? 'o tawa weka tan nasin nasa pini' : 'Leave solved maze quickly');
+    mazeQuickExitBtn?.setAttribute('title', isTpLanguage() ? 'o tawa weka tan nasin nasa (X)' : 'Leave solved maze (X)');
+    glyphGrid?.setAttribute('aria-label', isTpLanguage() ? 'kulupu sitelen 120' : '120 glyph collection');
+    puzzleSlots?.setAttribute('aria-label', isTpLanguage() ? 'ma pana sitelen pi musi sona' : 'Puzzle glyph slots');
+    document.getElementById('levelIntroCartouche')?.setAttribute('aria-label', isTpLanguage() ? 'nanpa ma musi lon poki nanpa-linja-n lili' : 'Level number as an abbreviated nanpa-linja-n numeric cartouche');
+    document.getElementById('puzzleLiveCartoucheCanvas')?.setAttribute('aria-label', isTpLanguage() ? 'poki sitelen lon tenpo ni' : 'Current sitelen cartouche preview');
+    document.getElementById('puzzleTray')?.setAttribute('aria-label', isTpLanguage() ? 'sitelen ken' : 'Available glyph keys');
+    if (languageSelect) languageSelect.value = uiLanguage;
+  }
 
   canvas.width = VIEW_W;
   canvas.height = VIEW_H;
@@ -327,7 +421,7 @@
         {areaId:'l3Navigation',name:'Navigation Floor',x1:19,y1:1,x2:26.9,y2:6.9,instruction:'o tawa lon nasin.',hint:'Visit the beacons in order before reaching the exit.'},
         {areaId:'l3Observation',name:'Observation Chamber',x1:19,y1:8,x2:26.9,y2:14.9,instruction:'o lukin e suno lili.',hint:'Each lamp affects its neighbours.'},
         {areaId:'l3Workshop',name:'Instrument Workshop',x1:10,y1:8,x2:17.9,y2:14.9,instruction:'o sama e suli.',hint:'Balance the target using each available weight at most once.'},
-        {areaId:'l3Core',name:'Synchronization Core',x1:1,y1:8,x2:8.9,y2:14.9,instruction:'o ante ala e kontekis.',hint:'Choose the contextual numeric cartouche that matches the time display.'}
+        {areaId:'l3Core',name:'Synchronization Core',x1:1,y1:8,x2:8.9,y2:14.9,instruction:'o anu e poki nanpa pi tenpo ni.',hint:'Choose the contextual numeric cartouche that matches the time display.'}
       ],
       doors:[
         {id:'l3RelayDoor',x:9,y:4,open:false,label:'relay door',unlockState:'l3RelayAccess',autoOpenState:'l3RelayAccess'},
@@ -677,7 +771,7 @@
         '#........#...........#........#',
         '#........#...........#........#',
         '#........#...........#........#',
-        '#.............................#',
+        '#....................D........#',
         '#........#...........#........#',
         '#........#...........#........#',
         '#........#...........#........#',
@@ -690,9 +784,11 @@
       rooms:[
         {areaId:'l10Receiving',name:'Receiving Bay',x1:1,y1:1,x2:8.9,y2:13.9,instruction:'o pana e poki tawa ilo tawa.',hint:'The powered delivery cart can hold two bulk crates. Load both Receiving crates, then send the cart to the Market Arcade.'},
         {areaId:'l10Market',name:'Central Market Arcade',x1:9.1,y1:1,x2:20.9,y2:13.9,instruction:'o pona e esun. o pana e moku tawa ma pona.',hint:()=>campaignWorld().l10BasementOpen?'Delivery complete. The OPEN Cold Store hatch is marked ↓ on the minimap near the south-west side of this arcade.':'The till powers the ground-floor freight cart. The bakery stand is marked pan; the sweet-goods stand is marked suwi.'},
-        {areaId:'l10Dispatch',name:'Dispatch Bay',x1:21.1,y1:1,x2:29.9,y2:13.9,instruction:'o pana e ijo pona tawa ma weka.',hint:()=>campaignWorld().l10TextileDone?'Final inspection: the clean pan sample belongs here; the unsafe suwi sample belongs in Quarantine.':'Dispatch is for the final inspection. Nothing here is active yet; follow the current objective first.'}
+        {areaId:'l10Dispatch',name:'Dispatch Bay',x1:21.1,y1:1,x2:29.9,y2:13.9,instruction:'o tawa weka tan ma musi.',hint:()=>campaignWorld().l10ExitUnlocked?'Final audit approved. The exit terminal is active in this bay.':'Dispatch remains sealed until the final Ledger Office audit is approved.'}
       ],
-      doors:[],
+      doors:[
+        {id:'l10DispatchShutter',x:21,y:6,open:false,label:'final dispatch shutter',unlockState:'l10ExitUnlocked',autoOpenState:'l10ExitUnlocked'}
+      ],
       objects:[
         {id:'l10Till',type:'console',x:15.2,y:3.0,scale:1.0,radius:0.4,interact:'campaignPuzzle',puzzleId:'l10-market-till',areaId:'l10Market'},
         {id:'l10BreadCrate',type:'parcel',word:'pan',parcelId:'bread',x:3.0,y:3.2,scale:0.72,radius:0.3,interact:'l10BulkParcel',areaId:'l10Receiving'},
@@ -705,7 +801,6 @@
         {id:'l10CartCtlMarket',type:'console',dockId:'market',x:18.0,y:10.2,scale:0.78,radius:0.36,interact:'l10CartControl',areaId:'l10Market'},
         {id:'l10GroundColdLift',type:'trapdoor',x:11.2,y:12.0,scale:1.12,radius:0.54,interact:'l10GroundToLower',areaId:'l10Market',visibleWhen:()=>Boolean(campaignWorld().l10BasementOpen)},
         {id:'l10GroundAwningUp',type:'ladder',x:19.3,y:12.0,scale:1.0,radius:0.36,interact:'l10GroundToUpper',areaId:'l10Market',visibleWhen:()=>Boolean(campaignWorld().l10AwningOpen)},
-        {id:'l10DispatchAuditStand',type:'pedestal',auditDest:'dispatch',x:25.0,y:4.2,scale:0.82,radius:0.38,interact:'l10AuditStand',puzzleId:'l10-inspection-audit',areaId:'l10Dispatch',visibleWhen:()=>Boolean(campaignWorld().l10TextileDone)},
         {id:'l10DispatchExit',type:'terminal',x:28.0,y:4.2,scale:0.9,radius:0.4,interact:'l10ExitTerminal',areaId:'l10Dispatch',visibleWhen:()=>Boolean(campaignWorld().l10ExitUnlocked)}
       ]
     },
@@ -719,7 +814,7 @@
         '#...........#...........#',
         '#...........#...........#',
         '#...........#...........#',
-        '#.......................#',
+        '#...........D...........#',
         '#...........#...........#',
         '#...........#...........#',
         '#...........#...........#',
@@ -729,20 +824,21 @@
         '#########################'
       ],
       rooms:[
-        {areaId:'l10Textile',name:'Textile / Dye Loft',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o sama e telo kule. o pana e len tawa ilo pona.',hint:'Prepare the 2:1:1 dye mixture, then carry each cloth batch to the correct station. Completion drops an awning shortcut to the market floor.'},
-        {areaId:'l10Ledger',name:'Ledger Office',x1:12.1,y1:1,x2:23.9,y2:12.9,instruction:'o lukin e lipu esun. o pana e ijo ike tawa ma jaki.',hint:'After the textile chain, two inspection samples appear here. Their records refer to the deliveries and cold history already used in this level.'}
+        {areaId:'l10Textile',name:'Textile / Dye Loft',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o sama e telo kule. o pana e len tawa ilo pona.',hint:'Reconcile the three mixed-fraction dye batches, then carry each cloth batch to the correct station. Completion drops an awning shortcut to the market floor.'},
+        {areaId:'l10Ledger',name:'Ledger Office',x1:12.1,y1:1,x2:23.9,y2:12.9,instruction:'o lukin e lipu pana. o anu e nasin pini.',hint:()=>campaignWorld().l10TextileDone&&!campaignWorld().l10ExitUnlocked?'FINAL OBJECTIVE: use the audit console marked ! in this office. Review the pan and suwi shipment records and classify each as Dispatch or Quarantine. You are not moving the goods again.':campaignWorld().l10ExitUnlocked?'Final audit complete. Dispatch Bay is now open on the market floor.':'The final audit console activates only after the textile routing is complete.'}
       ],
-      doors:[],
+      doors:[
+        {id:'l10LedgerShutter',x:12,y:6,open:false,label:'inspection ledger shutter',unlockState:'l10TextileDone',autoOpenState:'l10TextileDone'}
+      ],
       objects:[
         {id:'l10UpperServiceLift',type:'ladder',x:2.5,y:10.6,scale:1.02,radius:0.36,interact:'l10UpperToLower',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10UpperLift)},
         {id:'l10UpperAwningDown',type:'ladder',x:10.3,y:10.6,scale:1.02,radius:0.36,interact:'l10UpperToGround',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10AwningOpen)},
-        {id:'l10BlueCloth',type:'parcel',word:'laso',textileId:'blue-cloth',x:3.0,y:3.1,scale:0.7,radius:0.3,interact:'l10TextileParcel',areaId:'l10Textile'},
-        {id:'l10WhiteCloth',type:'parcel',word:'walo',textileId:'white-cloth',x:7.0,y:3.1,scale:0.7,radius:0.3,interact:'l10TextileParcel',areaId:'l10Textile'},
+        {id:'l10BlueCloth',type:'parcel',word:'laso',textileId:'blue-cloth',x:3.35,y:6.8,scale:0.82,radius:0.34,interact:'l10TextileParcel',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10DyeReady)},
+        {id:'l10WhiteCloth',type:'parcel',word:'walo',textileId:'white-cloth',x:7.05,y:6.8,scale:0.82,radius:0.34,interact:'l10TextileParcel',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10DyeReady)},
         {id:'l10DyeMixer',type:'console',x:5.2,y:6.8,scale:0.96,radius:0.4,interact:'campaignPuzzle',puzzleId:'l10-textile-mixer',areaId:'l10Textile'},
-        {id:'l10DyeFrame',type:'pedestal',stationId:'dye-frame',x:4.0,y:10.0,scale:0.82,radius:0.38,interact:'l10TextileStation',puzzleId:'l10-textile-routing',areaId:'l10Textile'},
-        {id:'l10FinishTable',type:'pedestal',stationId:'finish-table',x:8.0,y:10.0,scale:0.82,radius:0.38,interact:'l10TextileStation',puzzleId:'l10-textile-routing',areaId:'l10Textile'},
-        {id:'l10BreadSample',type:'parcel',word:'pan',auditId:'bread-sample',x:16.0,y:4.0,scale:0.66,radius:0.28,interact:'l10AuditParcel',areaId:'l10Ledger',visibleWhen:()=>Boolean(campaignWorld().l10TextileDone)},
-        {id:'l10SweetSample',type:'parcel',word:'suwi',auditId:'sweet-sample',x:20.0,y:4.0,scale:0.66,radius:0.28,interact:'l10AuditParcel',areaId:'l10Ledger',visibleWhen:()=>Boolean(campaignWorld().l10TextileDone)}
+        {id:'l10DyeFrame',type:'pedestal',expectedWord:'laso',stationId:'dye-frame',x:4.0,y:10.0,scale:0.88,radius:0.40,interact:'l10TextileStation',puzzleId:'l10-textile-routing',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10DyeReady)},
+        {id:'l10FinishTable',type:'pedestal',expectedWord:'walo',stationId:'finish-table',x:8.0,y:10.0,scale:0.88,radius:0.40,interact:'l10TextileStation',puzzleId:'l10-textile-routing',areaId:'l10Textile',visibleWhen:()=>Boolean(campaignWorld().l10DyeReady)},
+        {id:'l10AuditConsole',type:'terminal',x:18.0,y:6.0,scale:1.08,radius:0.44,interact:'campaignPuzzle',puzzleId:'l10-inspection-audit',areaId:'l10Ledger',visibleWhen:()=>Boolean(campaignWorld().l10TextileDone)&&!campaignSolved('l10-inspection-audit')} 
       ]
     },
 
@@ -755,7 +851,7 @@
         '#...........#...........#',
         '#...........#...........#',
         '#...........#...........#',
-        '#.......................#',
+        '#...........D...........#',
         '#...........#...........#',
         '#...........#...........#',
         '#...........#...........#',
@@ -765,15 +861,18 @@
         '#########################'
       ],
       rooms:[
-        {areaId:'l10Cold',name:'Cold Store',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o pona e lete. o awen e ko lon nanpa pona.',hint:'Three coupled controls must simultaneously reach freezer −18.0, chilled store +4.0 and gel loop +0.5. Stabilization activates the direct chilled service lift to the loft.'},
-        {areaId:'l10Quarantine',name:'Quarantine',x1:12.1,y1:1,x2:23.9,y2:12.9,instruction:'o pana e ijo jaki lon ni.',hint:'The final unsafe inspection sample belongs here. Wrong placements remain recoverable.'}
+        {areaId:'l10Cold',name:'Cold Store',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o pona e lete. o awen e ko lon nanpa pona.',hint:()=>campaignWorld().l10ColdStable&&!campaignWorld().l10ColdRecorded?'Cold chain stable. Use the scientific-record console to normalize 0.0042, 0.00075 and 125 before the service lift will unlock.':'Three coupled controls must simultaneously reach freezer −18.0, chilled store +4.0 and gel loop +0.5.'},
+        {areaId:'l10Quarantine',name:'Quarantine',x1:12.1,y1:1,x2:23.9,y2:12.9,instruction:'o lukin e lipu awen ike.',hint:()=>campaignWorld().l10ExitUnlocked?'Audit status: the unsafe suwi shipment record is classified for quarantine. This room is optional after completion.':'Quarantine remains sealed until the Ledger Office audit is complete.'}
       ],
-      doors:[],
+      doors:[
+        {id:'l10QuarantineShutter',x:12,y:6,open:false,label:'quarantine status shutter',unlockState:'l10ExitUnlocked',autoOpenState:'l10ExitUnlocked'}
+      ],
       objects:[
         {id:'l10ColdConsole',type:'console',x:5.5,y:4.2,scale:1.0,radius:0.4,interact:'campaignPuzzle',puzzleId:'l10-cold-chain',areaId:'l10Cold'},
+        {id:'l10ColdRecordConsole',type:'console',x:8.5,y:4.2,scale:0.92,radius:0.4,interact:'campaignPuzzle',puzzleId:'l10-cold-record',areaId:'l10Cold',visibleWhen:()=>Boolean(campaignWorld().l10ColdStable)},
         {id:'l10LowerGroundLift',type:'ladder',x:2.5,y:10.4,scale:1.02,radius:0.36,interact:'l10LowerToGround',areaId:'l10Cold'},
         {id:'l10LowerUpperLift',type:'ladder',x:9.2,y:10.4,scale:1.02,radius:0.36,interact:'l10LowerToUpper',areaId:'l10Cold',visibleWhen:()=>Boolean(campaignWorld().l10UpperLift)},
-        {id:'l10QuarantineAuditStand',type:'pedestal',auditDest:'quarantine',x:18.0,y:8.0,scale:0.82,radius:0.38,interact:'l10AuditStand',puzzleId:'l10-inspection-audit',areaId:'l10Quarantine',visibleWhen:()=>Boolean(campaignWorld().l10TextileDone)}
+        {id:'l10QuarantineStatus',type:'terminal',x:18.0,y:8.0,scale:0.82,radius:0.38,interact:'l10QuarantineStatus',areaId:'l10Quarantine',visibleWhen:()=>Boolean(campaignWorld().l10ExitUnlocked)}
       ]
     },
 
@@ -986,7 +1085,7 @@
         '#############'
       ],
       rooms:[
-        {areaId:'l12Final',name:'Final Sudoku Chamber',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o pini e musi nanpa pini.',hint:()=>campaignWorld().l12ExitUnlocked?'The final Sudoku is solved. All 120 canonical glyphs have been recovered.':'This is the last puzzle. Complete the expert 9×9 nanpa-linja-n Sudoku; use notes if needed and press Try answer only when ready.'}
+        {areaId:'l12Final',name:'Final Sudoku Chamber',x1:1,y1:1,x2:11.9,y2:12.9,instruction:'o pini e musi nanpa pini.',hint:()=>campaignWorld().l12ExitUnlocked?'The final Sudoku is solved. All 120 glyphs have been recovered.':'This is the last puzzle. Complete the medium 9×9 nanpa-linja-n Sudoku; use notes if needed and press Try answer only when ready.'}
       ],
       doors:[],
       objects:[
@@ -1060,8 +1159,7 @@
   const MOBILE_JOYSTICK_TURN_MAX = 1.65;
   const MOBILE_JOYSTICK_STEER_FULL_ANGLE = Math.PI / 3;
   const MOBILE_JOYSTICK_STEER_DEADBAND = Math.PI / 8;
-  const MOBILE_JOYSTICK_CATCHUP_THRESHOLD = 1.0;
-  const MOBILE_JOYSTICK_MAX_FRAME_DT = 0.16;
+  const MOBILE_JOYSTICK_MAX_FRAME_DT = 0.24;
   const MOBILE_JOYSTICK_MAX_SIM_STEP = 1 / 60;
   const mobileMapSteer = { active:false, pointerId:null, levelId:null, targetCell:null, targetPoint:null, direction:null, path:[], pathIndex:0 };
   let lastTime = performance.now();
@@ -1214,6 +1312,10 @@
     next.l10AuditPlacements = Object.assign({}, saved?.l10AuditPlacements || {});
     next.l10AuditLocations = Object.assign({'bread-sample':'ledger','sweet-sample':'ledger'}, saved?.l10AuditLocations || {});
     next.l10MechanismStates = Object.assign({}, saved?.l10MechanismStates || {});
+    // v0.89 replaced the old physical audit-sample carrying stage with a Ledger Office record-classification console.
+    if (String(next.carrying || '').startsWith('l10:audit:')) next.carrying = null;
+    next.l10AuditPlacements = {};
+    next.l10AuditLocations = {};
     next.l11CallMarkers = Object.assign({}, saved?.l11CallMarkers || {});
     next.l11BandPlacements = Object.assign({}, saved?.l11BandPlacements || {});
     next.l11BandLocations = Object.assign({'red-band':'rack','blue-band':'rack'}, saved?.l11BandLocations || {});
@@ -1262,7 +1364,7 @@
         if (!oursIsActiveReset) {
           if (!externalSaveConflictShown) {
             externalSaveConflictShown = true;
-            showMessage('Saved game changed in another tab. This tab will not overwrite the newer reset. Reload to continue.');
+            showMessage('Your progress changed in another window. Reload this page to continue.');
           }
           return;
         }
@@ -1522,9 +1624,35 @@
     return Boolean(campaignWorld().l10DyeReady)&&placements['dye-frame']==='blue-cloth'&&placements['finish-table']==='white-cloth';
   }
 
-  function l10AuditCorrect(){
-    const placements=state.l10AuditPlacements||{};
-    return placements.dispatch==='bread-sample'&&placements.quarantine==='sweet-sample';
+
+  function repairLevel10TextileState(){
+    if(!campaignWorld().l10DyeReady || campaignSolved('l10-textile-routing')) return false;
+    state.l10TextilePlacements=state.l10TextilePlacements||{};
+    state.l10TextileLocations=state.l10TextileLocations||{};
+    const validStations=new Set(['dye-frame','finish-table']);
+    let changed=false;
+    for(const textileId of ['blue-cloth','white-cloth']){
+      const carrying=state.carrying===`l10:textile:${textileId}`;
+      let placedAt=null;
+      for(const [stationId,placedId] of Object.entries(state.l10TextilePlacements)){
+        if(placedId===textileId && validStations.has(stationId)){placedAt=stationId;break;}
+      }
+      if(carrying){
+        if(state.l10TextileLocations[textileId]!=='carrying'){state.l10TextileLocations[textileId]='carrying';changed=true;}
+      }else if(placedAt){
+        if(state.l10TextileLocations[textileId]!==placedAt){state.l10TextileLocations[textileId]=placedAt;changed=true;}
+      }else if(state.l10TextileLocations[textileId]!=='upper-rack'){
+        state.l10TextileLocations[textileId]='upper-rack';changed=true;
+      }
+    }
+    // Remove stale duplicate/invalid placement entries left by older test saves.
+    for(const [stationId,textileId] of Object.entries({...state.l10TextilePlacements})){
+      if(!validStations.has(stationId) || !['blue-cloth','white-cloth'].includes(textileId)){
+        delete state.l10TextilePlacements[stationId];changed=true;
+      }
+    }
+    if(changed)spriteCache.clear();
+    return changed;
   }
 
   function l10MaybeCompleteDelivery(){
@@ -1537,14 +1665,7 @@
   function l10MaybeCompleteTextile(){
     if(campaignSolved('l10-textile-routing')||!l10TextileCorrect())return false;
     const result=completeCampaignPuzzle('l10-textile-routing','Earned by preparing the dye bath and routing both cloth batches to the correct loft stations.');
-    if(result.ok){showMessage('Textile batch complete. The market awning drops into a direct shortcut to the ground floor.');log('Level 10 textile batch complete: awning shortcut opened.');}
-    return Boolean(result.ok);
-  }
-
-  function l10MaybeCompleteAudit(){
-    if(campaignSolved('l10-inspection-audit')||!l10AuditCorrect())return false;
-    const result=completeCampaignPuzzle('l10-inspection-audit','Earned by quarantining the unsafe sample and dispatching the clean shipment sample.');
-    if(result.ok){showMessage('Inspection complete. The dispatch shutter is released.');log('Level 10 inspection complete: dispatch shutter released.');}
+    if(result.ok){showMessage('Textile batch complete. FINAL OBJECTIVE: the Ledger Office is now open upstairs. Use the audit console marked ! to review the pan and suwi shipment records.');log('Level 10 textile batch complete: awning shortcut opened and final Ledger audit activated.');}
     return Boolean(result.ok);
   }
 
@@ -1593,10 +1714,6 @@
     if (obj.interact === 'l10TextileParcel') {
       if (campaignSolved('l10-textile-routing')) return false;
       return state.l10TextileLocations?.[obj.textileId] === 'upper-rack';
-    }
-    if (obj.interact === 'l10AuditParcel') {
-      if (campaignSolved('l10-inspection-audit')) return false;
-      return state.l10AuditLocations?.[obj.auditId] === 'ledger';
     }
     if (obj.interact === 'l11BandParcel') {
       if (campaignSolved('l11-parent-bands')) return false;
@@ -1650,20 +1767,12 @@
         const parcelId=state.l10DeliveryPlacements?.[stand.standId];
         if(parcelId)drawSingleSprite({id:`l10DeliveryPlaced:${stand.standId}`,type:'parcel',word:l10ParcelWord(parcelId),x:stand.x,y:stand.y,scale:0.42},zBuffer,-0.50);
       }
-      const dispatch=level().objects.find(obj=>obj.interact==='l10AuditStand'&&obj.auditDest==='dispatch');
-      const auditId=state.l10AuditPlacements?.dispatch;
-      if(dispatch&&auditId)drawSingleSprite({id:'l10AuditDispatchPlaced',type:'parcel',word:l10ParcelWord(auditId),x:dispatch.x,y:dispatch.y,scale:0.40},zBuffer,-0.50);
     }
     if (state.levelId === 'l10upper') {
       for (const station of level().objects.filter(obj=>obj.interact==='l10TextileStation')) {
         const textileId=state.l10TextilePlacements?.[station.stationId];
         if(textileId)drawSingleSprite({id:`l10TextilePlaced:${station.stationId}`,type:'parcel',word:l10ParcelWord(textileId),x:station.x,y:station.y,scale:0.40},zBuffer,-0.50);
       }
-    }
-    if (state.levelId === 'l10lower') {
-      const quarantine=level().objects.find(obj=>obj.interact==='l10AuditStand'&&obj.auditDest==='quarantine');
-      const auditId=state.l10AuditPlacements?.quarantine;
-      if(quarantine&&auditId)drawSingleSprite({id:'l10AuditQuarantinePlaced',type:'parcel',word:l10ParcelWord(auditId),x:quarantine.x,y:quarantine.y,scale:0.40},zBuffer,-0.50);
     }
     if (state.levelId === 'l11canopy') {
       for (const perch of level().objects.filter(obj=>obj.interact==='l11BandPerch')) {
@@ -1779,11 +1888,14 @@
         verticalOffset = 0.08; break;
       }
       case 'terminal': {
-        g.fillStyle = '#303a40'; g.fillRect(18, 31, 92, 87);
-        g.strokeStyle = puzzleSolved ? '#8fd0a4' : '#71858f'; g.lineWidth = puzzleSolved ? 5 : 3; g.strokeRect(18, 31, 92, 87);
-        g.fillStyle = puzzleSolved ? '#173925' : '#0f181d'; g.fillRect(28, 41, 72, 44);
-        g.fillStyle = puzzleSolved ? '#a8e0b9' : '#96c8b6'; g.font = `48px "${NASIN_NANPA_FONT}"`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(glyphChar('sona'), 64, 63);
-        g.fillStyle = puzzleSolved ? '#56a874' : '#a78f6b'; g.fillRect(47, 98, 34, 7); verticalOffset = 0.07; break;
+        const isAuditConsole=obj.id==='l10AuditConsole';
+        g.fillStyle = isAuditConsole ? '#56441f' : '#303a40'; g.fillRect(18, 31, 92, 87);
+        g.strokeStyle = puzzleSolved ? '#8fd0a4' : isAuditConsole ? '#f0cf72' : '#71858f'; g.lineWidth = puzzleSolved || isAuditConsole ? 5 : 3; g.strokeRect(18, 31, 92, 87);
+        g.fillStyle = puzzleSolved ? '#173925' : isAuditConsole ? '#211803' : '#0f181d'; g.fillRect(28, 41, 72, 44);
+        g.fillStyle = puzzleSolved ? '#a8e0b9' : isAuditConsole ? '#ffe58e' : '#96c8b6';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        if(isAuditConsole){g.font='900 52px system-ui,sans-serif';g.fillText('!',64,64);}else{g.font = `48px "${NASIN_NANPA_FONT}"`;g.fillText(glyphChar('sona'), 64, 63);}
+        g.fillStyle = puzzleSolved ? '#56a874' : isAuditConsole ? '#e1b846' : '#a78f6b'; g.fillRect(47, 98, 34, 7); verticalOffset = 0.07; break;
       }
       case 'mazeGate': {
         const world = campaignWorld();
@@ -1961,18 +2073,26 @@
       mapCtx.stroke();
       mapCtx.restore();
     }
-    if (state.levelId === 'l10ground' && campaignWorld().l10BasementOpen) {
-      // Once the delivery is complete, make the newly opened Cold Store route impossible to miss.
-      // It remains marked even if that corner of the Market Arcade has not yet been explored.
-      const hatch=level().objects.find(obj=>obj.id==='l10GroundColdLift');
-      if(hatch){
-        const hx=ox+hatch.x*cell,hy=oy+hatch.y*cell,size=Math.max(8,cell*1.05);
-        mapCtx.save();
-        mapCtx.fillStyle='#d7c28b';mapCtx.strokeStyle='#111';mapCtx.lineWidth=Math.max(1.2,cell*0.12);
-        mapCtx.beginPath();mapCtx.arc(hx,hy,size*0.52,0,Math.PI*2);mapCtx.fill();mapCtx.stroke();
-        mapCtx.fillStyle='#111';mapCtx.font=`900 ${Math.max(8,Math.floor(size*0.82))}px system-ui,sans-serif`;mapCtx.textAlign='center';mapCtx.textBaseline='middle';mapCtx.fillText('↓',hx,hy-0.5);
-        mapCtx.restore();
-      }
+    if (state.levelId === 'l10ground') {
+      const world=campaignWorld();
+      if(world.l10BasementOpen&&!world.l10ColdRecorded) drawRouteMarker(level().objects.find(obj=>obj.id==='l10GroundColdLift'),'↓');
+      if(world.l10TextileDone&&!world.l10ExitUnlocked) drawRouteMarker(level().objects.find(obj=>obj.id==='l10GroundAwningUp'),'↑');
+      if(world.l10ExitUnlocked) drawRouteMarker(level().objects.find(obj=>obj.id==='l10DispatchExit'),'✓');
+    }
+    if (state.levelId === 'l10upper' && campaignWorld().l10DyeReady && !campaignWorld().l10TextileDone) {
+      const carrying=String(state.carrying||'');
+      const blueLoc=state.l10TextileLocations?.['blue-cloth'];
+      const whiteLoc=state.l10TextileLocations?.['white-cloth'];
+      if(blueLoc==='upper-rack')drawRouteMarker(level().objects.find(obj=>obj.id==='l10BlueCloth'),'!');
+      if(whiteLoc==='upper-rack')drawRouteMarker(level().objects.find(obj=>obj.id==='l10WhiteCloth'),'!');
+      if(carrying==='l10:textile:blue-cloth')drawRouteMarker(level().objects.find(obj=>obj.id==='l10DyeFrame'),'→');
+      if(carrying==='l10:textile:white-cloth')drawRouteMarker(level().objects.find(obj=>obj.id==='l10FinishTable'),'→');
+    }
+    if (state.levelId === 'l10upper' && campaignWorld().l10TextileDone && !campaignWorld().l10ExitUnlocked) {
+      drawRouteMarker(level().objects.find(obj=>obj.id==='l10AuditConsole'),'!');
+    }
+    if (state.levelId === 'l10lower' && campaignWorld().l10TextileDone && !campaignWorld().l10ExitUnlocked) {
+      drawRouteMarker(level().objects.find(obj=>obj.id==='l10LowerUpperLift'),'↑');
     }
     if (state.levelId === 'l11ground') {
       if(campaignWorld().l11CanopyOpen)drawRouteMarker(level().objects.find(obj=>obj.id==='l11GroundCanopyLadder'),'↑');
@@ -2049,6 +2169,10 @@
 
   function progressSummaryText(progress, compact = false) {
     const p = progress || currentLevelProgress();
+    if (isTpLanguage()) {
+      if (compact) return `ma ${p.levelNo} · ${p.requiredOwned}/${p.requiredTotal} wile${p.bonusOwned ? ` · +${p.bonusOwned} namako` : ''} · ${p.totalOwned}/120`;
+      return `ma musi ${p.levelNo}: sitelen wile ${p.requiredOwned}/${p.requiredTotal}${p.bonusOwned ? ` · sitelen namako ${p.bonusOwned}` : ''} · sitelen ale ${p.totalOwned}/120`;
+    }
     if (compact) {
       return `L${p.levelNo} ${p.requiredOwned}/${p.requiredTotal} req${p.bonusOwned ? ` · +${p.bonusOwned} bonus` : ''} · ${p.totalOwned}/120`;
     }
@@ -2056,105 +2180,201 @@
   }
 
   function currentObjective() {
-    if (!campaignAdapter) return 'Loading campaign…';
+    if (!campaignAdapter) return uiText('loadingCampaign');
     const progress = currentLevelProgress();
-    if (campaignAdapter.isLevelComplete()) return `Level ${progress.levelNo} complete · continue when ready.`;
-    const prefix = progress.requiredOwned >= progress.requiredTotal && progress.requiredTotal > 0
-      ? `${progress.requiredOwned}/${progress.requiredTotal} required ✓ · main objective remains`
-      : `${progress.requiredOwned}/${progress.requiredTotal} required${progress.bonusOwned ? ` · +${progress.bonusOwned} bonus` : ''}`;
+    if (campaignAdapter.isLevelComplete()) {
+      return isTpLanguage()
+        ? `ma musi ${progress.levelNo} li pini · o tawa lon tenpo sina wile.`
+        : `Level ${progress.levelNo} complete · continue when ready.`;
+    }
+    const prefix = isTpLanguage()
+      ? (progress.requiredOwned >= progress.requiredTotal && progress.requiredTotal > 0
+          ? `${progress.requiredOwned}/${progress.requiredTotal} sitelen wile ✓ · wile suli li awen`
+          : `${progress.requiredOwned}/${progress.requiredTotal} sitelen wile${progress.bonusOwned ? ` · +${progress.bonusOwned} namako` : ''}`)
+      : (progress.requiredOwned >= progress.requiredTotal && progress.requiredTotal > 0
+          ? `${progress.requiredOwned}/${progress.requiredTotal} required ✓ · main objective remains`
+          : `${progress.requiredOwned}/${progress.requiredTotal} required${progress.bonusOwned ? ` · +${progress.bonusOwned} bonus` : ''}`);
 
     if (progress.levelNo === 9 && !campaignSolved('l9-maze-survey')) {
       const survey=l9MarkerProgress();
-      return `${prefix} · Labyrinth survey ${survey.found}/${survey.needed} · Find and inspect the remaining survey markers.`;
+      return isTpLanguage()
+        ? `${prefix} · alasa nasin nasa ${survey.found}/${survey.needed} · o alasa e sitelen alasa awen. o lukin e ona.`
+        : `${prefix} · Labyrinth survey ${survey.found}/${survey.needed} · Find and inspect the remaining survey markers.`;
     }
     if (progress.levelNo === 9 && campaignWorld().l9SphinxReady && !campaignSolved('l9-sphinx-riddles')) {
-      return `${prefix} · Survey complete 3/3 · Return to the Sphinx Court at the centre of the labyrinth.`;
+      return isTpLanguage()
+        ? `${prefix} · sitelen alasa 3/3 li pini · o kama sin tawa tomo jan [[Sphinx]] lon insa nasin nasa.`
+        : `${prefix} · Survey complete 3/3 · Return to the Sphinx Court at the centre of the labyrinth.`;
     }
     if (progress.levelNo === 9 && campaignSolved('l9-sphinx-riddles') && !campaignSolved('l9-counterweight')) {
-      return `${prefix} · Sphinx solved · Use the quick exit from the Sphinx Court to reach the next chamber.`;
+      return isTpLanguage()
+        ? `${prefix} · jan [[Sphinx]] li pini · o kepeken nasin weka lili tawa tomo kama.`
+        : `${prefix} · Sphinx solved · Use the quick exit from the Sphinx Court to reach the next chamber.`;
     }
     if (progress.levelNo === 10) {
       const world=campaignWorld();
-      if(!world.l10PowerOn)return `${prefix} · Balance the Market Permit till to power the freight spine.`;
+      if(!world.l10PowerOn)return isTpLanguage()
+        ? `${prefix} · o pini e lipu pana % tu wan. ni la nasin poki tawa li kama jo e wawa.`
+        : `${prefix} · Complete the three-percentage Market allocation ledger to power the freight spine.`;
       if(!world.l10DeliveryDone){
-        const bakery=state.l10DeliveryPlacements?.bakery?l10ParcelWord(state.l10DeliveryPlacements.bakery):'empty';
-        const sweet=state.l10DeliveryPlacements?.['sweet-stall']?l10ParcelWord(state.l10DeliveryPlacements['sweet-stall']):'empty';
-        return `${prefix} · Freight powered · bakery expects pan (${bakery}); sweet-goods expects suwi (${sweet}).`;
+        const bakery=state.l10DeliveryPlacements?.bakery?l10ParcelWord(state.l10DeliveryPlacements.bakery):(isTpLanguage()?'weka':'empty');
+        const sweet=state.l10DeliveryPlacements?.['sweet-stall']?l10ParcelWord(state.l10DeliveryPlacements['sweet-stall']):(isTpLanguage()?'weka':'empty');
+        return isTpLanguage()
+          ? `${prefix} · wawa tawa li lon · tomo [[pan]] li wile e [[pan]] (${bakery}); tomo [[suwi]] li wile e [[suwi]] (${sweet}).`
+          : `${prefix} · Freight powered · bakery expects pan (${bakery}); sweet-goods expects suwi (${sweet}).`;
       }
-      if(!world.l10ColdStable)return `${prefix} · Delivery complete · Cold Store entrance OPEN in the Market Arcade (↓ on minimap). Descend and stabilize the three cold-chain readings.`;
-      if(!world.l10DyeReady)return `${prefix} · Cold chain stable · Take the chilled service lift to the Textile Loft and prepare the 2:1:1 dye bath.`;
-      if(!world.l10TextileDone)return `${prefix} · Dye ready · Place laso cloth at the dye frame and walo cloth at the clean finishing table.`;
-      if(!world.l10ExitUnlocked)return `${prefix} · Textile complete · Take the pan and suwi inspection samples from the Ledger Office; dispatch pan and quarantine suwi.`;
+      if(!world.l10ColdStable)return isTpLanguage()
+        ? `${prefix} · pana poki li pini · lupa tawa tomo lete li open lon tomo esun (↓ lon sitelen ma). o tawa anpa. o pona e nanpa lete tu wan lon tenpo sama.`
+        : `${prefix} · Delivery complete · Cold Store entrance OPEN in the Market Arcade (↓ on minimap). Descend and stabilize the three cold-chain readings.`;
+      if(!world.l10ColdRecorded)return isTpLanguage()
+        ? `${prefix} · ilo lete li pona · o ante e nanpa tu wan tawa nasin [[neko]]. o awen e ona. ni la ilo tawa sewi li open.`
+        : `${prefix} · Cold chain stable · Normalize all three recorder values as scientific notation to unlock the chilled service lift.`;
+      if(!world.l10DyeReady)return isTpLanguage()
+        ? `${prefix} · lipu [[neko]] li pini · o tawa sewi tawa tomo len. o pona e nanpa pi wan en kipisi tu wan.`
+        : `${prefix} · Scientific record complete · Take the chilled service lift to the Textile Loft and reconcile the three mixed-fraction dye batches.`;
+      if(!world.l10TextileDone){
+        const carrying=String(state.carrying||'');
+        if(carrying==='l10:textile:blue-cloth')return isTpLanguage()
+          ? `${prefix} · sina jo e len [[laso]] · o tawa e ona tawa supa kule pi sitelen [[laso]] (→ lon sitelen ma).`
+          : `${prefix} · Carrying laso cloth · Take it to the laso-marked dye frame (→ on minimap).`;
+        if(carrying==='l10:textile:white-cloth')return isTpLanguage()
+          ? `${prefix} · sina jo e len [[walo]] · o tawa e ona tawa supa pini pi sitelen [[walo]] (→ lon sitelen ma).`
+          : `${prefix} · Carrying walo cloth · Take it to the walo-marked finishing table (→ on minimap).`;
+        return isTpLanguage()
+          ? `${prefix} · nanpa len li pona · len [[laso]] en len [[walo]] li lon poka ilo telo kule ({{!}} lon sitelen ma). o kama jo e wan.`
+          : `${prefix} · Dye ready · The laso and walo cloth bundles are beside the mixer (! on minimap). Pick one up, then follow the destination marker.`;
+      }
+      if(!world.l10ExitUnlocked){
+        const routeEn=state.levelId==='l10upper'
+          ? 'The Ledger Office is beside the Textile Loft.'
+          : state.levelId==='l10lower'
+            ? 'Take the chilled service lift ↑ to the Textile Loft, then enter the Ledger Office.'
+            : 'Use the awning ladder ↑ in the Market Arcade to reach the Textile Loft, then enter the Ledger Office.';
+        const routeTp=state.levelId==='l10upper'
+          ? 'tomo lipu li lon poka tomo len.'
+          : state.levelId==='l10lower'
+            ? 'o tawa sewi ↑ kepeken ilo tawa lete. ni la o tawa tomo lipu.'
+            : 'o tawa sewi ↑ kepeken palisa pi len sewi lon tomo esun. ni la o tawa tomo lipu.';
+        return isTpLanguage()
+          ? `${prefix} · WILE PINI · ${routeTp} o kepeken ilo lukin lipu pi sitelen {{!}}. o anu e lipu [[pan]] e lipu [[suwi]] tawa ma pana anu ma awen ike. sina tawa e moku sin ala.`
+          : `${prefix} · FINAL OBJECTIVE · ${routeEn} Use the audit console marked !. Review the pan and suwi records and classify each as Dispatch or Quarantine. You are NOT moving the goods again.`;
+      }
     }
     if (progress.levelNo === 11) {
       const world=campaignWorld(),calls=l11CallProgress();
-      if(!world.l11CallsLogged)return `${prefix} · Acoustic survey ${calls.found}/${calls.needed} · Record all three call pylons in the Field Station and Habitat Hub.`;
-      if(!world.l11CanopyOpen)return `${prefix} · Calls logged 3/3 · Use the Habitat Hub triangulation console to locate the night roost.`;
-      if(!world.l11RoostDone)return `${prefix} · Roost located · Climb the marked canopy ladder ↑ and restore the overnight roost/feeding schedule.`;
-      if(!world.l11LineageDone)return `${prefix} · Schedule restored · Descend through the marked incubator hatch ↓ and solve the Lineage Registry.`;
+      if(!world.l11CallsLogged)return isTpLanguage()
+        ? `${prefix} · alasa kalama ${calls.found}/${calls.needed} · o awen e sona tan palisa kalama tu wan lon tomo alasa ma en tomo ma soweli.`
+        : `${prefix} · Acoustic survey ${calls.found}/${calls.needed} · Record all three call pylons in the Field Station and Habitat Hub.`;
+      if(!world.l11CanopyOpen)return isTpLanguage()
+        ? `${prefix} · kalama 3/3 li awen · o kepeken ilo alasa ma lon tomo ma soweli. o alasa e ma awen pimeja.`
+        : `${prefix} · Calls logged 3/3 · Use the Habitat Hub triangulation console to locate the night roost.`;
+      if(!world.l11RoostDone)return isTpLanguage()
+        ? `${prefix} · ma awen li sona · o tawa sewi kepeken palisa ↑. o pona e nasin tenpo pimeja.`
+        : `${prefix} · Roost located · Climb the marked canopy ladder ↑ and restore the overnight roost/feeding schedule.`;
+      if(!world.l11LineageDone)return isTpLanguage()
+        ? `${prefix} · nasin tenpo li pona · o tawa anpa kepeken lupa ↓. o pini e lipu mama.`
+        : `${prefix} · Schedule restored · Descend through the marked incubator hatch ↓ and solve the Lineage Registry.`;
       if(!world.l11PairDone){
-        const west=state.l11BandPlacements?.['west-perch']?l11BandWord(state.l11BandPlacements['west-perch']):'empty';
-        const east=state.l11BandPlacements?.['east-perch']?l11BandWord(state.l11BandPlacements['east-perch']):'empty';
-        return `${prefix} · Lineage solved · Nest bands: west expects loje (${west}); east expects laso (${east}).`;
+        const west=state.l11BandPlacements?.['west-perch']?l11BandWord(state.l11BandPlacements['west-perch']):(isTpLanguage()?'weka':'empty');
+        const east=state.l11BandPlacements?.['east-perch']?l11BandWord(state.l11BandPlacements['east-perch']):(isTpLanguage()?'weka':'empty');
+        return isTpLanguage()
+          ? `${prefix} · lipu mama li pini · supa poka loje li wile e [[loje]] (${west}); supa poka laso li wile e [[laso]] (${east}).`
+          : `${prefix} · Lineage solved · Nest bands: west expects loje (${west}); east expects laso (${east}).`;
       }
-      if(!world.l11ExitUnlocked)return `${prefix} · Parent bands aligned · Take the new Nest Observatory shortcut ↓ to the Recovery Ward and complete habitat triage.`;
+      if(!world.l11ExitUnlocked)return isTpLanguage()
+        ? `${prefix} · sitelen mama li pona · o kepeken nasin sin ↓ tan tomo lukin mama tawa tomo pona sin. o pini e musi ma soweli.`
+        : `${prefix} · Parent bands aligned · Take the new Nest Observatory shortcut ↓ to the Recovery Ward and complete habitat triage.`;
     }
     if (progress.levelNo === 12) {
       const world=campaignWorld();
-      if(!world.l12SpineOnline)return `${prefix} · Final archive · Solve the Fracture Core ten-switch parity network first.`;
-      if(!world.l12IdentityDone && !world.l12CipherDone)return `${prefix} · Archive spine online · Two marked routes are open: ↑ Identity Gallery and ↓ Totality Cipher Vault. Both branches are required.`;
-      if(!world.l12IdentityDone)return `${prefix} · Totality cipher solved · Take the marked upper route and solve the eight-record Identity permutation.`;
-      if(!world.l12RelationDone)return `${prefix} · Identity resolved · Complete the Triple Relation mirror array in the upper observatory.`;
-      if(!world.l12CipherDone)return `${prefix} · Upper trials complete · Return to the Fracture Core and descend to solve the six-glyph Totality cipher.`;
-      if(!world.l12ExitUnlocked)return `${prefix} · All preliminary trials complete · FINAL hatch ↓ is open in the Totality Cipher Vault. Descend to the last Sudoku.`;
+      if(!world.l12SpineOnline)return isTpLanguage()
+        ? `${prefix} · tomo lipu pini · o pona e ilo luka pi ante tu lon open.`
+        : `${prefix} · Final archive · Solve the Fracture Core ten-switch parity network first.`;
+      if(!world.l12IdentityDone && !world.l12CipherDone)return isTpLanguage()
+        ? `${prefix} · linja lipu li lon · nasin tu li open: ↑ tomo nasin sitelen; ↓ tomo linja len. o pini e tu.`
+        : `${prefix} · Archive spine online · Two marked routes are open: ↑ Identity Gallery and ↓ Totality Cipher Vault. Both branches are required.`;
+      if(!world.l12IdentityDone)return isTpLanguage()
+        ? `${prefix} · linja len li pini · o tawa ↑. o pini e nasin sitelen 8.`
+        : `${prefix} · Totality cipher solved · Take the marked upper route and solve the eight-record Identity permutation.`;
+      if(!world.l12RelationDone)return isTpLanguage()
+        ? `${prefix} · nasin sitelen li pona · o pini e ilo lukin linja tu wan lon tomo sewi.`
+        : `${prefix} · Identity resolved · Complete the Triple Relation mirror array in the upper observatory.`;
+      if(!world.l12CipherDone)return isTpLanguage()
+        ? `${prefix} · musi sewi li pini · o kama sin tawa ilo pakala insa. o tawa anpa. o pini e linja len sitelen 6.`
+        : `${prefix} · Upper trials complete · Return to the Fracture Core and descend to solve the six-glyph Totality cipher.`;
+      if(!world.l12ExitUnlocked)return isTpLanguage()
+        ? `${prefix} · musi open ale li pini · lupa [[FINAL]] ↓ li open lon tomo linja len. o tawa anpa tawa [[Sudoku]] pini.`
+        : `${prefix} · All preliminary trials complete · FINAL hatch ↓ is open in the Totality Cipher Vault. Descend to the final medium Sudoku.`;
     }
 
-    // Map reveal is intentionally a cross-room objective. Keep its destination
-    // explicit even while the player is still in Cartography or another room.
     if (progress.levelNo === 2 && campaignWorld().cacheRevealed && !campaignSolved('l2-hidden-cache')) {
       const cachePuzzle = campaignPuzzle('l2-hidden-cache');
-      const cacheObjective = cachePuzzle?.ui?.objective || 'Return to the Lower Archive and inspect the revealed cache.';
+      const cacheObjective = puzzleText(cachePuzzle, 'objective') || (isTpLanguage() ? 'o tawa sin tawa tomo lipu anpa. o lukin e poki sin.' : 'Return to the Lower Archive and inspect the revealed cache.');
       return `${prefix} · ${cacheObjective}`;
     }
 
     const available = campaignAdapter.availablePuzzles();
     const nextPuzzle = available.find(p => p.requiredForMinimum !== false) || available[0] || null;
-    const nextObjective = nextPuzzle ? (nextPuzzle.ui?.objective || nextPuzzle.ui?.title || nextPuzzle.id) : campaignAdapter.objective();
-    return `${prefix} · ${nextObjective}`;
+    const nextObjective = nextPuzzle ? (puzzleText(nextPuzzle,'objective') || puzzleText(nextPuzzle,'title') || nextPuzzle.id) : campaignAdapter.objective();
+    return `${prefix} · ${isTpLanguage() ? exactText(nextObjective) : nextObjective}`;
   }
 
   function updateHUD() {
     syncWorldFromCampaign();
     const room = currentRoom();
     if (room.areaId) syncCampaignArea(room.areaId);
-    roomEl.textContent = room.name;
-    levelEl.textContent = `level ${level().chapter} · z ${level().z >= 0 ? '+' : ''}${level().z}`;
-    tpInstructionEl.textContent = value(room.instruction) || '—';
-    enInstructionEl.textContent = value(room.hint) || '';
-    objectiveEl.textContent = currentObjective();
+    renderLocalized(roomEl, roomNameText(room.name));
+    renderLocalized(levelEl, isTpLanguage()
+      ? `ma musi ${level().chapter}`
+      : `level ${level().chapter}`);
+    const rawInstruction = value(room.instruction) || '';
+    const rawHint = value(room.hint) || '';
+    if (isTpLanguage()) {
+      renderLocalized(tpInstructionEl, exactText(rawInstruction) || '—');
+      const hint = roomHintText(rawHint);
+      renderLocalized(enInstructionEl, hint || '');
+      enInstructionEl.hidden = !hint;
+    } else {
+      // The authored English hint is deliberately the primary English instruction;
+      // room.instruction is often already a compact Toki Pona imperative.
+      renderLocalized(tpInstructionEl, rawHint || rawInstruction || '—', {sitelen:false});
+      enInstructionEl.textContent = '';
+      enInstructionEl.classList.remove('tpProse');
+      enInstructionEl.hidden = true;
+    }
+    renderLocalized(objectiveEl, currentObjective());
     const progress = currentLevelProgress();
     const carryRaw=String(state.carrying||'');
-    const carriedName=state.carrying==='ball'?'sike':carryRaw.startsWith('l9:')?l9RelicWord(carryRaw.slice(3)):carryRaw.startsWith('l10:')?l10ParcelWord(carryRaw.split(':').slice(-1)[0]):carryRaw.startsWith('l11:band:')?`${l11BandWord(carryRaw.slice('l11:band:'.length))} band`:'—';
+    const carriedName=state.carrying==='ball'?'sike':carryRaw.startsWith('l9:')?l9RelicWord(carryRaw.slice(3)):carryRaw.startsWith('l10:')?l10ParcelWord(carryRaw.split(':').slice(-1)[0]):carryRaw.startsWith('l11:band:')?`${l11BandWord(carryRaw.slice('l11:band:'.length))} ${isTpLanguage()?'sitelen mama':'band'}`:'—';
     if(progress.levelNo===10){
       const cartCargo=(state.l10CartCargo||[]).map(l10ParcelWord);
-      inventoryEl.textContent=`carrying: ${carriedName} · cart: ${l10CartDockName(state.l10CartDock)} ${cartCargo.length}/2${cartCargo.length?` (${cartCargo.join(', ')})`:''}`;
-    }else inventoryEl.textContent = `carrying: ${carriedName}`;
+      const dock = isTpLanguage() ? termLabelText(state.l10CartDock) : l10CartDockName(state.l10CartDock);
+      renderLocalized(inventoryEl, isTpLanguage()
+        ? `sina jo e: [[${carriedName}]] · ilo tawa: ${dock} ${cartCargo.length}/2${cartCargo.length?` (${cartCargo.map(w=>`[[${w}]]`).join(', ')})`:''}`
+        : `carrying: ${carriedName} · cart: ${l10CartDockName(state.l10CartDock)} ${cartCargo.length}/2${cartCargo.length?` (${cartCargo.join(', ')})`:''}`);
+    } else {
+      renderLocalized(inventoryEl, isTpLanguage() ? `sina jo e: ${carriedName==='—'?'—':`[[${carriedName}]]`}` : `carrying: ${carriedName}`);
+    }
     const count = progress.totalOwned;
-    hudGlyphCountEl.textContent = progressSummaryText(progress, true);
-    collectionBtnCountEl.textContent = `${count} / 120`;
+    renderLocalized(hudGlyphCountEl, progressSummaryText(progress, true));
+    renderLocalized(collectionBtnCountEl, `${count} / 120`);
     if (continueCampaignBtn) {
       const next = campaignAdapter?.nextLevel?.();
       const complete = Boolean(campaignAdapter?.isLevelComplete());
       continueCampaignBtn.hidden = !complete;
-      continueCampaignBtn.textContent = next ? `Continue to Level ${next.ordinal}` : 'Replay celebration';
+      renderLocalized(continueCampaignBtn, next
+        ? (isTpLanguage() ? `o tawa ma musi ${next.ordinal}` : `Continue to Level ${next.ordinal}`)
+        : uiText('replayCelebration'));
     }
-    soundBtn.textContent = state.sound ? 'Sound on' : 'Sound off';
+    renderLocalized(soundBtn, state.sound ? uiText('soundOn') : uiText('soundOff'));
     soundBtn.setAttribute('aria-pressed', String(state.sound));
-    mapBtn.textContent = state.mapVisible ? 'Map on' : 'Map off';
+    renderLocalized(mapBtn, state.mapVisible ? uiText('mapOn') : uiText('mapOff'));
     mapBtn.setAttribute('aria-pressed', String(state.mapVisible));
+    renderLocalized(resetBtn, uiText('newGame'));
     miniMap.classList.toggle('isHidden', !state.mapVisible);
     if (mazeQuickExitBtn) {
       mazeQuickExitBtn.hidden = !(state.levelId === 'maze' && campaignWorld().mazeExitReleased);
+      renderLocalized(mazeQuickExitBtn, uiText('leaveMaze'));
     }
 
     if (!state.visitedRooms[`${state.levelId}:${room.name}`]) {
@@ -2165,9 +2385,9 @@
 
   function interactionLineOfSightClear(targetX, targetY, endpointAllowance = 0.08) {
     // Interaction discovery is intentionally independent of camera facing, but walls and
-    // closed doors must block it. This prevents prompts for glyphs/panels on the far side
-    // of maze walls while still allowing an in-range object behind the player to be found
-    // simply by rotating toward it.
+    // closed doors must block it. This is a point-ray visibility check only; object prompts
+    // additionally use interactionDirectReachClear() so a ray that merely clips an open
+    // cell corner cannot expose an interaction the player's body cannot actually reach.
     const dx = targetX - state.x, dy = targetY - state.y;
     const dist = Math.hypot(dx, dy);
     if (dist <= endpointAllowance) return true;
@@ -2182,6 +2402,23 @@
     return true;
   }
 
+  function interactionDirectReachClear(targetX, targetY, endpointAllowance = 0.08) {
+    if (!interactionLineOfSightClear(targetX, targetY, endpointAllowance)) return false;
+    const dx = targetX - state.x, dy = targetY - state.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= endpointAllowance) return true;
+    const checkDistance = Math.max(0, dist - Math.max(0, endpointAllowance));
+    const step = 0.04;
+    const samples = Math.max(1, Math.ceil(checkDistance / step));
+    const canReach = isCoarsePointer() ? canOccupyMobile : canOccupy;
+    for (let i = 1; i <= samples; i += 1) {
+      const d = Math.min(checkDistance, i * step);
+      const t = d / dist;
+      if (!canReach(state.x + dx * t, state.y + dy * t)) return false;
+    }
+    return true;
+  }
+
   function findInteractionTarget() {
     // Global interaction rule: proximity + unobstructed world line of sight.
     // Facing/camera alignment is NOT required; rotating toward an in-range object is enough.
@@ -2192,7 +2429,7 @@
       const dx = obj.x - state.x, dy = obj.y - state.y;
       const dist = Math.hypot(dx, dy);
       if (dist > maxDistance + (obj.radius || 0)) continue;
-      if (!interactionLineOfSightClear(obj.x, obj.y, 0.08)) continue;
+      if (!interactionDirectReachClear(obj.x, obj.y, 0.08)) continue;
       candidates.push({ kind: 'object', obj, dist });
     }
 
@@ -2226,12 +2463,82 @@
     return { ok: missingStates.length === 0 && missingGlyphs.length === 0, missingStates, missingGlyphs };
   }
 
+  const DOOR_STATE_HINTS = {
+    workshopDoorOpen: { en:'Put the ball on the table first.', tp:'o pana e [[sike]] lon [[supa]] lon open.' },
+    innerMazeDoorUnlocked: { en:'Restore power in Maintenance first.', tp:'o pali e wawa lon ma pali lon open.' },
+    observationDoorUnlocked: { en:'Complete the Upper Gallery number puzzle first.', tp:'o pini e musi nanpa lon tomo sewi lon open.' },
+    l2ArchiveAccess: { en:'Solve the first Atrium puzzle first.', tp:'o pini e musi open lon tomo open nanpa tu lon open.' },
+    l2CartographyAccess: { en:'Solve the Workshop stone puzzle first.', tp:'o pini e musi kiwen lon tomo pali nanpa lon open.' },
+    l2LabAccess: { en:'Reveal the hidden cache in the Archive first.', tp:'o kama sona e poki len lon tomo lipu lon open.' },
+    l2VaultAccess: { en:'Finish the Laboratory bridge puzzle first.', tp:'o pini e musi pi nasin lon tomo sona sitelen lon open.' },
+    l3RelayAccess: { en:'Solve Clock alignment first.', tp:'o pini e musi tenpo lon open.' },
+    l3NavigationAccess: { en:'Finish the Relay Gallery first.', tp:'o pini e tomo nasin wawa lon open.' },
+    l3ObservationAccess: { en:'Finish the Navigation Floor first.', tp:'o pini e ma nasin lon open.' },
+    l3WorkshopAccess: { en:'Finish the Observation Chamber first.', tp:'o pini e tomo lukin lon open.' },
+    l3CoreAccess: { en:'Finish the Instrument Workshop first.', tp:'o pini e tomo ilo lon open.' },
+    l4BranchAccess: { en:'Solve Reservoir Measure first.', tp:'o pini e musi pi tomo telo lon open.' },
+    l4StackDone: { en:'Finish Stackworks first.', tp:'o pini e tomo kiwen sike lon open.' },
+    l4CodeDone: { en:'Finish Codebreaker Lab first.', tp:'o pini e tomo linja len lon open.' },
+    l4RatioDone: { en:'Finish the Equivalence Gallery first.', tp:'o pini e tomo nanpa sama lon open.' },
+    l5BranchAccess: { en:'Solve the River Crossing first.', tp:'o pini e musi telo tawa lon open.' },
+    l5FreightDone: { en:'Finish Freight Bay first.', tp:'o pini e tomo poki tawa lon open.' },
+    l5SlideDone: { en:'Finish Sliding Gallery first.', tp:'o pini e tomo sitelen tawa lon open.' },
+    l5StrategyDone: { en:'Finish the Strategy Room first.', tp:'o pini e tomo nasin sona lon open.' },
+    l6BranchAccess: { en:'Solve the Card Archive first.', tp:'o pini e tomo lipu musi lon open.' },
+    l6CalculatorDone: { en:'Finish the Calculation Bench first.', tp:'o pini e supa nanpa lon open.' },
+    l6CrosswordDone: { en:'Finish the Country Index first.', tp:'o pini e kulupu ma lon open.' },
+    l6BasesDone: { en:'Finish the Number Systems Lab first.', tp:'o pini e tomo nasin nanpa lon open.' },
+    l7BranchAccess: { en:'Solve the Resonance Hall first.', tp:'o pini e tomo kalama lon open.' },
+    l7AirflowDone: { en:'Finish the Airflow Gallery first.', tp:'o pini e tomo nasin kon lon open.' },
+    l7PulseDone: { en:'Finish the Pulse Chamber first.', tp:'o pini e tomo wawa tenpo lon open.' },
+    l7SpectrumDone: { en:'Finish the Spectrum Laboratory first.', tp:'o pini e tomo kule lon open.' },
+    l8BranchAccess: { en:'Solve the Deduction Chamber first.', tp:'o pini e musi pi sona pali lon open.' },
+    l8MirrorDone: { en:'Finish the Dual Mirror Array first.', tp:'o pini e ilo lukin tu lon open.' },
+    l8TruthDone: { en:'Finish the Truth Gate Rack first.', tp:'o pini e lupa sona lon open.' },
+    l8ScheduleDone: { en:'Finish the Dependency Scheduler first.', tp:'o pini e nasin tenpo lon open.' },
+    l10TextileDone: { en:'Finish the dye-batch reconciliation and route both cloth batches in the Textile / Dye Loft first. Then the Ledger Office opens for the final audit.', tp:'o pini e nanpa telo kule. o pana e len tu tawa ma pali pona lon tomo len. ni la tomo lipu li open tawa lukin pini.' },
+    l10ExitUnlocked: { en:'Complete the final shipment audit at the marked ! console in the Ledger Office first.', tp:'o pini e lukin pini lon ilo {{!}} lon tomo lipu lon open.' }
+  };
+
+  function capitalizeSentence(text) {
+    const s = String(text || '').trim();
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
+
+  function doorLockedMessage(door, status) {
+    const missingStateHints = [];
+    const seenStates = new Set();
+    for (const key of status.missingStates || []) {
+      if (seenStates.has(key)) continue;
+      seenStates.add(key);
+      const hint = DOOR_STATE_HINTS[key];
+      if (hint) missingStateHints.push(hint);
+    }
+    if (isTpLanguage()) {
+      const parts = [];
+      if (missingStateHints.length) parts.push(...missingStateHints.map(h => h.tp));
+      if ((status.missingGlyphs || []).length) parts.push(`o kama jo e sitelen ni lon open: ${status.missingGlyphs.map(g => `[[${g}]]`).join(', ')}.`);
+      if (!parts.length) parts.push('o pini e musi open lon ma ni.');
+      return `lupa ni li pini. ${parts.join(' ')}`;
+    }
+    const parts = [];
+    if (missingStateHints.length) parts.push(...missingStateHints.map(h => h.en));
+    if ((status.missingGlyphs || []).length) parts.push(`Recover these glyphs first: ${status.missingGlyphs.join(', ')}.`);
+    if (!parts.length) parts.push('Complete the required earlier puzzle first.');
+    return `${capitalizeSentence(door?.label || 'door')} is locked. ${parts.join(' ')}`;
+  }
+
+  function showMessagePair(en, tp) {
+    if (isTpLanguage()) showLocalizedMessage(tp);
+    else showMessage(en);
+  }
+
   function interactionText(target) {
     if (!target) return '';
     const p = interactionPrefix();
     if (target.kind === 'door') {
       const status = doorRequirementStatus(target.door);
-      if (!status.ok) return `${p} · ${target.door.label} — locked`;
+      if (!status.ok) return `${p} · ${target.door.label} — locked · solve earlier puzzle`;
       return `${p} · open ${target.door.label}`;
     }
     const obj = target.obj;
@@ -2327,15 +2634,8 @@
         if(String(state.carrying||'').startsWith('l10:textile:'))return `${p} · place carried cloth batch here`;
         return `${p} · empty textile station`;
       }
-      case 'l10AuditParcel': return state.carrying?`${p} · hands full`:`${p} · take ${obj.word} inspection sample`;
-      case 'l10AuditStand': {
-        const placed=state.l10AuditPlacements?.[obj.auditDest];
-        if(campaignSolved('l10-inspection-audit'))return `${p} · inspect completed ${obj.auditDest} placement`;
-        if(placed)return state.carrying?`${p} · ${l10ParcelWord(placed)} sample placed here`:`${p} · take placed ${l10ParcelWord(placed)} sample`;
-        if(String(state.carrying||'').startsWith('l10:audit:'))return `${p} · place carried sample in ${obj.auditDest}`;
-        return `${p} · ${obj.auditDest} sample position`;
-      }
-      case 'l10ExitTerminal': return `${p} · inspect open dispatch route`;
+      case 'l10QuarantineStatus': return `${p} · inspect quarantine audit status`;
+      case 'l10ExitTerminal': return `${p} · leave completed Level 10`;
       case 'l11CallPylon': {
         const calls=l11CallProgress(),done=Boolean(state.l11CallMarkers?.[obj.pylonId]);
         return done?`${p} · call pylon ${obj.pylonId} recorded · survey ${calls.found}/${calls.needed}`:`${p} · record call pylon ${obj.pylonId} · survey ${calls.found}/${calls.needed}`;
@@ -2366,14 +2666,109 @@
     }
   }
 
+  function interactionTextLocalized(target) {
+    if (!isTpLanguage()) return interactionText(target);
+    if (!target) return '';
+    const p = `[[${interactionPrefix()}]]`;
+    if (target.kind === 'door') {
+      const status = doorRequirementStatus(target.door);
+      return status.ok ? `${p} · o open e lupa` : `${p} · lupa li pini · o pini e musi open`;
+    }
+    const obj = target.obj;
+    switch (obj.interact) {
+      case 'campaignPickup': return `${p} · o kama jo e sitelen [[${obj.word}]]`;
+      case 'campaignPuzzle': {
+        const puzzle = campaignPuzzle(obj.puzzleId);
+        if (campaignSolved(obj.puzzleId)) return `${p} · o lukin e musi pini: ${puzzleText(puzzle,'title') || 'musi'}`;
+        if (obj.puzzleId === 'l9-sphinx-riddles' && !campaignPuzzleAvailable(obj.puzzleId)) {
+          const survey=l9MarkerProgress(); return `${p} · jan [[Sphinx]] · alasa ${survey.found}/${survey.needed}`;
+        }
+        if (obj.puzzleId === 'l11-call-triangulation' && !campaignPuzzleAvailable(obj.puzzleId)) {
+          const calls=l11CallProgress(); return `${p} · ilo alasa ma · kalama ${calls.found}/${calls.needed}`;
+        }
+        return `${p} · ${puzzleText(puzzle,'title') || 'o kepeken ilo musi'}`;
+      }
+      case 'ball': return `${p} · o kama jo e [[sike]]`;
+      case 'table': return state.carrying === 'ball' ? `${p} · o pana e [[sike]] lon [[supa]]` : `${p} · o lukin e [[supa]]`;
+      case 'mazeEnter': return campaignWorld().mazeEntranceUnlocked ? `${p} · o tawa insa nasin nasa` : `${p} · lupa nasin nasa li pini`;
+      case 'mazeExit': return campaignWorld().mazeExitReleased ? `${p} · o tawa weka tan nasin nasa` : (campaignPuzzleAvailable(obj.puzzleId) ? `${p} · o pana e linja sitelen tu wan` : `${p} · lupa li pini · sitelen tu wan li wile`);
+      case 'ladderUp': return campaignWorld().upperAccess ? `${p} · o tawa sewi` : `${p} · lupa sewi li pini`;
+      case 'ladderDown': case 'lowerLadderUp': return `${p} · o tawa kepeken palisa`;
+      case 'trapdoor': return campaignWorld().maintenanceAccess ? `${p} · o tawa anpa tawa ma pali` : `${p} · lupa anpa li pini`;
+      case 'l9UpperToMaze': return `${p} · o tawa anpa tawa nasin nasa`;
+      case 'l9MazeToUpper': return `${p} · o tawa sewi tawa tomo alasa`;
+      case 'l9SphinxToUpper': return `${p} · o kepeken nasin weka lili tawa sewi`;
+      case 'l9UpperShortcutToSphinx': return `${p} · o tawa anpa tawa jan [[Sphinx]]`;
+      case 'l9SphinxToLower': return `${p} · o tawa anpa kepeken lupa lili`;
+      case 'l9LowerToSphinx': return `${p} · o kama sin tawa jan [[Sphinx]]`;
+      case 'l9WeightsToUpper': return `${p} · o tawa sewi kepeken nasin kiwen awen`;
+      case 'l9UpperShortcutToWeights': return `${p} · o tawa anpa tawa tomo kiwen awen`;
+      case 'l9UpperToVault': return `${p} · o tawa anpa kepeken lupa sin`;
+      case 'l9VaultToUpper': return `${p} · o kama sin tawa tomo sewi`;
+      case 'l9MazeMarker': { const survey=l9MarkerProgress(); return `${p} · o lukin e sitelen alasa (${survey.found}/${survey.needed})`; }
+      case 'l9CarryRelic': return state.carrying ? `${p} · luka sina li jo e ijo` : `${p} · o kama jo e [[${obj.word||l9RelicWord(obj.carryId)}]]`;
+      case 'l9RelicPedestal': {
+        const puzzle=campaignPuzzle('l9-counterweight'),spec=puzzle?.ui?.payload?.pedestals?.find(x=>x.id===obj.pedestalId),placed=state.l9Placements?.[obj.pedestalId];
+        const clue=exactText(spec?.clue||'');
+        if(state.carrying&&String(state.carrying).startsWith('l9:'))return placed?`${p} · supa li jo e ijo`:`${p} · o pana e ijo jo lon supa · ${clue}`;
+        if(placed)return `${p} · o kama jo e [[${l9RelicWord(placed)}]] · ${clue}`;
+        return `${p} · o lukin e supa · ${clue}`;
+      }
+      case 'l10Cart': { const cargo=(state.l10CartCargo||[]).map(w=>`[[${l10ParcelWord(w)}]]`); return `${p} · ilo tawa ${cargo.length}/2${cargo.length?` · ${cargo.join(' + ')}`:''}`; }
+      case 'l10CartControl': {
+        if(!campaignWorld().l10PowerOn)return `${p} · ilo tawa li jo ala e wawa`;
+        if(!l10CartDockEnabled(obj.dockId))return `${p} · ma tawa ni li open ala`;
+        if(state.l10CartDock!==obj.dockId)return `${p} · o kama e ilo tawa tawa ${termLabelText(obj.dockId)}`;
+        const dest=l10CartRecommendedDestination(obj.dockId); return l10CartDockEnabled(dest)?`${p} · o tawa e ilo tawa tawa ${termLabelText(dest)}`:`${p} · nasin tawa li awen`;
+      }
+      case 'l10BulkParcel': return !campaignWorld().l10PowerOn?`${p} · wawa tawa li wile`:state.l10CartDock!=='receiving'?`${p} · o kama e ilo tawa tawa ma kama`:(state.l10CartCargo||[]).length>=2?`${p} · ilo tawa li jo e poki tu`:`${p} · o pana e poki [[${obj.word}]] lon ilo tawa`;
+      case 'l10DeliveryStand': { const spec=l10DeliveryStandSpec(obj.standId),expected=l10ParcelWord(spec?.accept||obj.expectedParcel); return `${p} · ma ni li wile e [[${expected}]]`; }
+      case 'l10GroundToLower': return `${p} · lupa tomo lete li open ↓ · o tawa anpa`;
+      case 'l10LowerToGround': return `${p} · o tawa sewi tawa tomo esun`;
+      case 'l10LowerToUpper': return `${p} · o tawa sewi tawa tomo len`;
+      case 'l10UpperToLower': return `${p} · o tawa anpa tawa tomo lete`;
+      case 'l10GroundToUpper': return `${p} · o tawa sewi kepeken nasin lili`;
+      case 'l10UpperToGround': return `${p} · o tawa anpa tawa tomo esun`;
+      case 'l10TextileParcel': return state.carrying?`${p} · luka sina li jo e ijo`:`${p} · o kama jo e len [[${obj.word}]]`;
+      case 'l10TextileStation': return String(state.carrying||'').startsWith('l10:textile:')?`${p} · o pana e len jo lon ni`:`${p} · o lukin e ma pali len`;
+      case 'l10QuarantineStatus': return `${p} · o lukin e lipu pi ma awen ike`;
+      case 'l10ExitTerminal': return `${p} · o tawa tan ma musi 10 pini`;
+      case 'l11CallPylon': { const calls=l11CallProgress(),done=Boolean(state.l11CallMarkers?.[obj.pylonId]); return `${p} · palisa kalama ${obj.pylonId} · ${done?'sona li awen':'o awen e sona'} · ${calls.found}/${calls.needed}`; }
+      case 'l11GroundToCanopy': return `${p} · palisa ↑ · o tawa sewi`;
+      case 'l11CanopyToGround': return `${p} · o tawa anpa tawa tomo ma soweli`;
+      case 'l11CanopyToLower': return `${p} · lupa poki mama ↓ · o tawa anpa`;
+      case 'l11LowerToCanopy': return `${p} · o kama sin tawa nasin waso`;
+      case 'l11CanopyToRecovery': return `${p} · nasin tomo pona sin ↓`;
+      case 'l11RecoveryToCanopy': return `${p} · o kama sin tawa tomo lukin mama`;
+      case 'l11BandParcel': return state.carrying?`${p} · luka sina li jo e ijo`:`${p} · o kama jo e sitelen mama [[${obj.bandLabel||l11BandWord(obj.bandId)}]]`;
+      case 'l11BandPerch': { const spec=l11BandPerchSpec(obj.perchId),expected=l11BandWord(spec?.accept||obj.expectedBand); return `${p} · supa ${obj.perchId==='west-perch'?'←':'→'} li wile e [[${expected}]]`; }
+      case 'l11ExitTerminal': return `${p} · o lukin e nasin weka pona`;
+      case 'l12GroundToUpper': return `${p} · palisa ↑ · o tawa tawa tomo nasin sitelen`;
+      case 'l12UpperToGround': return `${p} · o tawa anpa tawa ilo pakala insa`;
+      case 'l12GroundToLower': return `${p} · lupa ↓ · o tawa tawa tomo linja len`;
+      case 'l12LowerToGround': return `${p} · o kama sin tawa ilo pakala insa`;
+      case 'l12LowerToFinal': return `${p} · lupa [[FINAL]] ↓ · o tawa tawa [[Sudoku]] pini`;
+      case 'l12FinalToLower': return `${p} · o kama sin tawa tomo linja len`;
+      case 'l12ExitTerminal': return `${p} · o lukin e tomo lipu pini`;
+      default: return `${p} · o kepeken`;
+    }
+  }
+
   function describePuzzleRequirements(puzzle) {
-    if (!puzzle) return 'This mechanism is not ready.';
+    if (!puzzle) return isTpLanguage() ? 'ilo ni li ken ala lon tenpo ni.' : 'This mechanism is not ready.';
     const rt = campaignRuntime();
     const solved = rt ? rt.solvedSet() : new Set();
     const world = campaignWorld();
     const missingGlyphs = (puzzle.requirements.glyphs || []).filter(g => !collected(g));
     const missingStates = Object.entries(puzzle.requirements.states || {}).filter(([k,v]) => world[k] !== v).map(([k]) => k);
     const missingPuzzles = (puzzle.requirements.solvedPuzzles || []).filter(id => !solved.has(id));
+    if (isTpLanguage()) {
+      const parts = [];
+      if (missingGlyphs.length) parts.push(`sitelen wile: ${missingGlyphs.map(g=>`[[${g}]]`).join(', ')}`);
+      if (missingStates.length) parts.push(`wile ma/ilo ${missingStates.length} li pini ala`);
+      if (missingPuzzles.length) parts.push(`musi open ${missingPuzzles.length} li pini ala`);
+      return parts.length ? `ilo ni li ken ala. ${parts.join(' · ')}.` : 'ilo ni li ken ala lon tenpo ni.';
+    }
     const parts = [];
     if (missingGlyphs.length) parts.push(`glyph keys: ${missingGlyphs.join(', ')}`);
     if (missingStates.length) parts.push(`world state: ${missingStates.join(', ')}`);
@@ -2383,11 +2778,11 @@
 
   function showGlyphReward(word, source) {
     if (!isCollectibleGlyph(word)) return;
-    const count = collectionCount();
     glyphPopupGlyph.textContent = glyphChar(word);
     glyphPopupTitle.textContent = word;
-    glyphPopupSource.textContent = source || 'Glyph recovered.';
-    glyphPopupCount.textContent = progressSummaryText(currentLevelProgress());
+    glyphPopupTitle.classList.toggle('tpTerm', isTpLanguage());
+    renderExact(glyphPopupSource, source || 'Glyph recovered.');
+    renderLocalized(glyphPopupCount, progressSummaryText(currentLevelProgress()));
     openModal(glyphPopup);
     pickupTone();
     glyphPopupClose.focus({ preventScroll: true });
@@ -2428,16 +2823,37 @@
       log('The Sphinx Court changes: a quick-exit ladder rises to the upper loft and a trapdoor opens to the lower chambers.');
     }
     if (puzzleId === 'l10-market-till') {
-      showMessage('Exact payment accepted. Conveyor and freight-cart power comes online across the market.');
-      log('Level 10 freight spine powered from the market till.');
+      showMessage('All three market allocations are correct. Conveyor and freight-cart power comes online across the market.');
+      log('Level 10 freight spine powered from the percentage allocation ledger.');
     }
     if (puzzleId === 'l10-cold-chain') {
-      showMessage('Cold chain stable. The chilled service lift now runs directly between the basement and textile loft.');
-      log('Level 10 cold chain stable: upper service lift activated.');
+      showMessage('Cold chain stable. The recorder console is now active; normalize its three values before the service lift can run.');
+      log('Level 10 cold chain stable: scientific recorder activated.');
+    }
+    if (puzzleId === 'l10-cold-record') {
+      showMessage('Scientific record accepted. The chilled service lift now runs directly between the basement and textile loft.');
+      log('Level 10 scientific notation record complete: upper service lift activated.');
     }
     if (puzzleId === 'l10-textile-mixer') {
-      showMessage('The 2:1:1 dye mixture is ready. Place both cloth batches at their correct stations.');
-      log('Level 10 dye bath prepared at 2:1:1.');
+      // The routing stage starts here. Older builds exposed the cloth before the
+      // mixer was solved, so a persisted test save could leave it somewhere the
+      // player would not reasonably know to look. Start this stage from a clear,
+      // deterministic visual state beside the mixer.
+      if(!campaignSolved('l10-textile-routing')){
+        if(String(state.carrying||'').startsWith('l10:textile:'))state.carrying=null;
+        state.l10TextilePlacements={};
+        state.l10TextileLocations={'blue-cloth':'upper-rack','white-cloth':'upper-rack'};
+        spriteCache.clear();
+      }
+      showMessagePair(
+        'Dye batches complete. Two cloth bundles are now beside the mixer: laso on the left and walo on the right. Carry laso to the laso-marked dye frame and walo to the walo-marked finishing table.',
+        'nanpa telo kule li pini. len tu li kama lon poka ilo: len [[laso]] li lon poka loje; len [[walo]] li lon poka laso. o pana e [[laso]] tawa supa kule pi sitelen [[laso]]. o pana e [[walo]] tawa supa pini pi sitelen [[walo]].'
+      );
+      log('Level 10 dye-batch reconciliation complete: textile routing objects released beside the mixer.');
+    }
+    if (puzzleId === 'l10-inspection-audit') {
+      showMessage('Final audit approved. pan is cleared for Dispatch; suwi is classified for Quarantine. The Dispatch Bay exit is now OPEN on the market floor.');
+      log('Level 10 final shipment audit complete: Dispatch exit opened.');
     }
     if (puzzleId === 'l11-call-triangulation') {
       showMessage('Roost located. A marked canopy ladder ↑ opens in the Habitat Hub.');
@@ -2474,8 +2890,8 @@
       log('Level 12 triple relation mirror array complete.');
     }
     if (puzzleId === 'l12-final-sudoku') {
-      showMessage('Final Sudoku solved. All 120 canonical glyphs are recovered. The campaign is complete.');
-      log('Level 12 final Sudoku complete: 120/120 canonical glyphs recovered.');
+      showMessage('Final Sudoku solved. All 120 glyphs are recovered. The game is complete.');
+      log('Level 12 final Sudoku complete: 120/120 glyphs recovered.');
     }
     saveState();
     renderCollection();
@@ -2515,8 +2931,7 @@
       const d = target.door;
       const status = doorRequirementStatus(d);
       if (!status.ok) {
-        const missing = [...status.missingGlyphs, ...status.missingStates];
-        showMessage(`${d.label} is locked${missing.length ? ` — missing ${missing.join(', ')}` : ''}.`);
+        showLocalizedMessage(doorLockedMessage(d, status));
         blockedTone(); return;
       }
       d.open = true; state.openDoors[d.id] = true;
@@ -2550,7 +2965,7 @@
         break;
       case 'mazeEnter':
         if (!campaignWorld().mazeEntranceUnlocked) {
-          showMessage('The maze door is still sealed.'); blockedTone();
+          showMessagePair('The maze entrance is still locked. Put the ball on the table to open the gate.','lupa open pi nasin nasa li pini. o pana e [[sike]] lon [[supa]]; ni la lupa li open.'); blockedTone();
         } else if (campaignWorld().mazeExitReleased) {
           transitionLevel('maze', 1.5, 1.82, Math.PI/2, 'You re-enter the solved maze. Use Leave maze (X) from anywhere when you want to return outside.');
         } else {
@@ -2563,18 +2978,18 @@
         } else if (campaignPuzzleAvailable(obj.puzzleId)) {
           openCampaignPuzzleById(obj.puzzleId);
         } else {
-          showMessage('The exit is sealed. Three glyph sockets are waiting for the glyphs hidden in the maze.'); blockedTone();
+          showMessagePair('The maze exit is still locked. Find the three hidden glyphs in the maze, then return here.','lupa weka pi nasin nasa li pini. o alasa e sitelen tu wan lon nasin nasa; ni la o kama sin tawa ni.'); blockedTone();
         }
         break;
       case 'ladderUp':
-        if (!campaignWorld().upperAccess) { showMessage('The upper hatch is sealed. The maze mechanism controls it.'); blockedTone(); }
+        if (!campaignWorld().upperAccess) { showMessagePair('The upper hatch is still locked. Solve the maze code to unlock the Upper Gallery.','lupa sewi li pini. o pini e musi nanpa lon nasin nasa; ni la tomo sewi li open.'); blockedTone(); }
         else transitionLevel('upper', 2.3, 2.5, 0.15, 'You climb into the Upper Gallery.');
         break;
       case 'ladderDown':
         transitionLevel('main', 16.0, 9.35, Math.PI, 'You climb down into the Lower Concourse.');
         break;
       case 'trapdoor':
-        if (!campaignWorld().maintenanceAccess) { showMessage('The maintenance hatch is locked.'); blockedTone(); }
+        if (!campaignWorld().maintenanceAccess) { showMessagePair('The maintenance hatch is still locked. Complete the first number puzzle upstairs to open it.','lupa tawa ma pali li pini. o pini e musi nanpa open lon tomo sewi; ni la lupa li open.'); blockedTone(); }
         else transitionLevel('lower', 5.8, 2.8, 1.55, 'You descend into the Maintenance Level.');
         break;
       case 'lowerLadderUp':
@@ -2663,7 +3078,7 @@
         break;
       }
       case 'l10CartControl': {
-        if(!campaignWorld().l10PowerOn){showMessage('The freight controls have no power. Balance the Market Permit till first.');blockedTone();break;}
+        if(!campaignWorld().l10PowerOn){showMessage('The freight controls have no power. Complete the Market allocation ledger first.');blockedTone();break;}
         if(!l10CartDockEnabled(obj.dockId)){showMessage('That freight stop is not available yet.');blockedTone();break;}
         if(state.l10CartDock!==obj.dockId){
           const old=l10CartDockName(state.l10CartDock);state.l10CartDock=obj.dockId;state.l10CartTrips=(Number(state.l10CartTrips)||0)+1;spriteCache.clear();
@@ -2709,12 +3124,14 @@
       case 'l10GroundToUpper': transitionLevel('l10upper',10.0,10.0,Math.PI,'You climb the lowered awning shortcut into the Textile / Dye Loft.');break;
       case 'l10UpperToGround': transitionLevel('l10ground',19.0,11.2,0,'You descend the awning shortcut into the Central Market Arcade.');break;
       case 'l10TextileParcel': {
+        if(!campaignWorld().l10DyeReady){showMessagePair('Finish the dye-batch reconciliation first. The cloth-routing stage has not started yet.','o pini e nanpa telo kule lon open. pali tawa len li open ala lon tenpo ni.');blockedTone();break;}
         if(campaignSolved('l10-textile-routing')){showMessage('The textile batch is already complete.');softTone();break;}
         if(state.carrying){showMessage('You can carry only one object at a time.');blockedTone();break;}
         state.carrying=`l10:textile:${obj.textileId}`;state.l10TextileLocations[obj.textileId]='carrying';spriteCache.clear();
         showMessage(`You take the ${obj.word} cloth batch.`);pickupTone();break;
       }
       case 'l10TextileStation': {
+        if(!campaignWorld().l10DyeReady){showMessagePair('Finish the dye-batch reconciliation first. The textile stations are not active yet.','o pini e nanpa telo kule lon open. ma pali len li pali ala lon tenpo ni.');blockedTone();break;}
         if(campaignSolved('l10-textile-routing')){showMessage('The cloth batch is already correctly processed.');softTone();break;}
         state.l10TextilePlacements=state.l10TextilePlacements||{};const placed=state.l10TextilePlacements[obj.stationId];
         if(placed){
@@ -2728,27 +3145,7 @@
         if(!l10MaybeCompleteTextile())log(`Textile placement: ${l10ParcelWord(textileId)} → ${obj.stationId}.`);
         break;
       }
-      case 'l10AuditParcel': {
-        if(campaignSolved('l10-inspection-audit')){showMessage('The inspection is already complete.');softTone();break;}
-        if(state.carrying){showMessage('You can carry only one object at a time.');blockedTone();break;}
-        state.carrying=`l10:audit:${obj.auditId}`;state.l10AuditLocations[obj.auditId]='carrying';spriteCache.clear();
-        const status=obj.auditId==='sweet-sample'?'cold history +8.5 excursion':'cold history remained within limits';
-        showMessage(`${obj.word} sample taken — ${status}.`);pickupTone();break;
-      }
-      case 'l10AuditStand': {
-        if(campaignSolved('l10-inspection-audit')){showMessage('The inspection placement is complete.');softTone();break;}
-        state.l10AuditPlacements=state.l10AuditPlacements||{};const placed=state.l10AuditPlacements[obj.auditDest];
-        if(placed){
-          if(state.carrying){showMessage('Your hands are full.');blockedTone();break;}
-          state.carrying=`l10:audit:${placed}`;delete state.l10AuditPlacements[obj.auditDest];state.l10AuditLocations[placed]='carrying';spriteCache.clear();
-          showMessage(`You recover the ${l10ParcelWord(placed)} inspection sample.`);pickupTone();break;
-        }
-        if(!String(state.carrying||'').startsWith('l10:audit:')){showMessage(`The ${obj.auditDest} position is empty.`);softTone();break;}
-        const auditId=String(state.carrying).slice('l10:audit:'.length);state.l10AuditPlacements[obj.auditDest]=auditId;state.l10AuditLocations[auditId]=obj.auditDest;state.carrying=null;spriteCache.clear();
-        showMessage(`${l10ParcelWord(auditId)} sample placed in ${obj.auditDest}.`);stepTone();
-        if(!l10MaybeCompleteAudit())log(`Inspection placement: ${l10ParcelWord(auditId)} → ${obj.auditDest}.`);
-        break;
-      }
+      case 'l10QuarantineStatus': showMessage('Quarantine status: the suwi shipment record is classified unsafe after a +8.5 cold-history excursion.');softTone();break;
       case 'l10ExitTerminal': showMessage('The final dispatch shutter is open. Level 10 is complete.');successTone();break;
       case 'l11CallPylon': {
         state.l11CallMarkers=state.l11CallMarkers||{};
@@ -2797,7 +3194,7 @@
       case 'l12LowerToGround': transitionLevel('l12ground',21.0,9.8,Math.PI,'You climb back to the Fracture Core.');break;
       case 'l12LowerToFinal': transitionLevel('l12final',3.0,10.0,0,'You descend through the FINAL hatch into the last Sudoku chamber.');break;
       case 'l12FinalToLower': transitionLevel('l12lower',9.0,9.8,Math.PI,'You climb back to the Totality Cipher Vault.');break;
-      case 'l12ExitTerminal': showMessage('The final archive is stable. All 120 canonical glyphs are recovered.');successTone();break;
+      case 'l12ExitTerminal': showMessage('The final archive is stable. All 120 glyphs are recovered.');successTone();break;
     }
     saveState(); updateHUD();
   }
@@ -2813,8 +3210,9 @@
     renderCollection();
     glyphPopupGlyph.textContent = glyphChar(word);
     glyphPopupTitle.textContent = word;
-    glyphPopupSource.textContent = source || 'Glyph recovered.';
-    glyphPopupCount.textContent = progressSummaryText(currentLevelProgress());
+    glyphPopupTitle.classList.toggle('tpTerm', isTpLanguage());
+    renderExact(glyphPopupSource, source || 'Glyph recovered.');
+    renderLocalized(glyphPopupCount, progressSummaryText(currentLevelProgress()));
     openModal(glyphPopup);
     pickupTone();
     if (!options.suppressCloseFocus) glyphPopupClose.focus({ preventScroll: true });
@@ -2826,7 +3224,9 @@
     const panel = PANELS[panelId];
     if (!panel) return;
     activePanelId = panelId;
-    sentenceTitle.textContent = panel.title;
+    renderLocalized(sentenceTitle, isTpLanguage()
+      ? (panelId === 'entrySentence' ? 'sitelen open' : 'sitelen tomo sewi')
+      : panel.title);
     renderSentencePanel();
     openModal(sentenceOverlay);
     sentenceCloseBtn.focus({ preventScroll: true });
@@ -2850,17 +3250,21 @@
     }
 
     if (state.completedPanels[activePanelId] || missing.length === 0) {
-      sentenceStatus.textContent = `Complete: ${panel.completionText}`;
+      renderLocalized(sentenceStatus, isTpLanguage() ? `pini: [[${panel.completionText}]]` : `Complete: ${panel.completionText}`);
       sentenceCompleteBtn.disabled = true;
-      sentenceCompleteBtn.textContent = 'Sentence complete';
+      renderLocalized(sentenceCompleteBtn, isTpLanguage() ? 'toki li pini' : 'Sentence complete');
     } else if (missing.length === 1 && missing[0] === panel.reward) {
-      sentenceStatus.textContent = `Only one glyph is missing. Your collection is sufficient to reconstruct the sentence.`;
+      renderLocalized(sentenceStatus, isTpLanguage()
+        ? 'sitelen wan taso li kama ala. sitelen lon kulupu sina li ken pini e toki ni.'
+        : 'Only one glyph is missing. Your collection is sufficient to reconstruct the sentence.');
       sentenceCompleteBtn.disabled = false;
-      sentenceCompleteBtn.textContent = 'Complete sentence';
+      renderLocalized(sentenceCompleteBtn, uiText('completeSentence'));
     } else {
-      sentenceStatus.textContent = `${missing.length} glyphs are still missing. Recover more glyphs and return to this inscription.`;
+      renderLocalized(sentenceStatus, isTpLanguage()
+        ? `sitelen ${missing.length} li kama ala. o alasa e sitelen ante, li kama sin tawa sitelen toki ni.`
+        : `${missing.length} glyphs are still missing. Recover more glyphs and return to this inscription.`);
       sentenceCompleteBtn.disabled = true;
-      sentenceCompleteBtn.textContent = 'More glyphs required';
+      renderLocalized(sentenceCompleteBtn, isTpLanguage() ? 'sitelen ante li wile' : 'More glyphs required');
     }
   }
 
@@ -2920,6 +3324,8 @@
 
   function isNumericCartoucheConstructionPuzzle(puzzle) {
     const seq = puzzleSequence(puzzle);
+    const groups = puzzle?.ui?.payload?.answerGroups;
+    if (Array.isArray(groups) && groups.length) return false;
     return puzzle?.type === 'glyph-key-code' && seq.length >= 3 &&
       NUMERIC_PREVIEW_HALF_SCALE_HEADS.has(seq[0]) &&
       NUMERIC_PREVIEW_HALF_SCALE_CLOSERS.has(seq[seq.length - 1]);
@@ -3088,7 +3494,7 @@
     drawerHeader.className = 'puzzleGlyphDrawerHeader';
     const drawerTitle = document.createElement('strong');
     drawerTitle.className = 'puzzleGlyphDrawerTitle';
-    drawerTitle.textContent = selectedPuzzleFamily === 'PUNCT' ? 'Punctuation' : selectedPuzzleFamily;
+    renderLocalized(drawerTitle, selectedPuzzleFamily === 'PUNCT' ? (isTpLanguage()?'sitelen toki':'Punctuation') : selectedPuzzleFamily, {sitelen:selectedPuzzleFamily === 'PUNCT'});
     const drawerClose = document.createElement('button');
     drawerClose.type = 'button';
     drawerClose.className = 'puzzleGlyphDrawerClose';
@@ -3124,17 +3530,79 @@
     puzzleTray.appendChild(drawer);
   }
 
-  const MECHANISM_PUZZLE_TYPES = new Set(['dial-bank','route-board','path-grid','lights-out','balance-scale','context-match','jug-transfer','hanoi-stack','codebreaker','equivalence-grid','schedule-order','river-crossing','sokoban','sliding-grid','peg-solitaire','pattern-sequence','nonogram','card-sort','calculator-sequence','base-match','ring-lock','tone-sequence','airflow-network','pulse-sync','spectrum-order','power-balance','deduction-order','dual-mirror','truth-gates','dependency-order','exact-path','sphinx-riddles','coupled-switches','layer-alignment','market-till','cold-chain','textile-mixer','call-triangulation','lineage-match','habitat-triage','sudoku']);
+  const MECHANISM_PUZZLE_TYPES = new Set(['dial-bank','route-board','path-grid','lights-out','balance-scale','context-match','jug-transfer','hanoi-stack','codebreaker','equivalence-grid','schedule-order','river-crossing','sokoban','sliding-grid','peg-solitaire','pattern-sequence','nonogram','card-sort','calculator-sequence','base-match','ring-lock','tone-sequence','airflow-network','pulse-sync','spectrum-order','power-balance','deduction-order','dual-mirror','truth-gates','dependency-order','exact-path','sphinx-riddles','coupled-switches','layer-alignment','market-till','cold-chain','textile-mixer','record-classification','call-triangulation','lineage-match','habitat-triage','sudoku']);
   const DIGIT_GLYPH_WORDS = ['ijo','wan','tu','seli','awen','luka','utala','mun','pipi','jo'];
 
   function isMechanismPuzzle(puzzle) {
     return Boolean(puzzle && MECHANISM_PUZZLE_TYPES.has(puzzle.type));
   }
 
-  function mechanismDigit(value) {
+  function sudokuDigitGlyph(value) {
     const n = Number(value);
     const word = Number.isInteger(n) && n >= 0 && n <= 9 ? DIGIT_GLYPH_WORDS[n] : null;
     return word ? glyphChar(word) : String(value);
+  }
+
+  function renderMechanismNumber(el, value, options = {}) {
+    if (!el) return el;
+    // Every non-Sudoku mechanism number is a renderer-backed nanpa-linja-n
+    // cartouche in Toki Pona mode. Mark the host so CSS can fit the rendered
+    // canvas to the control instead of allowing its intrinsic canvas width to
+    // overflow buttons, tiles, lamps, discs, clue cells, etc.
+    el.classList.add('mechanismNumberHost');
+    if (options.className) el.classList.add(...String(options.className).split(/\s+/).filter(Boolean));
+    renderLocalized(el, String(value ?? ''), { sitelen:isTpLanguage() });
+    return el;
+  }
+
+  function mechanismNumberNode(value, className = '') {
+    const el = document.createElement('span');
+    return renderMechanismNumber(el, value, { className });
+  }
+
+  function explicitNanpaSource(source) {
+    const raw = String(source ?? '').trim();
+    return I18N?.numericCartoucheSource?.(raw) || raw;
+  }
+
+
+  async function hydrateInlineNumericCartouches(root) {
+    if (!root) return;
+    const nodes=[];
+    if (root.matches?.('.tpNumeric[data-nanpa-source]')) nodes.push(root);
+    root.querySelectorAll?.('.tpNumeric[data-nanpa-source]').forEach(node=>nodes.push(node));
+    for (const node of nodes) {
+      if (node.dataset?.nanpaHydrating === '1' || node.dataset?.nanpaHydrated === '1') continue;
+      const source=node.getAttribute?.('data-nanpa-source') || node.dataset?.nanpaSource || '';
+      if (!source) continue;
+      if (node.dataset) node.dataset.nanpaHydrating='1';
+      try {
+        const renderer=await ensureLevelRenderer();
+        const rendered=await renderer.renderTextToNewCanvas({
+          input:source,
+          layout:{fontPx:48,align:'center',spacingPreset:'compact',paddingPx:4},
+          parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true}
+        });
+        const src=rendered?.canvas;
+        if(!src) throw new Error('no inline numeric canvas');
+        const canvas=document.createElement('canvas');
+        canvas.className='tpNumericCanvas';
+        canvas.width=Math.max(1,src.width); canvas.height=Math.max(1,src.height);
+        canvas.setAttribute('aria-hidden','true');
+        const c=canvas.getContext('2d',{alpha:true});
+        c.clearRect(0,0,canvas.width,canvas.height); c.drawImage(src,0,0);
+        node.replaceChildren(canvas);
+        node.classList.remove('tpNumeric--fallback');
+        if (node.dataset) { node.dataset.nanpaHydrated='1'; delete node.dataset.nanpaHydrating; }
+      } catch (err) {
+        // Never expose parser/source syntax to the player. Latin is the safe fallback.
+        const latin=node.getAttribute?.('data-latin') || node.dataset?.latin || '';
+        node.textContent=latin;
+        node.classList.add('tpNumeric--fallback');
+        if (node.dataset) delete node.dataset.nanpaHydrating;
+        console.warn('[game] inline numeric cartouche renderer unavailable',err);
+      }
+    }
   }
 
   function randomIndex(maxExclusive) {
@@ -3301,6 +3769,7 @@
       case 'market-till': return { selected:(payload.tokens||[]).map(()=>false) };
       case 'cold-chain': return { controls:Array.from(payload.start||[0,0,0]).map(v=>Math.max(0,Math.min(2,Number(v)||0))) };
       case 'textile-mixer': return { selectedIndex:null };
+      case 'record-classification': return { assignments:{} };
       case 'call-triangulation': return { selected:null };
       case 'lineage-match': return { assignments:(payload.hatchlings||[]).map(()=>null) };
       case 'habitat-triage': return { akesi:null, moli:null };
@@ -3640,6 +4109,11 @@
       case 'market-till': return marketTillSum(puzzle,st)===Number(payload.targetCents);
       case 'cold-chain': return l10ColdSolved(puzzle,st);
       case 'textile-mixer': return Number(st.selectedIndex)===Number(payload.correctIndex);
+      case 'record-classification': {
+        const assignments=st.assignments||{};
+        const records=payload.records||[];
+        return records.length>0 && records.every(record=>String(assignments[record.id]||'')===String(record.destination||''));
+      }
       case 'call-triangulation': return Array.isArray(st.selected) && Number(st.selected[0])===Number(payload.target?.[0]) && Number(st.selected[1])===Number(payload.target?.[1]);
       case 'lineage-match': return JSON.stringify(st.assignments||[])===JSON.stringify(payload.targetAssignments||[]);
       case 'habitat-triage': return String(st.akesi||'')===String(payload.target?.akesi||'') && String(st.moli||'')===String(payload.target?.moli||'');
@@ -3739,7 +4213,11 @@
     if(!feedback) return false;
     tutorialSubmissionFeedback=feedback;
     renderCampaignPuzzle();
-    puzzleStatus.textContent=tutorialFeedbackMessage(feedback);
+    const message = tutorialFeedbackMessage(feedback);
+    const confirmed = feedback.correctIndices?.length || 0;
+    renderLocalized(puzzleStatus, isTpLanguage()
+      ? (confirmed ? `pana sona li pona ala. kipisi ${confirmed} li lon ma pona; kipisi ante li awen sona ala. o ante e ona, li alasa sin.` : 'pana sona li pona ala. ilo li toki ala e kipisi pona. o lukin sin e sona, li alasa sin.')
+      : message);
     return true;
   }
 
@@ -3753,7 +4231,14 @@
   ]);
 
   function setMechanismStatus(puzzle, text, neutralText) {
-    if (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)) {
+    if (isTpLanguage()) {
+      const source = NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type) ? (neutralText || '') : (text || '');
+      const translated = source ? exactText(source) : '';
+      const tp = translated && translated !== source ? translated : (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)
+        ? 'o pali e pana sona ale. ni la o luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.'
+        : 'o ante e ilo. sina pilin e ni: ona li pona la o luka e [[o alasa]].');
+      renderLocalized(puzzleStatus, tp);
+    } else if (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)) {
       puzzleStatus.textContent = neutralText || 'Set the complete answer, then press Try answer. Correctness is checked only when you submit.';
     } else {
       puzzleStatus.textContent = text || 'Adjust the mechanism, then press Try answer.';
@@ -3764,14 +4249,14 @@
   function renderDialBankPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState;
     const clues=document.createElement('div'); clues.className='mechanismClues';
-    for(const clue of payload.clues||[]) { const row=document.createElement('div'); row.className='mechanismClue'; row.textContent=clue; clues.appendChild(row); }
+    for(const clue of payload.clues||[]) { const row=document.createElement('div'); row.className='mechanismClue'; renderExact(row,clue); clues.appendChild(row); }
     const bank=document.createElement('div'); bank.className='dialBank';
-    const names=['left','middle','right'];
+    const names=isTpLanguage()?['poka loje','meso','poka laso']:['left','middle','right'];
     (st.values||[]).forEach((value,index)=>{
       const dial=document.createElement('div'); dial.className=`dialUnit${tutorialFeedbackMatches(puzzle,'dial',index)?' tutorialConfirmed':''}`;
       const label=document.createElement('div'); label.className='dialLabel'; label.textContent=names[index]||`dial ${index+1}`;
       const up=document.createElement('button'); up.type='button'; up.className='dialAdjust'; up.textContent='▲'; up.setAttribute('aria-label',`Increase ${label.textContent}`);
-      const display=document.createElement('div'); display.className='dialValue'; display.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(value)}</span><small>${value}</small>`;
+      const display=document.createElement('div'); display.className='dialValue'; renderMechanismNumber(display,value);
       const down=document.createElement('button'); down.type='button'; down.className='dialAdjust'; down.textContent='▼'; down.setAttribute('aria-label',`Decrease ${label.textContent}`);
       up.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+1)%10;renderCampaignPuzzle();});
       down.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+9)%10;renderCampaignPuzzle();});
@@ -3818,7 +4303,7 @@
     const moves=[['↑',0,-1,'north'],['←',-1,0,'west'],['↓',0,1,'south'],['→',1,0,'east']];
     const move=(dx,dy)=>{
       const nx=st.x+dx, ny=st.y+dy;
-      if(nx<0||ny<0||nx>=width||ny>=height||blocks.has(`${nx},${ny}`)){puzzleStatus.textContent='That route is blocked.';blockedTone();return;}
+      if(nx<0||ny<0||nx>=width||ny>=height||blocks.has(`${nx},${ny}`)){renderExact(puzzleStatus,'That route is blocked.');blockedTone();return;}
       clearTutorialSubmissionFeedback();
       st.x=nx; st.y=ny;
       const next=cps[st.nextCheckpoint];
@@ -3849,12 +4334,12 @@
   function renderBalancePuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const weights=payload.weights||[]; const sum=balanceSum(puzzle);
     const target=document.createElement('div'); target.className='balanceTarget';
-    const label=document.createElement('strong'); label.textContent='target mass';
+    const label=document.createElement('strong'); renderExact(label,'target mass');
     const canvas=document.createElement('canvas'); canvas.width=220; canvas.height=68; canvas.className='balanceTargetCanvas';
     target.append(label,canvas); puzzleSlots.appendChild(target); renderNanpaSourceToCanvas(String(payload.target),canvas,36);
     const tray=document.createElement('div'); tray.className='balanceWeights';
-    weights.forEach((weight,index)=>{const b=document.createElement('button');b.type='button';b.className=`balanceWeight${st.selected[index]?' selected':''}${tutorialFeedbackMatches(puzzle,'weight',index)?' tutorialConfirmed':''}`;b.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(weight)}</span><small>${weight}</small>`;b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));b.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.selected[index]=!st.selected[index];renderCampaignPuzzle();});tray.appendChild(b);});
-    const readout=document.createElement('div');readout.className=`balanceReadout${sum===Number(payload.target)?' balanced':''}`;readout.textContent=`selected mass: ${sum}`;
+    weights.forEach((weight,index)=>{const b=document.createElement('button');b.type='button';b.className=`balanceWeight${st.selected[index]?' selected':''}${tutorialFeedbackMatches(puzzle,'weight',index)?' tutorialConfirmed':''}`;renderMechanismNumber(b,weight);b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));b.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.selected[index]=!st.selected[index];renderCampaignPuzzle();});tray.appendChild(b);});
+    const readout=document.createElement('div');readout.className=`balanceReadout${sum===Number(payload.target)?' balanced':''}`;renderExact(readout,`selected mass: ${sum}`);
     puzzleSlots.append(tray,readout);
     setMechanismStatus(puzzle,sum===Number(payload.target)?'The scale is balanced. Press Try answer to confirm the machine.':sum>Number(payload.target)?'Too heavy. Remove a weight.':'Too light. Add weight.');
   }
@@ -3878,23 +4363,34 @@
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState;
     const caps=(payload.capacities||[3,5]).map(Number); const target=Number(payload.target)||4;
     const header=document.createElement('div'); header.className='jugTarget';
-    header.innerHTML=`<strong>target</strong><span class="sitelenGlyph">${mechanismDigit(target)}</span><small>${target} units</small>`;
+    const headerLabel=document.createElement('strong');renderLocalized(headerLabel,isTpLanguage()?'wile':'target');
+    const headerValue=mechanismNumberNode(target,'jugTargetValue');
+    const headerUnit=document.createElement('small');renderLocalized(headerUnit,isTpLanguage()?'suli':'units',{sitelen:isTpLanguage()});
+    header.append(headerLabel,headerValue,headerUnit);
     const vessels=document.createElement('div'); vessels.className='jugVessels';
     caps.forEach((cap,index)=>{
       const amount=Number(st.amounts?.[index])||0;
       const unit=document.createElement('div'); unit.className='jugUnit';
       const vessel=document.createElement('div'); vessel.className='jugVessel';
       const fill=document.createElement('div'); fill.className='jugVesselFill'; fill.style.height=`${cap ? (amount/cap)*100 : 0}%`;
-      const read=document.createElement('div'); read.className='jugReadout'; read.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(amount)}</span><small>${amount} / ${cap}</small>`;
-      vessel.append(fill,read); const label=document.createElement('div'); label.className='jugLabel'; label.textContent=`${cap}-unit vessel`;
+      const read=document.createElement('div'); read.className='jugReadout';
+      if(isTpLanguage()){
+        const readCartouche=document.createElement('span'); readCartouche.className='jugReadoutCartouche';
+        renderMechanismNumber(readCartouche,`${amount}/${cap}`);
+        const readLatin=document.createElement('small'); readLatin.className='jugReadoutLatin'; readLatin.textContent=`${amount}/${cap}`;
+        read.append(readCartouche,readLatin);
+      } else {
+        read.textContent=`${amount}/${cap}`;
+      }
+      vessel.append(fill,read); const label=document.createElement('div'); label.className='jugLabel'; renderLocalized(label,isTpLanguage()?`poki suli ${cap}`:`${cap}-unit vessel`);
       unit.append(vessel,label); vessels.appendChild(unit);
     });
     const controls=document.createElement('div'); controls.className='jugControls';
-    const action=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='jugAction';b.textContent=label;b.addEventListener('click',()=>{fn();renderCampaignPuzzle();});controls.appendChild(b);};
-    action(`Fill ${caps[0]}`,()=>{st.amounts[0]=caps[0];});
-    action(`Fill ${caps[1]}`,()=>{st.amounts[1]=caps[1];});
-    action(`Empty ${caps[0]}`,()=>{st.amounts[0]=0;});
-    action(`Empty ${caps[1]}`,()=>{st.amounts[1]=0;});
+    const action=(label,fn)=>{const b=document.createElement('button');b.type='button';b.className='jugAction';renderLocalized(b,label,{sitelen:isTpLanguage()});b.addEventListener('click',()=>{fn();renderCampaignPuzzle();});controls.appendChild(b);};
+    action(isTpLanguage()?`o pini e poki ${caps[0]}`:`Fill ${caps[0]}`,()=>{st.amounts[0]=caps[0];});
+    action(isTpLanguage()?`o pini e poki ${caps[1]}`:`Fill ${caps[1]}`,()=>{st.amounts[1]=caps[1];});
+    action(isTpLanguage()?`o weka e telo tan poki ${caps[0]}`:`Empty ${caps[0]}`,()=>{st.amounts[0]=0;});
+    action(isTpLanguage()?`o weka e telo tan poki ${caps[1]}`:`Empty ${caps[1]}`,()=>{st.amounts[1]=0;});
     action(`${caps[0]} → ${caps[1]}`,()=>{const moved=Math.min(st.amounts[0],caps[1]-st.amounts[1]);st.amounts[0]-=moved;st.amounts[1]+=moved;});
     action(`${caps[1]} → ${caps[0]}`,()=>{const moved=Math.min(st.amounts[1],caps[0]-st.amounts[0]);st.amounts[1]-=moved;st.amounts[0]+=moved;});
     puzzleSlots.append(header,vessels,controls);
@@ -3908,20 +4404,20 @@
       const btn=document.createElement('button'); btn.type='button'; btn.className=`hanoiRod${Number(st.selectedRod)===rodIndex?' selected':''}`; btn.setAttribute('aria-label',`Post ${rodIndex+1}`);
       const post=document.createElement('div'); post.className='hanoiPost';
       const stack=document.createElement('div'); stack.className='hanoiStack';
-      for(const size of rod){const disk=document.createElement('div');disk.className='hanoiDisk';disk.style.width=`${38+(Number(size)/n)*56}%`;disk.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(size)}</span>`;stack.appendChild(disk);}
-      const base=document.createElement('div'); base.className='hanoiBase'; const label=document.createElement('small');label.textContent=`post ${rodIndex+1}`;
+      for(const size of rod){const disk=document.createElement('div');disk.className='hanoiDisk';disk.style.width=`${38+(Number(size)/n)*56}%`;renderMechanismNumber(disk,size);stack.appendChild(disk);}
+      const base=document.createElement('div'); base.className='hanoiBase'; const label=document.createElement('small');renderExact(label,`post ${rodIndex+1}`);
       btn.append(post,stack,base,label);
       btn.addEventListener('click',()=>{
-        if(st.selectedRod==null){if(!rod.length){puzzleStatus.textContent='That post has no disc to move.';blockedTone();return;}st.selectedRod=rodIndex;renderCampaignPuzzle();return;}
+        if(st.selectedRod==null){if(!rod.length){renderExact(puzzleStatus,'That post has no disc to move.');blockedTone();return;}st.selectedRod=rodIndex;renderCampaignPuzzle();return;}
         const from=Number(st.selectedRod); if(from===rodIndex){st.selectedRod=null;renderCampaignPuzzle();return;}
         const source=st.rods[from], dest=st.rods[rodIndex], disk=source[source.length-1], top=dest[dest.length-1];
         if(disk==null){st.selectedRod=null;renderCampaignPuzzle();return;}
-        if(top!=null && Number(top)<Number(disk)){puzzleStatus.textContent='A larger disc cannot sit on a smaller disc.';blockedTone();return;}
+        if(top!=null && Number(top)<Number(disk)){renderExact(puzzleStatus,'A larger disc cannot sit on a smaller disc.');blockedTone();return;}
         source.pop(); dest.push(disk); st.moves=(Number(st.moves)||0)+1; st.selectedRod=null; renderCampaignPuzzle();
       });
       board.appendChild(btn);
     });
-    const moves=document.createElement('div');moves.className='hanoiMoves';moves.textContent=`moves: ${Number(st.moves)||0}`;
+    const moves=document.createElement('div');moves.className='hanoiMoves';renderExact(moves,`moves: ${Number(st.moves)||0}`);
     puzzleSlots.append(board,moves);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The complete stack is on the right post. Press Try answer to confirm Stackworks.':st.selectedRod==null?'Tap a post to pick up its top disc.':'Now tap the destination post.');
   }
@@ -3939,17 +4435,17 @@
   function renderCodebreakerPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const variant=getCodebreakerVariant(puzzle); const words=variant.words; const secret=variant.secret;
     const legend=document.createElement('div');legend.className='codeLegend';
-    const legendTitle=document.createElement('strong');legendTitle.textContent='available glyphs';legend.appendChild(legendTitle);
+    const legendTitle=document.createElement('strong');renderExact(legendTitle,'available glyphs');legend.appendChild(legendTitle);
     words.forEach((word)=>{const item=document.createElement('span');item.className='codeLegendGlyph';item.title=word;item.setAttribute('aria-label',word);const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);item.appendChild(glyph);legend.appendChild(item);});
     const guess=document.createElement('div'); guess.className='codeGuess';guess.style.setProperty('--code-cols',String(Math.min(words.length,6)));guess.dataset.symbolCount=String(words.length);
     st.guess.forEach((value,index)=>{const word=words[Number(value)%words.length]||words[0];const b=document.createElement('button');b.type='button';b.className='codeSymbol';b.innerHTML=`<span class="sitelenGlyph">${glyphChar(word)}</span>`;b.setAttribute('aria-label',`Position ${index+1}, ${word}. Tap to change glyph.`);b.addEventListener('click',()=>{st.guess[index]=(Number(st.guess[index])+1)%words.length;renderCampaignPuzzle();});guess.appendChild(b);});
-    const submit=document.createElement('button');submit.type='button';submit.className='codeSubmit';submit.textContent='Test code';submit.disabled=Boolean(st.solved);submit.addEventListener('click',()=>{
+    const submit=document.createElement('button');submit.type='button';submit.className='codeSubmit';renderExact(submit,'Test code',{sitelen:false});submit.disabled=Boolean(st.solved);submit.addEventListener('click',()=>{
       const fb=codebreakerFeedback(secret,st.guess); st.history.push({guess:Array.from(st.guess),exact:fb.exact,misplaced:fb.misplaced});
       const max=Math.max(1,Number(payload.maxHistory)||5); if(st.history.length>max) st.history.splice(0,st.history.length-max);
       if(fb.exact===secret.length){st.solved=true;successTone();} else softTone(); renderCampaignPuzzle();
     });
     const history=document.createElement('div');history.className='codeHistory';
-    for(const item of st.history){const row=document.createElement('div');row.className='codeHistoryRow';const code=document.createElement('span');code.className='codeHistorySymbols';for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}const fb=document.createElement('span');fb.textContent=`exact ${item.exact} · misplaced ${item.misplaced}`;row.append(code,fb);history.appendChild(row);}
+    for(const item of st.history){const row=document.createElement('div');row.className='codeHistoryRow';const code=document.createElement('span');code.className='codeHistorySymbols';for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}const fb=document.createElement('span');renderExact(fb,`exact ${item.exact} · misplaced ${item.misplaced}`);row.append(code,fb);history.appendChild(row);}
     puzzleSlots.append(legend,guess,submit,history);
     setMechanismStatus(puzzle,st.solved?`The ${secret.length}-glyph code is confirmed. Press Try answer to confirm the vault.`:st.history.length?'Use exact/misplaced feedback to refine the permutation.':`Tap each of the ${secret.length} positions to choose a glyph, then test the code.`);
   }
@@ -3958,7 +4454,7 @@
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const fractions=payload.fractions||[], decimals=payload.decimals||[], percents=payload.percents||[];
     const wrap=document.createElement('div');wrap.className='equivalenceWrap';
     const grid=document.createElement('div');grid.className='equivalenceGrid';
-    for(const title of ['fraction','decimal','percent']){const h=document.createElement('div');h.className='equivalenceHeader';h.textContent=title;grid.appendChild(h);}
+    for(const title of ['fraction','decimal','percent']){const h=document.createElement('div');h.className='equivalenceHeader';renderLocalized(h,isTpLanguage()?({fraction:'kipisi',decimal:'nanpa lili',percent:'mute 100'}[title]):title);grid.appendChild(h);}
     const makeCard=(entry,column,row,movable)=>{
       const b=document.createElement(movable?'button':'div'); if(movable)b.type='button'; b.className=`equivalenceCard${st.selected?.column===column&&st.selected?.row===row?' selected':''}${movable?' movable':''}`;
       const c=document.createElement('canvas');c.width=220;c.height=68;c.className='equivalenceCanvas'; const small=document.createElement('small');small.textContent=entry?.source||'';b.append(c,small);renderNanpaSourceToCanvas(entry?.source||'',c,34);
@@ -3983,7 +4479,7 @@
     const ctxOut=target.getContext('2d',{alpha:true});
     try {
       const renderer=await ensureLevelRenderer();
-      const rendered=await renderer.renderTextToNewCanvas({input:String(source),layout:{fontPx,align:'center',spacingPreset:'compact',paddingPx:6},parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true}});
+      const rendered=await renderer.renderTextToNewCanvas({input:explicitNanpaSource(source),layout:{fontPx,align:'center',spacingPreset:'compact',paddingPx:6},parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true}});
       const src=rendered?.canvas;if(!src)throw new Error('no canvas');
       target.width=Math.max(1,src.width);target.height=Math.max(1,src.height);
       const c=target.getContext('2d',{alpha:true});c.clearRect(0,0,target.width,target.height);c.drawImage(src,0,0);
@@ -3998,7 +4494,7 @@
     const move=(row,delta)=>{const to=row+delta;if(to<0||to>=st.order.length)return;[st.order[row],st.order[to]]=[st.order[to],st.order[row]];renderCampaignPuzzle();};
     st.order.forEach((eventIndex,row)=>{
       const event=events[eventIndex]; const item=document.createElement('div');item.className='scheduleItem';
-      const rank=document.createElement('div');rank.className='scheduleRank';rank.textContent=String(row+1);
+      const rank=document.createElement('div');rank.className='scheduleRank';renderMechanismNumber(rank,row+1);
       const cards=document.createElement('div');cards.className='scheduleCartouches';
       const date=document.createElement('canvas');date.className='scheduleCanvas scheduleDateCanvas';date.setAttribute('aria-label','date cartouche');
       const time=document.createElement('canvas');time.className='scheduleCanvas scheduleTimeCanvas';time.setAttribute('aria-label','time cartouche');
@@ -4025,7 +4521,7 @@
     const wrap=document.createElement('div');wrap.className='riverPuzzle';
 
     const rules=document.createElement('div');rules.className='riverRules';
-    const ruleLead=document.createElement('strong');ruleLead.textContent='jan must stay with these pairs:';rules.appendChild(ruleLead);
+    const ruleLead=document.createElement('strong');renderExact(ruleLead,'jan must stay with these pairs:');rules.appendChild(ruleLead);
     (payload.forbiddenPairs||[]).forEach((pair,index)=>{
       const a=travellers[Number(pair?.[0])], b=travellers[Number(pair?.[1])];
       if(!a||!b)return;
@@ -4039,7 +4535,8 @@
 
     const scene=document.createElement('div');scene.className='riverBoardWrap';
     const labels=document.createElement('div');labels.className='riverBoardLabels';
-    labels.innerHTML='<span>LEFT BANK</span><span></span><span>RIVER</span><span></span><span>RIGHT BANK</span>';
+    labels.innerHTML=isTpLanguage()?'<span>poka loje</span><span></span><span>telo</span><span></span><span>poka laso</span>':'<span>LEFT BANK</span><span></span><span>RIVER</span><span></span><span>RIGHT BANK</span>';
+    labels.classList.toggle('tpProse',isTpLanguage());
     scene.appendChild(labels);
     const board=document.createElement('div');board.className='riverBoard';
 
@@ -4085,35 +4582,35 @@
     const down=document.createElement('button'); down.type='button'; down.className='riverMoveButton'; down.textContent='↓'; down.disabled=boatRow>=3; down.addEventListener('click',()=>{st.boatRow=Math.min(3,boatRow+1); renderCampaignPuzzle();});
     const load=document.createElement('button'); load.type='button'; load.className='riverLoadButton';
     if(selected==null) {
-      load.textContent='Load';
+      renderExact(load,'Load',{sitelen:false});
       load.disabled=alignedItemIndex<0;
       load.addEventListener('click',()=>{
         if(alignedItemIndex<0){blockedTone(); return;}
         st.selectedItem=alignedItemIndex; renderCampaignPuzzle();
       });
     } else {
-      load.textContent='Unload';
+      renderExact(load,'Unload',{sitelen:false});
       load.addEventListener('click',()=>{
         const occupied=travellers.some((_,i)=>i!==selected && Number(itemSides[i])===playerSide && Number(itemRows[i])===boatRow);
-        if(occupied){puzzleStatus.textContent='That bank position is already occupied.'; blockedTone(); return;}
+        if(occupied){renderExact(puzzleStatus,'That bank position is already occupied.'); blockedTone(); return;}
         st.itemSides[selected]=playerSide; st.itemRows[selected]=boatRow; st.selectedItem=null; renderCampaignPuzzle();
       });
     }
-    const cross=document.createElement('button'); cross.type='button'; cross.className='riverCrossButton'; cross.textContent=playerSide===0?'Cross →':'← Cross';
+    const cross=document.createElement('button'); cross.type='button'; cross.className='riverCrossButton'; renderLocalized(cross,playerSide===0?(isTpLanguage()?'o tawa →':'Cross →'):(isTpLanguage()?'← o tawa':'← Cross'),{sitelen:isTpLanguage()});
     cross.addEventListener('click',()=>{
       const to=playerSide?0:1;
       const next={ playerSide:to, boatRow, itemSides:Array.from(itemSides), itemRows:Array.from(itemRows), selectedItem:selected, moves:(Number(st.moves)||0)+1 };
       if(selected!=null) { next.itemSides[selected]=to; next.itemRows[selected]=boatRow; }
       const unsafe=riverCrossingUnsafeDetail(puzzle,next);
-      if(unsafe){puzzleStatus.textContent=`No: ${unsafe.label} would be left together without jan.`; blockedTone(); return;}
+      if(unsafe){renderExact(puzzleStatus,`No: ${unsafe.label} would be left together without jan.`); blockedTone(); return;}
       puzzleMechanismState=next; renderCampaignPuzzle();
     });
     controls.append(up,down,load,cross);
 
     const footer=document.createElement('div'); footer.className='riverFooter';
-    const moves=document.createElement('span'); moves.textContent=`crossings: ${Number(st.moves)||0}`;
+    const moves=document.createElement('span'); renderExact(moves,`crossings: ${Number(st.moves)||0}`);
     const hint=document.createElement('span');
-    hint.textContent=selected==null ? (alignedItemIndex>=0 ? 'Aligned with a bank object. Load it, or cross alone.' : 'Move the raft up or down to align with an object, then load or cross.') : `Cargo aboard: ${travellers[selected]?.label||''}. Cross, or unload at the aligned bank position.`;
+    renderLocalized(hint, selected==null ? (alignedItemIndex>=0 ? (isTpLanguage()?'tomo telo li lon poka ijo. o pana e ijo lon tomo, anu o tawa taso.':'Aligned with a bank object. Load it, or cross alone.') : (isTpLanguage()?'o tawa e tomo telo sewi anu anpa tawa poka ijo. ni la o pana e ijo lon tomo anu o tawa.':'Move the raft up or down to align with an object, then load or cross.')) : (isTpLanguage()?`ijo lon tomo: [[${travellers[selected]?.label||''}]]. o tawa, anu o pana e ijo tawa poka telo.`:`Cargo aboard: ${travellers[selected]?.label||''}. Cross, or unload at the aligned bank position.`));
     footer.append(moves,hint);
 
     wrap.append(rules,scene,controls,footer);puzzleSlots.appendChild(wrap);
@@ -4136,13 +4633,13 @@
 
   function renderSlidingGridPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,size=Number(payload.size)||3;const grid=document.createElement('div');grid.className='slidingGrid';grid.style.setProperty('--slide-cols',String(size));
-    (st.tiles||[]).forEach((value,index)=>{const b=document.createElement('button');b.type='button';b.className=`slidingTile${Number(value)===0?' blank':''}`;if(Number(value)!==0)b.innerHTML=`<span class="sitelenGlyph">${mechanismDigit(value)}</span><small>${value}</small>`;b.disabled=Number(value)===0;b.addEventListener('click',()=>{const z=st.tiles.indexOf(0),x=index%size,y=Math.floor(index/size),zx=z%size,zy=Math.floor(z/size);if(Math.abs(x-zx)+Math.abs(y-zy)!==1){blockedTone();return;}[st.tiles[index],st.tiles[z]]=[st.tiles[z],st.tiles[index]];renderCampaignPuzzle();});grid.appendChild(b);});
+    (st.tiles||[]).forEach((value,index)=>{const b=document.createElement('button');b.type='button';b.className=`slidingTile${Number(value)===0?' blank':''}`;if(Number(value)!==0)renderMechanismNumber(b,value);b.disabled=Number(value)===0;b.addEventListener('click',()=>{const z=st.tiles.indexOf(0),x=index%size,y=Math.floor(index/size),zx=z%size,zy=Math.floor(z/size);if(Math.abs(x-zx)+Math.abs(y-zy)!==1){blockedTone();return;}[st.tiles[index],st.tiles[z]]=[st.tiles[z],st.tiles[index]];renderCampaignPuzzle();});grid.appendChild(b);});
     puzzleSlots.appendChild(grid);setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The panel is in numerical order. Press Try answer to confirm the gallery.':'Slide tiles into ascending order, with the empty space last.');
   }
 
   function renderPegSolitairePuzzle(puzzle) {
     const st=puzzleMechanismState;const row=document.createElement('div');row.className='pegLine';
-    (st.pegs||[]).forEach((on,index)=>{const b=document.createElement('button');b.type='button';b.className=`pegHole${on?' occupied':''}${st.selected===index?' selected':''}`;b.textContent=on?'●':'○';b.setAttribute('aria-label',`Hole ${index+1}, ${on?'occupied':'empty'}`);b.addEventListener('click',()=>{if(on){st.selected=st.selected===index?null:index;renderCampaignPuzzle();return;}if(st.selected==null)return;const move=pegMoves(st.pegs).find(m=>m.from===st.selected&&m.to===index);if(!move){puzzleStatus.textContent='That peg cannot jump into this hole.';blockedTone();return;}st.pegs[move.from]=0;st.pegs[move.mid]=0;st.pegs[move.to]=1;st.selected=null;st.moves=(Number(st.moves)||0)+1;renderCampaignPuzzle();});row.appendChild(b);});
+    (st.pegs||[]).forEach((on,index)=>{const b=document.createElement('button');b.type='button';b.className=`pegHole${on?' occupied':''}${st.selected===index?' selected':''}`;b.textContent=on?'●':'○';b.setAttribute('aria-label',`Hole ${index+1}, ${on?'occupied':'empty'}`);b.addEventListener('click',()=>{if(on){st.selected=st.selected===index?null:index;renderCampaignPuzzle();return;}if(st.selected==null)return;const move=pegMoves(st.pegs).find(m=>m.from===st.selected&&m.to===index);if(!move){renderExact(puzzleStatus,'That peg cannot jump into this hole.');blockedTone();return;}st.pegs[move.from]=0;st.pegs[move.mid]=0;st.pegs[move.to]=1;st.selected=null;st.moves=(Number(st.moves)||0)+1;renderCampaignPuzzle();});row.appendChild(b);});
     puzzleSlots.appendChild(row);setMechanismStatus(puzzle,mechanismSolved(puzzle)?'One peg remains. Press Try answer to confirm the strategy panel.':st.selected==null?'Select a peg to move.':'Select an empty hole two spaces away across one peg.');
   }
 
@@ -4165,8 +4662,8 @@
         const sep=document.createElement('span'); sep.className='nonogramClueSeparator'; sep.textContent='+'; sep.setAttribute('aria-hidden','true');
         clue.appendChild(sep);
       }
-      const item=document.createElement('span'); item.className='nonogramClueNumber sitelenGlyph';
-      item.textContent=mechanismDigit(value); item.title=String(value); clue.appendChild(item);
+      const item=document.createElement('span'); item.className='nonogramClueNumber';
+      renderMechanismNumber(item,value); item.title=String(value); clue.appendChild(item);
     });
     return clue;
   }
@@ -4444,7 +4941,7 @@
       });
       row.appendChild(b);
     });
-    const note=document.createElement('div'); note.className='cardSortNote'; note.textContent=`swaps: ${Number(st.swaps)||0}`;
+    const note=document.createElement('div'); note.className='cardSortNote'; renderExact(note,`swaps: ${Number(st.swaps)||0}`);
     wrap.append(row,note); puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The cards are in ascending rank. Press Try answer to confirm the archive.':st.selected==null?'Select a card, then another card, to swap them.':'Now select the card to swap with it.');
   }
@@ -4531,7 +5028,7 @@
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,problems=payload.problems||[];
     const stage=Math.min(Number(st.stage)||0,Math.max(0,problems.length-1)),problem=problems[stage];
     const wrap=document.createElement('div'); wrap.className='calculatorPuzzle';
-    const progress=document.createElement('div'); progress.className='calculatorProgress'; progress.textContent=`problem ${Math.min(stage+1,problems.length)} / ${problems.length}`;
+    const progress=document.createElement('div'); progress.className='calculatorProgress'; renderExact(progress,`problem ${Math.min(stage+1,problems.length)} / ${problems.length}`);
 
     const expression=document.createElement('div'); expression.className='calculatorExpression';
     const a=document.createElement('canvas'); a.width=230;a.height=78;a.className='calculatorCartouche';
@@ -4544,7 +5041,7 @@
     renderNanpaSourceToCanvas(problem?.a||'0',a,40); renderNanpaSourceToCanvas(problem?.b||'0',b,40);
 
     const answerBox=document.createElement('div'); answerBox.className='calculatorAnswer calculatorAnswer--working';
-    const answerLabel=document.createElement('strong'); answerLabel.textContent='calculator';
+    const answerLabel=document.createElement('strong'); renderExact(answerLabel,'calculator');
     const answerDisplay=document.createElement('div'); answerDisplay.className='calculatorBenchWork';
     answerBox.append(answerLabel,answerDisplay);
     renderCalculatorBenchInput(answerDisplay,st.input||'');
@@ -4625,7 +5122,7 @@
     if(!Array.isArray(st.rounds)||st.rounds.length!==3)st.rounds=baseMatchRoundsForAttempt(payload,Number(st.attempt)||0);
     const rounds=st.rounds,stage=Math.min(Number(st.stage)||0,rounds.length-1),round=rounds[stage];
     const wrap=document.createElement('div');wrap.className='baseMatchWrap';
-    const progress=document.createElement('div');progress.className='baseMatchProgress';progress.textContent=`choice ${stage+1} / ${rounds.length}`;
+    const progress=document.createElement('div');progress.className='baseMatchProgress';renderExact(progress,`choice ${stage+1} / ${rounds.length}`);
     const target=document.createElement('canvas');target.width=360;target.height=84;target.className='baseMatchTarget';renderNanpaSourceToCanvas(round?.target||'0',target,42);
     const choices=document.createElement('div');choices.className='baseMatchChoices';
     (round?.options||[]).forEach((source,index)=>{
@@ -4663,7 +5160,7 @@
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,markers=payload.markers||[];
     const wrap=document.createElement('div');wrap.className='ringLockWrap';
     const clues=document.createElement('div');clues.className='ringLockClues';
-    (payload.clues||[]).forEach((text,index)=>{const item=document.createElement('div');item.className='ringLockClue';item.textContent=`${index+1}. ${text}`;clues.appendChild(item);});
+    (payload.clues||[]).forEach((text,index)=>{const item=document.createElement('div');item.className='ringLockClue';renderLocalized(item,`${index+1}. ${exactText(text)}`);clues.appendChild(item);});
     const rings=document.createElement('div');rings.className='ringLockGrid';
     markers.forEach((word,index)=>{
       const unit=document.createElement('div');unit.className='ringLockUnit';
@@ -4707,7 +5204,7 @@
   function renderToneSequencePuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,sequence=payload.sequence||[],freqs=payload.frequencies||[];
     const wrap=document.createElement('div');wrap.className='toneSequenceWrap';
-    const replay=document.createElement('button');replay.type='button';replay.className='toneReplay';replay.textContent='Play pattern';
+    const replay=document.createElement('button');replay.type='button';replay.className='toneReplay';renderExact(replay,'Play pattern',{sitelen:false});
     const progress=document.createElement('div');progress.className='toneProgress';
     progress.textContent=(st.input||[]).map(()=> '●').join(' ') + ((st.input||[]).length<sequence.length?' ○'.repeat(Math.max(0,sequence.length-(st.input||[]).length)):'');
     const pads=document.createElement('div');pads.className='tonePads';
@@ -4730,8 +5227,8 @@
 
     for(let index=0;index<freqs.length;index++){
       const btn=document.createElement('button');btn.type='button';btn.className='tonePad';btn.dataset.toneIndex=String(index);
-      const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=mechanismDigit(index+1);
-      const label=document.createElement('small');label.textContent=`tone ${index+1}`;
+      const glyph=mechanismNumberNode(index+1,'tonePadNumber');
+      const label=document.createElement('small');renderExact(label,`tone ${index+1}`);
       btn.append(glyph,label);
       btn.addEventListener('click',()=>{
         if(st.playing||st.solved)return;
@@ -4783,7 +5280,7 @@
       const lane=document.createElement('div');lane.className='pulseLane';
       const controls=document.createElement('div');controls.className='pulseControls';
       const left=document.createElement('button');left.type='button';left.textContent='←';left.setAttribute('aria-label',`Shift lane ${laneIndex+1} left and lane ${(laneIndex+1)%periods.length+1} right`);
-      const label=document.createElement('span');label.className='pulseLaneLabel sitelenGlyph';label.textContent=mechanismDigit(laneIndex+1);
+      const label=mechanismNumberNode(laneIndex+1,'pulseLaneLabel');
       const right=document.createElement('button');right.type='button';right.textContent='→';right.setAttribute('aria-label',`Shift lane ${laneIndex+1} right and lane ${(laneIndex+1)%periods.length+1} left`);
       const shift=dir=>{
         const next=(laneIndex+1)%periods.length;
@@ -4801,7 +5298,7 @@
       }
       lane.append(controls,cells);board.appendChild(lane);
     });
-    const note=document.createElement('div');note.className='pulseNote';note.textContent=`moves: ${Number(st.moves)||0} · each arrow shifts this lane and the next lane in opposite directions`;
+    const note=document.createElement('div');note.className='pulseNote';renderExact(note,`moves: ${Number(st.moves)||0} · each arrow shifts this lane and the next lane in opposite directions`);
     wrap.append(board,note);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All three pulse lanes meet at the gate. Press Try answer to confirm the chamber.':'Line up a pulse from every lane in the vertical gate.');
   }
@@ -4811,13 +5308,13 @@
     const info=new Map(filters.map(x=>[x.id,x]));
     const wrap=document.createElement('div');wrap.className='spectrumWrap';
     const clues=document.createElement('div');clues.className='spectrumClues';
-    (payload.clues||[]).forEach((text,index)=>{const row=document.createElement('div');row.className='spectrumClue';row.textContent=`${index+1}. ${text}`;clues.appendChild(row);});
+    (payload.clues||[]).forEach((text,index)=>{const row=document.createElement('div');row.className='spectrumClue';renderLocalized(row,`${index+1}. ${exactText(text)}`);clues.appendChild(row);});
     const row=document.createElement('div');row.className='spectrumFilters';
     (st.order||[]).forEach((id,index)=>{
       const spec=info.get(id)||{id,label:id},btn=document.createElement('button');btn.type='button';
       btn.className=`spectrumFilter spectrumFilter--${id}${Number(st.selected)===index?' selected':''}`;
       const swatch=document.createElement('span');swatch.className='spectrumSwatch';swatch.setAttribute('aria-hidden','true');
-      const label=document.createElement('span');label.textContent=spec.label||id;btn.append(swatch,label);
+      const label=document.createElement('span');renderLocalized(label,isTpLanguage()?`[[${termLabelText(spec.label||id)}]]`:(spec.label||id));btn.append(swatch,label);
       btn.addEventListener('click',()=>{
         if(st.selected==null){st.selected=index;renderCampaignPuzzle();return;}
         if(Number(st.selected)===index){st.selected=null;renderCampaignPuzzle();return;}
@@ -4861,12 +5358,12 @@
     const wrap=document.createElement('div');wrap.className='deductionWrap';
     const clues=document.createElement('div');clues.className=clueClass;
     (payload.clues||[]).forEach((text,index)=>{
-      const row=document.createElement('div');row.className='deductionClue';row.textContent=`${index+1}. ${text}`;clues.appendChild(row);
+      const row=document.createElement('div');row.className='deductionClue';renderLocalized(row,`${index+1}. ${exactText(text)}`);clues.appendChild(row);
     });
     const order=document.createElement('div');order.className=rowClass;
     (st.order||tokens).forEach((word,index)=>{
       const btn=document.createElement('button');btn.type='button';btn.className=`deductionToken${Number(st.selected)===index?' selected':''}`;
-      const slot=document.createElement('span');slot.className='deductionSlot';slot.textContent=String(index+1);
+      const slot=document.createElement('span');slot.className='deductionSlot';renderMechanismNumber(slot,index+1);
       const glyph=document.createElement('span');glyph.className='deductionGlyph sitelenGlyph';glyph.textContent=glyphChar(word);
       const label=document.createElement('span');label.className='deductionLabel';label.textContent=word;
       btn.append(slot,glyph,label);
@@ -4889,7 +5386,7 @@
     const wrap=document.createElement('div');wrap.className='dualMirrorWrap';
     const legend=document.createElement('div');legend.className='dualMirrorLegend';
     const beamLabels=(payload.sources||[]).map((source,index)=>source.label||String.fromCharCode(65+index));
-    legend.textContent=`${beamLabels.join(', ')} each have one inlet and one matching outlet. Rotate mirrors / ↔ \\.`;
+    renderLocalized(legend,isTpLanguage()?`linja ${beamLabels.join(', ')} ale li jo e open wan e pini sama wan. o sike e ilo lukin / ↔ \\.`:`${beamLabels.join(', ')} each have one inlet and one matching outlet. Rotate mirrors / ↔ \\.`);
     const board=document.createElement('div');board.className='dualMirrorBoard';board.style.setProperty('--mirror-cols',String(width));board.style.setProperty('--mirror-rows',String(height));
 
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','dualMirrorBeams');svg.setAttribute('viewBox',`-50 -50 ${width*100+100} ${height*100+100}`);svg.setAttribute('aria-hidden','true');
@@ -4949,10 +5446,10 @@
     for(const head of ['A','B','C','Y']){const h=document.createElement('strong');h.textContent=head;table.appendChild(h);}
     rows.forEach(row=>{
       for(const value of [row.a,row.b,row.c,row.y]){
-        const cell=document.createElement('span');cell.className='truthBit sitelenGlyph';cell.textContent=mechanismDigit(Number(value));table.appendChild(cell);
+        const cell=mechanismNumberNode(Number(value),'truthBit');table.appendChild(cell);
       }
     });
-    const key=document.createElement('div');key.className='truthGateKey';key.textContent='AND: both · OR: either · XOR: different';
+    const key=document.createElement('div');key.className='truthGateKey';renderExact(key,'AND: both · OR: either · XOR: different');
     wrap.append(diagram,table,key);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The circuit matches all eight rows. Press Try answer to confirm the rack.':'Set G1, G2 and G3 so one circuit satisfies every truth-table row.');
   }
@@ -4978,8 +5475,8 @@
     for(let y=0;y<height;y++)for(let x=0;x<width;x++){
       const key=`${x},${y}`,idx=pathIndex.get(key),btn=document.createElement('button');btn.type='button';
       btn.className=`exactPathCell${idx!=null?' visited':''}${idx===path.length-1?' current':''}${x===Number(end[0])&&y===Number(end[1])?' exit':''}`;
-      const step=document.createElement('span');step.className='exactPathStep';step.textContent=idx!=null?String(idx+1):'';
-      const glyph=document.createElement('span');glyph.className='exactPathValue sitelenGlyph';glyph.textContent=mechanismDigit(Number(values?.[y]?.[x])||0);
+      const step=document.createElement('span');step.className='exactPathStep';if(idx!=null)renderMechanismNumber(step,idx+1);
+      const glyph=mechanismNumberNode(Number(values?.[y]?.[x])||0,'exactPathValue');
       btn.append(step,glyph);
       const dist=Math.abs(x-Number(last[0]))+Math.abs(y-Number(last[1])),canMove=dist===1&&idx==null&&path.length<Number(payload.moves)+1;
       btn.disabled=!canMove;
@@ -4988,8 +5485,8 @@
       grid.appendChild(btn);
     }
     const controls=document.createElement('div');controls.className='exactPathControls';
-    const undo=document.createElement('button');undo.type='button';undo.textContent='Undo last move';undo.disabled=path.length<=1;undo.addEventListener('click',()=>{if(st.path.length>1)st.path.pop();st.message='';renderCampaignPuzzle();});
-    const reset=document.createElement('button');reset.type='button';reset.textContent='Restart route';reset.addEventListener('click',()=>{st.path=[Array.from(payload.start||[0,0])];st.message='';renderCampaignPuzzle();});
+    const undo=document.createElement('button');undo.type='button';renderExact(undo,'Undo last move',{sitelen:false});undo.disabled=path.length<=1;undo.addEventListener('click',()=>{if(st.path.length>1)st.path.pop();st.message='';renderCampaignPuzzle();});
+    const reset=document.createElement('button');reset.type='button';renderExact(reset,'Restart route',{sitelen:false});reset.addEventListener('click',()=>{st.path=[Array.from(payload.start||[0,0])];st.message='';renderCampaignPuzzle();});
     controls.append(undo,reset);
     wrap.append(meters,grid,controls);puzzleSlots.appendChild(wrap);
     const movesUsed=Math.max(0,path.length-1),atEnd=Number(last[0])===Number(end[0])&&Number(last[1])===Number(end[1]);
@@ -5008,8 +5505,8 @@
     const choices=Array.isArray(st.choiceOrders?.[stage])&&st.choiceOrders[stage].length?st.choiceOrders[stage]:(riddle?.choices||[]);
     const wrap=document.createElement('div');wrap.className='sphinxWrap';
     const crest=document.createElement('div');crest.className='sphinxCrest sitelenGlyph';crest.textContent=glyphChar('seme');
-    const progress=document.createElement('div');progress.className='sphinxProgress';progress.textContent=`memory ${Math.min(stage+1,order.length)} / ${order.length} · mistakes ${Number(st.mistakes)||0}`;
-    const text=document.createElement('div');text.className='sphinxRiddle';text.textContent=riddle?.text||'';
+    const progress=document.createElement('div');progress.className='sphinxProgress';renderExact(progress,`memory ${Math.min(stage+1,order.length)} / ${order.length} · mistakes ${Number(st.mistakes)||0}`);
+    const text=document.createElement('div');text.className='sphinxRiddle';renderExact(text,riddle?.text||'');
     const choicesEl=document.createElement('div');choicesEl.className='sphinxChoices';
     choices.forEach(word=>{
       const btn=document.createElement('button');btn.type='button';btn.className='sphinxChoice';
@@ -5040,16 +5537,16 @@
       const lab=document.createElement('strong');lab.textContent=label;row.appendChild(lab);
       values.forEach((value,index)=>{
         const lamp=document.createElement('span');lamp.className=`coupledLamp${Number(value)?' on':''}`;
-        lamp.textContent=String(index+1);row.appendChild(lamp);
+        renderMechanismNumber(lamp,index+1);row.appendChild(lamp);
       });
       return row;
     };
-    rows.append(makeRow('safe',target,false),makeRow('route',st.lamps||[],true));
+    rows.append(makeRow(isTpLanguage()?'pona':'safe',target,false),makeRow(isTpLanguage()?'nasin':'route',st.lamps||[],true));
     const levers=document.createElement('div');levers.className='coupledLevers';
     masks.forEach((mask,index)=>{
       const btn=document.createElement('button');btn.type='button';btn.className='coupledLever';
-      const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=mechanismDigit(index+1);
-      const info=document.createElement('small');info.textContent=`flips ${(mask||[]).map(i=>Number(i)+1).join(' · ')}`;
+      const glyph=mechanismNumberNode(index+1,'coupledLeverNumber');
+      const info=document.createElement('small');renderExact(info,`flips ${(mask||[]).map(i=>Number(i)+1).join(' · ')}`);
       btn.append(glyph,info);
       btn.addEventListener('click',()=>{
         st.lamps=Array.from(st.lamps||[]);for(const lampIndex of mask||[])st.lamps[lampIndex]=st.lamps[lampIndex]?0:1;
@@ -5057,7 +5554,7 @@
       });
       levers.appendChild(btn);
     });
-    const note=document.createElement('div');note.className='coupledSwitchNote';note.textContent=`moves: ${Number(st.moves)||0}`;
+    const note=document.createElement('div');note.className='coupledSwitchNote';renderExact(note,`moves: ${Number(st.moves)||0}`);
     wrap.append(rows,levers,note);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The route pattern is safe. Press Try answer to confirm the shaft control.':'Match every route lamp to the safe pattern.');
   }
@@ -5066,14 +5563,14 @@
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,size=Math.max(2,Number(payload.size)||5),layers=payload.layers||[],target=payload.targetMarkers||{};
     const wrap=document.createElement('div');wrap.className='layerAlignWrap';
     const targetBox=document.createElement('div');targetBox.className='layerTargetSummary';
-    targetBox.textContent='Targets: '+Object.entries(target).map(([label,pos])=>`${label}→(${Number(pos[0])+1},${Number(pos[1])+1})`).join(' · ');
+    renderExact(targetBox,'Targets: '+Object.entries(target).map(([label,pos])=>`${label}→(${Number(pos[0])+1},${Number(pos[1])+1})`).join(' · '));
     const stack=document.createElement('div');stack.className='layerAlignStack';
 
     layers.forEach((layer,index)=>{
       const unit=document.createElement('div');unit.className='layerAlignUnit';
       const head=document.createElement('div');head.className='layerAlignHead';
       const left=document.createElement('button');left.type='button';left.textContent='↶';left.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor counter-clockwise`);
-      const label=document.createElement('strong');label.textContent=layer.label||layer.id||`floor ${index+1}`;
+      const label=document.createElement('strong');renderExact(label,layer.label||layer.id||`floor ${index+1}`);
       const right=document.createElement('button');right.type='button';right.textContent='↷';right.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor clockwise`);
       left.addEventListener('click',()=>{st.rotations[index]=(Number(st.rotations[index])+3)%4;renderCampaignPuzzle();});
       right.addEventListener('click',()=>{st.rotations[index]=(Number(st.rotations[index])+1)%4;renderCampaignPuzzle();});
@@ -5094,7 +5591,7 @@
         }
         grid.appendChild(cell);
       }
-      const rot=document.createElement('small');rot.className='layerRotation';rot.textContent=`quarter-turns: ${Number(st.rotations[index])||0}`;
+      const rot=document.createElement('small');rot.className='layerRotation';renderExact(rot,`quarter-turns: ${Number(st.rotations[index])||0}`);
       unit.append(head,grid,rot);stack.appendChild(unit);
     });
     wrap.append(targetBox,stack);puzzleSlots.appendChild(wrap);
@@ -5116,7 +5613,7 @@
       const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(item.word);
       const copy=document.createElement('div');copy.className='marketTillCopy';
       const head=document.createElement('strong');head.textContent=item.word;
-      const detail=document.createElement('div');detail.textContent=item.discount?`${item.price} − ${item.discount} = ${item.final}`:`${item.price}`;
+      const detail=document.createElement('div');renderLocalized(detail,item.discount?`${item.price} {{−}} ${item.discount} {{=}} ${item.final}`:`${item.price}`,{sitelen:isTpLanguage()});
       copy.append(head,detail);headRow.append(glyph,copy);
       const frame=document.createElement('div');frame.className='marketTillCartoucheFrame';
       const c=document.createElement('canvas');c.width=320;c.height=82;c.className='marketTillCanvas';frame.appendChild(c);
@@ -5124,16 +5621,16 @@
       renderNanpaSourceToCanvas(item.final||item.price,c,38);
     });
     const targetBox=document.createElement('div');targetBox.className='marketTillTarget';
-    const targetLabel=document.createElement('strong');targetLabel.textContent='exact total';
+    const targetLabel=document.createElement('strong');renderExact(targetLabel,'exact total');
     const targetFrame=document.createElement('div');targetFrame.className='marketTillCartoucheFrame marketTillCartoucheFrame--target';
     const tc=document.createElement('canvas');tc.width=420;tc.height=92;tc.className='marketTillCanvas';targetFrame.appendChild(tc);targetBox.append(targetLabel,targetFrame);renderNanpaSourceToCanvas(centsText(target),tc,42);
     const tokens=document.createElement('div');tokens.className='marketTillTokens';
     (payload.tokens||[]).forEach((cents,index)=>{
       const b=document.createElement('button');b.type='button';b.className=`marketToken${st.selected[index]?' selected':''}`;
-      b.textContent=centsText(cents);b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));
+      renderMechanismNumber(b,centsText(cents));b.setAttribute('aria-pressed',String(Boolean(st.selected[index])));
       b.addEventListener('click',()=>{st.selected[index]=!st.selected[index];renderCampaignPuzzle();});tokens.appendChild(b);
     });
-    const read=document.createElement('div');read.className=`marketTillReadout${sum===target?' exact':''}`;read.textContent=`payment ${centsText(sum)} / ${centsText(target)}`;
+    const read=document.createElement('div');read.className=`marketTillReadout${sum===target?' exact':''}`;renderExact(read,`payment ${centsText(sum)} / ${centsText(target)}`);
     wrap.append(cards,targetBox,tokens,read);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,sum===target?'Exact payment. Press Try answer to confirm the till to power the freight spine.':sum>target?'Payment is too high. Remove a mani token.':'Payment is too low. Add mani tokens.');
   }
@@ -5148,7 +5645,9 @@
     const controls=document.createElement('div');controls.className='coldControls';
     ['compressor A','valve B','gel pump C'].forEach((label,index)=>{
       const b=document.createElement('button');b.type='button';b.className='coldControl';
-      b.innerHTML=`<strong>${label}</strong><span>setting ${Number(st.controls[index])||0}</span>`;
+      const controlName=document.createElement('strong');controlName.textContent=label;
+      const setting=document.createElement('span');renderExact(setting,`setting ${Number(st.controls[index])||0}`);
+      b.append(controlName,setting);
       b.addEventListener('click',()=>{st.controls[index]=((Number(st.controls[index])||0)+1)%3;renderCampaignPuzzle();});controls.appendChild(b);
     });
     const gauges=document.createElement('div');gauges.className='coldGauges';
@@ -5157,7 +5656,7 @@
       const box=document.createElement('div');box.className=`coldGauge${ok?' matched':''}`;
       const h=document.createElement('strong');h.textContent=label;
       const c=document.createElement('canvas');c.width=230;c.height=62;c.className='coldGaugeCanvas';
-      const small=document.createElement('small');small.textContent=`target ${signedOneDecimal(want[key])}`;
+      const small=document.createElement('small');renderExact(small,`target ${signedOneDecimal(want[key])}`);
       box.append(h,c,small);gauges.appendChild(box);renderNanpaSourceToCanvas(signedOneDecimal(readings[key]),c,34);
     });
     wrap.append(controls,gauges);puzzleSlots.appendChild(wrap);
@@ -5167,10 +5666,20 @@
   function renderTextileMixerPuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState;
     const wrap=document.createElement('div');wrap.className='textileMixerWrap';
-    const formula=document.createElement('div');formula.className='textileFormula';formula.innerHTML=`<span class="sitelenGlyph">${glyphChar('laso')}</span><strong>50%</strong><span>+</span><strong>25% water</strong><span>+</span><strong>25% binder</strong>`;
+    const formula=document.createElement('div');formula.className='textileFormula';
+    const laso=document.createElement('span');laso.className='sitelenGlyph';laso.textContent=glyphChar('laso');
+    const dye=document.createElement('strong');renderMechanismNumber(dye,'50%');
+    const plus1=document.createElement('span');renderLocalized(plus1,'{{+}}',{sitelen:isTpLanguage()});
+    const water=document.createElement('strong');renderLocalized(water,isTpLanguage()?'25% telo':'25% water',{sitelen:isTpLanguage()});
+    const plus2=document.createElement('span');renderLocalized(plus2,'{{+}}',{sitelen:isTpLanguage()});
+    const binder=document.createElement('strong');renderLocalized(binder,isTpLanguage()?'25% ko':'25% binder',{sitelen:isTpLanguage()});
+    formula.append(laso,dye,plus1,water,plus2,binder);
     const options=document.createElement('div');options.className='textileRatioOptions';
     (payload.options||[]).forEach((values,index)=>{
-      const b=document.createElement('button');b.type='button';b.className=`textileRatio${Number(st.selectedIndex)===index?' selected':''}`;b.textContent=values.join(' : ');
+      const b=document.createElement('button');b.type='button';b.className=`textileRatio${Number(st.selectedIndex)===index?' selected':''}`;
+      if(isTpLanguage()){
+        values.forEach((value,partIndex)=>{if(partIndex){const sep=document.createElement('span');renderLocalized(sep,'{{:}}',{sitelen:true});b.appendChild(sep);}b.appendChild(mechanismNumberNode(value,'textileRatioNumber'));});
+      } else b.textContent=values.join(' : ');
       b.addEventListener('click',()=>{st.selectedIndex=index;renderCampaignPuzzle();});options.appendChild(b);
     });
     wrap.append(formula,options);puzzleSlots.appendChild(wrap);
@@ -5187,10 +5696,9 @@
       const card=document.createElement('div');card.className='callTriangSensor';
       const id=document.createElement('strong');id.textContent=sensor.id;id.title=`pylon ${sensor.id}`;
       const reading=document.createElement('div');reading.className='callTriangReading';
-      const dist=document.createElement('span');dist.className='sitelenGlyph callTriangDistanceGlyph';dist.textContent=mechanismDigit(sensor.distance);dist.setAttribute('aria-hidden','true');
-      const latin=document.createElement('span');latin.className='callTriangLatin';latin.textContent=String(sensor.distance);
-      const lab=document.createElement('small');lab.textContent='grid steps';
-      reading.append(dist,latin,lab);card.append(id,reading);legend.appendChild(card);
+      const dist=mechanismNumberNode(sensor.distance,'callTriangDistanceGlyph');
+      const lab=document.createElement('small');renderExact(lab,'grid steps');
+      reading.append(dist,lab);card.append(id,reading);legend.appendChild(card);
     });
     const grid=document.createElement('div');grid.className='callTriangGrid';grid.style.setProperty('--tri-cols',String(width));
     const sensorAt=new Map(sensors.map(sensor=>[`${sensor.x},${sensor.y}`,sensor]));
@@ -5213,21 +5721,21 @@
     const pairGrid=document.createElement('div');pairGrid.className='lineagePairs';
     pairs.forEach(pair=>{
       const card=document.createElement('div');card.className='lineagePair';
-      const head=document.createElement('strong');head.textContent=`pair ${pair.id}`;card.appendChild(head);
+      const head=document.createElement('strong');renderExact(head,`pair ${pair.id}`);card.appendChild(head);
       const traits=document.createElement('div');traits.className='lineageTraits';
       (pair.traits||[]).forEach(word=>{const g=document.createElement('span');g.className='sitelenGlyph';g.textContent=glyphChar(word);g.title=word;traits.appendChild(g);});
       card.appendChild(traits);pairGrid.appendChild(card);
     });
     const evidence=document.createElement('div');evidence.className='lineageEvidence';
-    const evidenceHead=document.createElement('strong');evidenceHead.textContent='cross-record observations';evidence.appendChild(evidenceHead);
+    const evidenceHead=document.createElement('strong');renderExact(evidenceHead,'cross-record observations');evidence.appendChild(evidenceHead);
     const evidenceList=document.createElement('ul');
-    constraints.forEach(c=>{const li=document.createElement('li');li.textContent=c.text||'';evidenceList.appendChild(li);});
-    const once=document.createElement('li');once.textContent='Every parent pair A–D is used exactly once.';evidenceList.appendChild(once);evidence.appendChild(evidenceList);
+    constraints.forEach(c=>{const li=document.createElement('li');renderExact(li,c.text||'');evidenceList.appendChild(li);});
+    const once=document.createElement('li');renderExact(once,'Every parent pair A–D is used exactly once.');evidenceList.appendChild(once);evidence.appendChild(evidenceList);
     const rows=document.createElement('div');rows.className='lineageRows';
     hatchlings.forEach((h,index)=>{
       const row=document.createElement('div');row.className='lineageRow';
       const info=document.createElement('div');info.className='lineageHatchling';
-      const label=document.createElement('strong');label.textContent=`hatchling ${h.id}`;
+      const label=document.createElement('strong');renderExact(label,`hatchling ${h.id}`);
       const traits=document.createElement('div');traits.className='lineageTraits';
       (h.traits||[]).forEach(word=>{const g=document.createElement('span');g.className=word?'sitelenGlyph lineageTrait':'lineageTrait unknown';g.textContent=word?glyphChar(word):'?';g.title=word||'unrecorded trait';traits.appendChild(g);});
       info.append(label,traits);
@@ -5243,6 +5751,41 @@
     setMechanismStatus(puzzle,'',`${assigned}/${hatchlings.length} hatchlings assigned. Use the partial traits and both cross-record observations, then press Try answer.`);
   }
 
+  function renderRecordClassificationPuzzle(puzzle){
+    const payload=puzzle.ui?.payload||{},st=puzzleMechanismState;
+    const records=payload.records||[],destinations=payload.destinations||[];
+    st.assignments=st.assignments&&typeof st.assignments==='object'?st.assignments:{};
+    const wrap=document.createElement('div');wrap.className='recordClassifyWrap';
+    const lead=document.createElement('div');lead.className='recordClassifyLead';
+    renderLocalized(lead,isTpLanguage()
+      ? 'lipu tu ni li toki e pana [[pan]] e pana [[suwi]] pi tenpo pini. sina tawa e moku sin ala. o anu taso e lipu ale tawa ma pini pona.'
+      : 'These are records for the pan and suwi shipments you already delivered. You are not moving the goods again; classify the two records only.');
+    const grid=document.createElement('div');grid.className='recordClassifyGrid';
+    records.forEach(record=>{
+      const card=document.createElement('section');card.className='recordClassifyCard';
+      const head=document.createElement('div');head.className='recordClassifyHead';
+      const glyph=document.createElement('span');glyph.className='sitelenGlyph recordClassifyGlyph';glyph.textContent=glyphChar(record.word||'ijo');
+      const title=document.createElement('strong');renderExact(title,record.label||`${record.word||'shipment'} record`);head.append(glyph,title);
+      const facts=document.createElement('div');facts.className='recordClassifyFacts';
+      (record.evidence||[]).forEach(text=>{const row=document.createElement('div');row.className='recordClassifyFact';renderExact(row,text);facts.appendChild(row);});
+      const decision=document.createElement('div');decision.className='recordClassifyDecision';
+      const decisionLabel=document.createElement('strong');renderLocalized(decisionLabel,isTpLanguage()?'o anu e nasin pini:':'Classify this record:');decision.appendChild(decisionLabel);
+      const buttons=document.createElement('div');buttons.className='recordClassifyChoices';
+      destinations.forEach(dest=>{
+        const btn=document.createElement('button');btn.type='button';btn.className=`recordClassifyChoice${st.assignments[record.id]===dest.id?' selected':''}`;
+        renderLocalized(btn,isTpLanguage()?(dest.tpLabel||dest.label):(dest.label||dest.id));
+        btn.addEventListener('click',()=>{st.assignments[record.id]=dest.id;renderCampaignPuzzle();});
+        buttons.appendChild(btn);
+      });
+      decision.appendChild(buttons);card.append(head,facts,decision);grid.appendChild(card);
+    });
+    wrap.append(lead,grid);puzzleSlots.appendChild(wrap);
+    const chosen=records.filter(record=>Boolean(st.assignments[record.id])).length;
+    setMechanismStatus(puzzle,'',isTpLanguage()
+      ? `lipu ${chosen}/${records.length} li jo e nasin pini. o lukin e sona lete, o anu e lipu tu, ni la o luka e [[o alasa]].`
+      : `${chosen}/${records.length} records classified. Use the delivery and cold-history evidence, then press Try answer.`);
+  }
+
   function renderHabitatTriagePuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,stations=payload.stations||[],roles=payload.roles||[];
     const validStationIds=new Set(stations.map(station=>station.id));
@@ -5256,14 +5799,14 @@
       const card=document.createElement('div');card.className='habitatRoleRule';
       const head=document.createElement('div');head.className='habitatRoleRuleHead';
       const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(role.id);
-      const label=document.createElement('strong');label.textContent=role.label;head.append(glyph,label);
-      const rule=document.createElement('span');rule.textContent=role.rule;card.append(head,rule);brief.appendChild(card);
+      const label=document.createElement('strong');renderExact(label,role.label);head.append(glyph,label);
+      const rule=document.createElement('span');renderExact(rule,role.rule);card.append(head,rule);brief.appendChild(card);
     });
     const records=document.createElement('div');records.className='habitatRecords';
     stations.forEach(station=>{
       const card=document.createElement('div');card.className='habitatRecord';
-      const title=document.createElement('strong');title.textContent=station.label;
-      const facts=document.createElement('ul');(station.facts||[]).forEach(f=>{const li=document.createElement('li');li.textContent=f;facts.appendChild(li);});
+      const title=document.createElement('strong');renderExact(title,station.label);
+      const facts=document.createElement('ul');(station.facts||[]).forEach(f=>{const li=document.createElement('li');renderExact(li,f);facts.appendChild(li);});
       card.append(title,facts);records.appendChild(card);
     });
     const selectors=document.createElement('div');selectors.className='habitatSelectors';
@@ -5271,9 +5814,9 @@
       const box=document.createElement('div');box.className='habitatSelector';
       const head=document.createElement('div');head.className='habitatSelectorHead';
       const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(key);
-      const lab=document.createElement('strong');lab.textContent=title;head.append(glyph,lab);box.appendChild(head);
+      const lab=document.createElement('strong');renderExact(lab,title);head.append(glyph,lab);box.appendChild(head);
       const buttons=document.createElement('div');buttons.className='habitatChoiceGrid';
-      stations.forEach(station=>{const btn=document.createElement('button');btn.type='button';btn.className=`habitatChoice${st[key]===station.id?' selected':''}`;btn.textContent=station.label;btn.addEventListener('click',()=>{st[key]=station.id;renderCampaignPuzzle();});buttons.appendChild(btn);});
+      stations.forEach(station=>{const btn=document.createElement('button');btn.type='button';btn.className=`habitatChoice${st[key]===station.id?' selected':''}`;renderExact(btn,station.label,{sitelen:false});btn.addEventListener('click',()=>{st[key]=station.id;renderCampaignPuzzle();});buttons.appendChild(btn);});
       box.appendChild(buttons);return box;
     };
     selectors.append(makeSelector('akesi','choose the reptile habitat'),makeSelector('moli','choose the failed sensor'));
@@ -5294,7 +5837,7 @@
 
     const wrap=document.createElement('div');wrap.className='sudokuWrap';
     const lead=document.createElement('div');lead.className='sudokuLead';
-    lead.textContent='Final puzzle · every row, column and 3×3 box must contain 1–9 exactly once. Small Latin numerals are accessibility fallbacks; the large symbols are nanpa-linja-n digits.';
+    renderExact(lead,'Final puzzle · every row, column and 3×3 box must contain 1–9 exactly once. Small Latin numerals are accessibility fallbacks; the large symbols are nanpa-linja-n digits.');
     const grid=document.createElement('div');grid.className='sudokuGrid';
     for(let i=0;i<81;i++){
       const r=Math.floor(i/9),c=i%9,given=Boolean(givens[i]),value=Number(cells[i])||0;
@@ -5302,7 +5845,7 @@
       btn.className=`sudokuCell${given?' given':''}${selected===i?' selected':''}${c%3===2&&c<8?' boxRight':''}${r%3===2&&r<8?' boxBottom':''}`;
       btn.setAttribute('aria-label',given?`Row ${r+1}, column ${c+1}, given ${value}`:`Row ${r+1}, column ${c+1}${value?`, value ${value}`:', empty'}`);
       if(value){
-        const glyph=document.createElement('span');glyph.className='sudokuGlyph sitelenGlyph';glyph.textContent=mechanismDigit(value);
+        const glyph=document.createElement('span');glyph.className='sudokuGlyph sitelenGlyph';glyph.textContent=sudokuDigitGlyph(value);
         const latin=document.createElement('small');latin.className='sudokuLatin';latin.textContent=String(value);
         btn.append(glyph,latin);
       }else{
@@ -5317,13 +5860,13 @@
     }
 
     const controls=document.createElement('div');controls.className='sudokuControls';
-    const mode=document.createElement('button');mode.type='button';mode.className=`sudokuMode${st.noteMode?' active':''}`;mode.textContent=`Notes: ${st.noteMode?'ON':'OFF'}`;mode.addEventListener('click',()=>{st.noteMode=!st.noteMode;renderCampaignPuzzle();});
-    const clear=document.createElement('button');clear.type='button';clear.textContent='Clear cell';clear.disabled=selected==null||Boolean(givens[selected]);clear.addEventListener('click',()=>{if(selected==null||givens[selected])return;st.cells[selected]=0;st.notes[selected]=[];renderCampaignPuzzle();});
+    const mode=document.createElement('button');mode.type='button';mode.className=`sudokuMode${st.noteMode?' active':''}`;renderExact(mode,`Notes: ${st.noteMode?'ON':'OFF'}`,{sitelen:false});mode.addEventListener('click',()=>{st.noteMode=!st.noteMode;renderCampaignPuzzle();});
+    const clear=document.createElement('button');clear.type='button';renderExact(clear,'Clear cell',{sitelen:false});clear.disabled=selected==null||Boolean(givens[selected]);clear.addEventListener('click',()=>{if(selected==null||givens[selected])return;st.cells[selected]=0;st.notes[selected]=[];renderCampaignPuzzle();});
     controls.append(mode,clear);
     const keypad=document.createElement('div');keypad.className='sudokuKeypad';
     for(let n=1;n<=9;n++){
       const b=document.createElement('button');b.type='button';b.className='sudokuKey';
-      const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=mechanismDigit(n);
+      const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=sudokuDigitGlyph(n);
       const latin=document.createElement('small');latin.textContent=String(n);b.append(glyph,latin);
       b.disabled=selected==null||Boolean(givens[selected]);
       b.addEventListener('click',()=>{
@@ -5344,7 +5887,7 @@
   }
 
   function renderMechanismPuzzle(puzzle) {
-    puzzleTrayWrap.hidden=true; puzzleResetBtn.hidden=false; puzzleCompleteBtn.hidden=false; puzzleCompleteBtn.textContent='Try answer';
+    puzzleTrayWrap.hidden=true; puzzleResetBtn.hidden=false; puzzleCompleteBtn.hidden=false; renderLocalized(puzzleCompleteBtn,uiText('tryAnswer'));
     if(!puzzleMechanismState) resetMechanismState(puzzle);
     switch(puzzle.type){
       case 'dial-bank': renderDialBankPuzzle(puzzle); break;
@@ -5383,6 +5926,7 @@
       case 'market-till': renderMarketTillPuzzle(puzzle); break;
       case 'cold-chain': renderColdChainPuzzle(puzzle); break;
       case 'textile-mixer': renderTextileMixerPuzzle(puzzle); break;
+      case 'record-classification': renderRecordClassificationPuzzle(puzzle); break;
       case 'call-triangulation': renderCallTriangulationPuzzle(puzzle); break;
       case 'lineage-match': renderLineageMatchPuzzle(puzzle); break;
       case 'habitat-triage': renderHabitatTriagePuzzle(puzzle); break;
@@ -5392,7 +5936,7 @@
     // Submission is deliberately always available for mechanism puzzles. The UI must
     // never reveal a correct configuration merely by enabling or highlighting the button.
     puzzleCompleteBtn.disabled=false;
-    puzzleCompleteBtn.textContent='Try answer';
+    renderLocalized(puzzleCompleteBtn,uiText('tryAnswer'));
     if(String(puzzle.id||'').startsWith('l10-')&&puzzleMechanismState){
       state.l10MechanismStates=state.l10MechanismStates||{};
       state.l10MechanismStates[puzzle.id]=JSON.parse(JSON.stringify(puzzleMechanismState));
@@ -5416,7 +5960,7 @@
     puzzleCompleteBtn.hidden = true;
     const payload = puzzle.ui?.payload || {};
     const clue = document.createElement('div'); clue.className='coordinatePuzzleClue';
-    const label = document.createElement('div'); label.className='coordinatePuzzleLabel'; label.textContent='coordinate clue';
+    const label = document.createElement('div'); label.className='coordinatePuzzleLabel'; renderLocalized(label,isTpLanguage()?'sona lon ma':'coordinate clue');
     const clueCanvas = document.createElement('canvas'); clueCanvas.width=360; clueCanvas.height=82; clueCanvas.className='coordinatePuzzleCanvas';
     clue.append(label, clueCanvas); puzzleSlots.appendChild(clue);
     renderNanpaSourceToCanvas(payload.source || 'ma:(3,9)', clueCanvas, 38);
@@ -5435,29 +5979,29 @@
       cell.addEventListener('click',()=>{
         const tx=Number(payload.targetX), ty=Number(payload.targetY);
         if (x===tx && y===ty) {
-          puzzleStatus.textContent='Correct. A cache has been revealed in the Lower Archive.';
+          renderLocalized(puzzleStatus,isTpLanguage()?'pona. poki len li kama lon tomo lipu anpa.':'Correct. A cache has been revealed in the Lower Archive.');
           successTone();
-          const id=puzzle.id, title=puzzle.ui.title||id;
+          const id=puzzle.id, title=puzzleText(puzzle,'title')||puzzle.ui.title||id;
           closeModal(puzzleOverlay); puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism'); if (puzzleCard) delete puzzleCard.dataset.puzzleType; activeCampaignPuzzle=null; selectedPuzzleSlotIndex=null;
           const result=completeCampaignPuzzle(id,`Solved ${title}.`);
-          if (result.ok) showMessage('A hidden cache has appeared in the Lower Archive. It is marked on the minimap.');
+          if (result.ok) showMessagePair('A hidden cache has appeared in the Lower Archive. It is marked on the minimap.','poki len li kama lon tomo lipu anpa. sitelen ona li lon sitelen ma.');
         } else {
-          puzzleStatus.textContent=`That is ${x}, ${y}. The coordinate clue points somewhere else.`;
+          renderLocalized(puzzleStatus,isTpLanguage()?`ni li ${x}, ${y}. sona ma li toki e ma ante.`:`That is ${x}, ${y}. The coordinate clue points somewhere else.`);
           blockedTone();
         }
       });
       grid.appendChild(cell);
     }
     puzzleSlots.appendChild(grid);
-    puzzleStatus.textContent='Tap the cell at the coordinate shown above.';
+    renderLocalized(puzzleStatus,isTpLanguage()?'o luka e poki ma lon lon sama sona sewi.':'Tap the cell at the coordinate shown above.');
   }
 
   function renderCountryPuzzle(puzzle) {
     const answer = String(puzzle.ui?.payload?.answer || '').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
     const clueBox=document.createElement('div'); clueBox.className='countryClueBox';
-    const tp=document.createElement('div'); tp.className='countryClueTp'; tp.textContent=puzzle.ui?.payload?.clueTp || '';
-    const en=document.createElement('div'); en.className='countryClueEn'; en.textContent=puzzle.ui?.payload?.clueEn || '';
-    clueBox.append(tp,en); puzzleSlots.appendChild(clueBox);
+    const clue=document.createElement('div'); clue.className=isTpLanguage()?'countryClueTp':'countryClueEn';
+    renderLocalized(clue, isTpLanguage() ? (puzzle.ui?.payload?.clueTp || '') : (puzzle.ui?.payload?.clueEn || ''), {sitelen:isTpLanguage()});
+    clueBox.append(clue); puzzleSlots.appendChild(clueBox);
     if (!Array.isArray(puzzleSlotValues) || puzzleSlotValues.length!==answer.length) puzzleSlotValues=Array(answer.length).fill(null);
     if (selectedPuzzleSlotIndex == null && answer.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
     [...answer].forEach((letter,index)=>{
@@ -5471,8 +6015,8 @@
     renderGlyphFamilyPicker();
     puzzleCompleteBtn.hidden=false; puzzleResetBtn.hidden=false; puzzleTrayWrap.hidden=false;
     puzzleCompleteBtn.disabled=false;
-    puzzleCompleteBtn.textContent='Try answer';
-    puzzleStatus.textContent='Tap a slot, choose a letter, then tap or drag a glyph. Press Try answer when ready; correctness is checked only after submission.';
+    renderLocalized(puzzleCompleteBtn, uiText('tryAnswer'));
+    renderLocalized(puzzleStatus, isTpLanguage() ? 'o luka e ma sitelen, o anu e kalama lipu, o luka anu tawa e sitelen. sina pini la o luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.' : 'Tap a slot, choose a letter, then tap or drag a glyph. Press Try answer when ready; correctness is checked only after submission.');
   }
 
 
@@ -5571,9 +6115,10 @@
       const num=document.createElement('span');num.className='countryCrosswordNumberHost countryCrosswordNumberHost--clue';num.dataset.number=String(entry.number);
       const dir=document.createElement('span');dir.className='countryCrosswordClueDirection';dir.textContent=entry.direction==='down'?'↓':'→';
       head.append(num,dir);
-      const tp=document.createElement('span');tp.textContent=entry.clueTp||'';
-      const en=document.createElement('small');en.textContent=entry.clueEn||'';
-      clue.append(head,tp,en);clues.appendChild(clue);
+      const clueText=document.createElement(isTpLanguage()?'span':'small');
+      clueText.className=isTpLanguage()?'countryClueTp':'countryClueEn';
+      renderLocalized(clueText,isTpLanguage()?(entry.clueTp||''):(entry.clueEn||''),{sitelen:isTpLanguage()});
+      clue.append(head,clueText);clues.appendChild(clue);
     });
 
     const grid=document.createElement('div');grid.className='countryCrosswordGrid';grid.style.setProperty('--cross-cols',String(model.width));grid.style.setProperty('--cross-rows',String(model.height));
@@ -5592,15 +6137,81 @@
     renderGlyphFamilyPicker();
     puzzleTrayWrap.hidden=false;puzzleResetBtn.hidden=false;puzzleCompleteBtn.hidden=false;
     puzzleCompleteBtn.disabled=false;
-    puzzleCompleteBtn.textContent='Try answer';
-    puzzleStatus.textContent='Any country name that matches its clue, length and crossings is valid. Press Try answer when ready; correctness is checked only after submission.';
+    renderLocalized(puzzleCompleteBtn, uiText('tryAnswer'));
+    renderLocalized(puzzleStatus, isTpLanguage()
+      ? 'nimi ma li pona la ona o sama tawa sona, suli lipu, en poki kama sama. sina pini la o luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.'
+      : 'Any country name that matches its clue, length and crossings is valid. Press Try answer when ready; correctness is checked only after submission.');
+  }
+
+  function sequenceAnswerGroups(puzzle, seq) {
+    const raw = Array.isArray(puzzle?.ui?.payload?.answerGroups) ? puzzle.ui.payload.answerGroups : [];
+    if (!raw.length) return [];
+    let cursor = 0;
+    const groups = [];
+    for (const entry of raw) {
+      const length = Math.max(0, Number(entry?.length) || 0);
+      if (!length || cursor + length > seq.length) return [];
+      groups.push({
+        label:String(entry?.label || `Answer ${groups.length + 1}`),
+        clue:String(entry?.clue || ''),
+        start:cursor,
+        length
+      });
+      cursor += length;
+    }
+    return cursor === seq.length ? groups : [];
+  }
+
+  function makeSequencePuzzleSlot(puzzle, index, localLabel=null) {
+    const slot=document.createElement('button');
+    slot.type='button';
+    slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`;
+    slot.dataset.slotIndex=String(index);
+    slot.setAttribute('aria-label',`Glyph slot ${index+1}`);
+    const glyph=document.createElement('div');
+    glyph.className=puzzleSlotValues[index]?'puzzleSlotGlyph sitelenGlyph':'puzzleSlotGlyph';
+    glyph.textContent=puzzleSlotValues[index]?displayPuzzleToken(puzzleSlotValues[index]):'＋';
+    const label=document.createElement('div');
+    label.className='puzzleSlotLabel';
+    label.textContent=localLabel == null ? String(index+1) : String(localLabel);
+    slot.append(glyph,label);
+    slot.addEventListener('click',()=>activatePuzzleSlot(index));
+    return slot;
+  }
+
+  function renderGroupedSequenceAnswers(puzzle, seq, groups) {
+    const wrap=document.createElement('div');
+    wrap.className='puzzleAnswerGroups';
+    for (const group of groups) {
+      const row=document.createElement('section');
+      row.className='puzzleAnswerGroup';
+      const text=document.createElement('div');
+      text.className='puzzleAnswerGroupText';
+      const title=document.createElement('strong');
+      title.className='puzzleAnswerGroupTitle';
+      renderExact(title,group.label);
+      const clue=document.createElement('small');
+      clue.className='puzzleAnswerGroupClue';
+      renderExact(clue,group.clue);
+      text.append(title,clue);
+      const slots=document.createElement('div');
+      slots.className='puzzleAnswerGroupSlots';
+      slots.style.setProperty('--answer-cols',String(group.length));
+      for(let local=0;local<group.length;local++){
+        const index=group.start+local;
+        slots.appendChild(makeSequencePuzzleSlot(puzzle,index,local+1));
+      }
+      row.append(text,slots);
+      wrap.appendChild(row);
+    }
+    puzzleSlots.appendChild(wrap);
   }
 
   async function renderNanpaSourceToCanvas(source, target, fontPx=48, parserOverrides={}) {
     const ctxOut=target.getContext('2d',{alpha:true}); ctxOut.clearRect(0,0,target.width,target.height);
     try {
       const renderer=await ensureLevelRenderer();
-      const rendered=await renderer.renderTextToNewCanvas({input:String(source),layout:{fontPx,align:'center',spacingPreset:'compact',paddingPx:8},parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true,...parserOverrides}});
+      const rendered=await renderer.renderTextToNewCanvas({input:explicitNanpaSource(source),layout:{fontPx,align:'center',spacingPreset:'compact',paddingPx:8},parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true,...parserOverrides}});
       const src=rendered?.canvas; if(!src) throw new Error('no canvas');
       const scale=Math.min((target.width-10)/src.width,(target.height-10)/src.height,1.5); const dw=src.width*scale,dh=src.height*scale;
       ctxOut.drawImage(src,(target.width-dw)/2,(target.height-dh)/2,dw,dh);
@@ -5619,17 +6230,23 @@
     puzzleCard?.classList.toggle('puzzleCard--map', puzzle.type === 'coordinate-map');
     puzzleCard?.classList.toggle('puzzleCard--mechanism', mechanismPuzzle);
     if (puzzleCard) puzzleCard.dataset.puzzleType = String(puzzle.type || '');
-    puzzleEyebrow.textContent = puzzle.type === 'country-cartouche' ? 'country cartouche' : puzzle.type === 'country-crossword' ? 'country crossword' : puzzle.type === 'coordinate-map' ? 'map puzzle' : mechanismPuzzle ? 'mechanism puzzle' : puzzle.type === 'terminal' ? 'campaign terminal' : 'glyph-key puzzle';
-    puzzleTitle.textContent = puzzle.ui.title || puzzle.id;
-    puzzleInstructions.textContent = '';
-    const instructionText = String(puzzle.ui.instructions || '');
-    if (instructionText) puzzleInstructions.appendChild(document.createTextNode(instructionText));
+    const eyebrow = puzzle.type === 'country-cartouche'
+      ? (isTpLanguage()?'poki nimi ma':'country cartouche')
+      : puzzle.type === 'country-crossword' ? (isTpLanguage()?'nimi ma lon linja':'country crossword')
+      : puzzle.type === 'coordinate-map' ? (isTpLanguage()?'musi sitelen ma':'map puzzle')
+      : mechanismPuzzle ? (isTpLanguage()?'musi ilo':'mechanism puzzle')
+      : puzzle.type === 'terminal' ? (isTpLanguage()?'ilo sona musi':'campaign terminal')
+      : (isTpLanguage()?'musi sitelen':'glyph-key puzzle');
+    renderLocalized(puzzleEyebrow, eyebrow);
+    renderLocalized(puzzleTitle, puzzleText(puzzle,'title') || puzzle.id);
+    const instructionText = String(puzzleText(puzzle,'instructions') || '');
+    renderLocalized(puzzleInstructions, instructionText);
     const helpLink = puzzle.ui?.helpLink;
     if (helpLink?.href) {
       if (instructionText) puzzleInstructions.appendChild(document.createTextNode(' '));
       const link = document.createElement('a');
       link.href = String(helpLink.href);
-      link.textContent = String(helpLink.label || 'Help');
+      renderLocalized(link, isTpLanguage() ? 'lipu sona [[nanpa-linja-n]]' : `[[nanpa-linja-n]] ${String(helpLink.label || 'Help').replace(/^nanpa-linja-n\s*/i,'')}`);
       if (helpLink.target) link.target = String(helpLink.target);
       if (link.target === '_blank') link.rel = 'noopener noreferrer';
       if (helpLink.downloadTrackType) link.dataset.downloadTrackType = String(helpLink.downloadTrackType);
@@ -5640,10 +6257,10 @@
     puzzleTray.textContent = '';
     puzzleStatus.textContent = '';
     puzzleResetBtn.hidden = false;
-    puzzleResetBtn.textContent = mechanismPuzzle ? 'Reset' : 'Clear';
+    renderLocalized(puzzleResetBtn, mechanismPuzzle ? (isTpLanguage()?'o open sin':'Reset') : uiText('clear'));
     puzzleTrayWrap.hidden = false;
     puzzleCompleteBtn.hidden = false;
-    puzzleCompleteBtn.textContent = puzzle.type === 'terminal' ? 'Confirm' : 'Try answer';
+    renderLocalized(puzzleCompleteBtn, puzzle.type === 'terminal' ? (isTpLanguage()?'o lon e ni':'Confirm') : uiText('tryAnswer'));
     puzzleCloseBtn.hidden = puzzle.ui.canExit === false;
     hidePuzzleLiveCartouchePreview();
 
@@ -5655,7 +6272,7 @@
     if (!seq.length) {
       puzzleResetBtn.hidden = true; puzzleTrayWrap.hidden = true;
       const box = document.createElement('div'); box.className = 'puzzleTerminalMessage';
-      box.textContent = puzzle.type === 'terminal' ? 'The terminal is ready. Confirm when you are satisfied.' : 'This mechanism is ready.';
+      renderLocalized(box, puzzle.type === 'terminal' ? (isTpLanguage()?'ilo sona li ken. pona la o lon e ni.':'The terminal is ready. Confirm when you are satisfied.') : (isTpLanguage()?'ilo li ken pali.':'This mechanism is ready.')); 
       puzzleSlots.appendChild(box); puzzleCompleteBtn.disabled = false; return;
     }
 
@@ -5663,7 +6280,7 @@
     const displayedSequence = Array.isArray(puzzle.ui?.payload?.displaySequence) ? puzzle.ui.payload.displaySequence : [];
     if (displayedSequence.length) {
       const source = document.createElement('div'); source.className = 'puzzleSourceSequence';
-      const sourceLabel = document.createElement('div'); sourceLabel.className = 'puzzleSourceSequenceLabel'; sourceLabel.textContent = 'cache inscription';
+      const sourceLabel = document.createElement('div'); sourceLabel.className = 'puzzleSourceSequenceLabel'; renderLocalized(sourceLabel, isTpLanguage()?'sitelen lon poki':'cache inscription');
       const sourceGlyphs = document.createElement('div'); sourceGlyphs.className = 'puzzleSourceSequenceGlyphs';
       for (const word of displayedSequence) {
         const glyph = document.createElement('div'); glyph.className = 'puzzleSourceGlyph sitelenGlyph'; glyph.textContent = displayPuzzleToken(word); glyph.title = word; glyph.setAttribute('aria-label', word);
@@ -5673,19 +6290,20 @@
       puzzleSlots.appendChild(source);
     }
     if (selectedPuzzleSlotIndex == null && seq.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
-    seq.forEach((expected,index)=>{
-      const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`; slot.dataset.slotIndex=String(index); slot.setAttribute('aria-label',`Glyph slot ${index+1}`);
-      const glyph=document.createElement('div'); glyph.className=puzzleSlotValues[index]?'puzzleSlotGlyph sitelenGlyph':'puzzleSlotGlyph'; glyph.textContent=puzzleSlotValues[index]?displayPuzzleToken(puzzleSlotValues[index]):'＋';
-      const label=document.createElement('div'); label.className='puzzleSlotLabel'; label.textContent=String(index+1);
-      slot.append(glyph,label);
-      slot.addEventListener('click',()=>activatePuzzleSlot(index));
-      puzzleSlots.appendChild(slot);
-    });
+    const answerGroups=sequenceAnswerGroups(puzzle,seq);
+    if(answerGroups.length) renderGroupedSequenceAnswers(puzzle,seq,answerGroups);
+    else for(let index=0;index<seq.length;index++) puzzleSlots.appendChild(makeSequencePuzzleSlot(puzzle,index));
     renderPuzzleLiveCartouchePreview(puzzle);
     renderGlyphFamilyPicker();
     puzzleCompleteBtn.disabled = false;
-    puzzleCompleteBtn.textContent = 'Try answer';
-    puzzleStatus.textContent = `Tap a slot, choose a letter, then tap or drag a glyph. Fill all ${seq.length} positions and press Try answer. Correctness is checked only after submission.`;
+    renderLocalized(puzzleCompleteBtn, uiText('tryAnswer'));
+    renderLocalized(puzzleStatus, answerGroups.length
+      ? (isTpLanguage()
+          ? `o pini e poki nanpa ${answerGroups.length} ale tan sona. ni la o luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.`
+          : `Complete all ${answerGroups.length} derived cartouches, then press Try answer. Correctness is checked only after submission.`)
+      : (isTpLanguage()
+          ? `o luka e ma sitelen, o anu e kalama lipu, o luka anu tawa e sitelen. o pini e ma ${seq.length} ale, li luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.`
+          : `Tap a slot, choose a letter, then tap or drag a glyph. Fill all ${seq.length} positions and press Try answer. Correctness is checked only after submission.`));
   }
 
   function openCampaignPuzzleHost(puzzle) {
@@ -5742,17 +6360,17 @@
     if (!puzzle) return;
     const needsSlots = puzzleSequence(puzzle).length || puzzle.type === 'country-cartouche' || puzzle.type === 'country-crossword';
     if (needsSlots && puzzleSlotValues.some(v=>!v)) {
-      puzzleStatus.textContent = 'Answer incomplete. Fill every required position, then press Try answer.';
+      renderExact(puzzleStatus,'Answer incomplete. Fill every required position, then press Try answer.');
       blockedTone();
       return;
     }
     if (isMechanismPuzzle(puzzle) && !mechanismSolved(puzzle)) {
-      if(!showTutorialFailureFeedback(puzzle)) puzzleStatus.textContent = 'That answer did not work. Review the clues, adjust the mechanism, and try again.';
+      if(!showTutorialFailureFeedback(puzzle)) renderExact(puzzleStatus,'That answer did not work. Review the clues, adjust the mechanism, and try again.');
       blockedTone();
       return;
     }
     if (needsSlots && !validateCampaignPuzzleSlots()) {
-      if(!showTutorialFailureFeedback(puzzle)) puzzleStatus.textContent = 'That answer did not work. Review the clues and try again.';
+      if(!showTutorialFailureFeedback(puzzle)) renderExact(puzzleStatus,'That answer did not work. Review the clues and try again.');
       blockedTone();
       return;
     }
@@ -5882,15 +6500,15 @@
   function renderCollection() {
     const progress = currentLevelProgress();
     const count = progress.totalOwned;
-    collectionCountEl.textContent = `${count} / 120`;
-    collectionBtnCountEl.textContent = `${count} / 120`;
-    if (collectionLevelProgressEl) collectionLevelProgressEl.textContent = progressSummaryText(progress);
+    renderLocalized(collectionCountEl, `${count} / 120`);
+    renderLocalized(collectionBtnCountEl, `${count} / 120`);
+    if (collectionLevelProgressEl) renderLocalized(collectionLevelProgressEl, progressSummaryText(progress));
     glyphGrid.textContent = '';
     for (const word of STANDARD_120) {
       const cell = document.createElement('div');
       const has = collected(word);
       cell.className = `glyphCell${has ? '' : ' missing'}`;
-      cell.title = has ? word : 'Not yet recovered';
+      cell.title = has ? word : (isTpLanguage() ? 'sitelen ni li kama ala' : 'Not yet recovered');
       const glyph = document.createElement('div');
       glyph.className = has ? 'glyphCellGlyph sitelenGlyph' : 'glyphCellGlyph';
       glyph.textContent = has ? glyphChar(word) : '•';
@@ -5932,8 +6550,14 @@
     ctxOut.clearRect(0,0,canvasOut.width,canvasOut.height);
     try {
       const renderer = await ensureLevelRenderer();
+      // Use the same explicit Nanpa-format source as every other descriptive
+      // decimal in the Toki Pona UI. Passing `nanpa:${levelNo}` here is wrong:
+      // the renderer treats that opener separately and then wraps the parsed
+      // decimal again, producing a duplicated `nanpa:` outside the cartouche.
+      const source = I18N?.numericCartoucheSource?.(String(levelNo));
+      if (!source) throw new Error('no level numeric cartouche source');
       const rendered = await renderer.renderTextToNewCanvas({
-        input:String(levelNo),
+        input:source,
         layout:{fontPx:64,align:'center',spacingPreset:'compact',paddingPx:10},
         parser:{abbreviateNumericCartouches:true,nanpaColonParsing:true,nanpaColonRendering:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true}
       });
@@ -5944,12 +6568,9 @@
       const dw = src.width*scale, dh = src.height*scale;
       ctxOut.drawImage(src,(canvasOut.width-dw)/2,(canvasOut.height-dh)/2,dw,dh);
     } catch (err) {
-      // Keep the start screen usable if the shared renderer asset is unavailable.
-      ctxOut.fillStyle='#111'; ctxOut.textAlign='center'; ctxOut.textBaseline='middle';
-      ctxOut.font=`64px "${NASIN_NANPA_FONT}"`;
-      const digitWord = levelNo === 1 ? 'wan' : levelNo === 2 ? 'tu' : levelNo === 3 ? 'seli' : levelNo === 4 ? 'awen' : levelNo === 5 ? 'luka' : levelNo === 6 ? 'utala' : levelNo === 7 ? 'mun' : levelNo === 8 ? 'pipi' : levelNo === 9 ? 'jo' : null;
-      const fallback = levelNo===10 ? `${glyphChar('nanpa')} : ${glyphChar('wan')} ${glyphChar('ijo')} ${glyphChar('nanpa')}` : levelNo===11 ? `${glyphChar('nanpa')} : ${glyphChar('wan')} ${glyphChar('wan')} ${glyphChar('nanpa')}` : levelNo===12 ? `${glyphChar('nanpa')} : ${glyphChar('wan')} ${glyphChar('tu')} ${glyphChar('nanpa')}` : digitWord ? `${glyphChar('nanpa')} : ${glyphChar(digitWord)} ${glyphChar('nanpa')}` : String(levelNo);
-      ctxOut.fillText(fallback,canvasOut.width/2,canvasOut.height/2);
+      // Never fake a cartouche by drawing its source syntax with the font. If the
+      // renderer is unavailable, the small Latin fallback beside this canvas is
+      // already present and remains unambiguous.
       console.warn('[game] level cartouche renderer unavailable', err);
     }
   }
@@ -5958,8 +6579,15 @@
     if (!levelIntroOverlay || !campaignAdapter) return;
     const def = campaignAdapter.currentLevel();
     const levelNo = def?.ordinal || level().chapter;
-    levelIntroTitle.textContent = `Level ${levelNo}`;
-    levelIntroHint.textContent = 'Tap anywhere to start · Enter/Space also starts';
+    // The semantic label belongs outside the numeric cartouche.  Do not put the
+    // level number into this label as well: that would create a second inline
+    // Nanpa cartouche above the dedicated level-number cartouche.
+    renderLocalized(levelIntroTitle, isTpLanguage() ? 'ma musi' : 'Level');
+    if (levelIntroLatinNumber) levelIntroLatinNumber.textContent = String(levelNo);
+    levelIntroCartouche?.setAttribute('aria-label', isTpLanguage()
+      ? `ma musi ${levelNo}: nanpa lon poki nanpa-linja-n lili`
+      : `Level ${levelNo} as an abbreviated nanpa-linja-n numeric cartouche`);
+    renderLocalized(levelIntroHint, isTpLanguage() ? 'o luka e ma ante la musi li open. Enter/Space li open kin.' : 'Tap anywhere to start · Enter/Space also starts');
     levelIntroShownAt = performance.now();
     openModal(levelIntroOverlay);
     renderLevelIntroCartouche(levelNo);
@@ -5984,19 +6612,25 @@
     const isCampaignComplete = !next;
     setCampaignCelebration(isCampaignComplete);
     if (isCampaignComplete) {
-      if (levelCompleteEyebrow) levelCompleteEyebrow.textContent = 'campaign complete';
-      levelCompleteTitle.textContent = 'Congratulations!';
-      levelCompleteText.textContent = `You recovered all ${STANDARD_120.length} canonical glyphs and completed the full ${campaignAdapter?.runtime?.campaign?.levels?.length || levelNo}-level campaign.`;
-      levelCompleteCount.textContent = `${collectionCount()} / ${STANDARD_120.length} glyphs recovered · full campaign complete`;
-      stayLevelBtn.textContent = 'Keep exploring';
+      renderLocalized(levelCompleteEyebrow, isTpLanguage() ? 'musi ale li pini' : 'campaign complete');
+      renderLocalized(levelCompleteTitle, isTpLanguage() ? 'pona mute!' : 'Congratulations!');
+      renderLocalized(levelCompleteText, isTpLanguage()
+        ? `sina alasa pona e sitelen pona ${STANDARD_120.length} ale. sina pini e ma musi ${campaignAdapter?.runtime?.campaign?.levels?.length || levelNo} ale.`
+        : `You recovered all ${STANDARD_120.length} glyphs and completed all ${campaignAdapter?.runtime?.campaign?.levels?.length || levelNo} levels.`);
+      renderLocalized(levelCompleteCount, isTpLanguage()
+        ? `${collectionCount()} / ${STANDARD_120.length} sitelen li kama · musi ale li pini`
+        : `${collectionCount()} / ${STANDARD_120.length} glyphs recovered · full campaign complete`);
+      renderLocalized(stayLevelBtn, isTpLanguage() ? 'o awen li alasa' : 'Keep exploring');
     } else {
-      if (levelCompleteEyebrow) levelCompleteEyebrow.textContent = 'level complete';
-      levelCompleteTitle.textContent = `Level ${levelNo} complete`;
-      levelCompleteText.textContent = `All ${progress.requiredTotal} required Level ${levelNo} glyphs and mandatory objectives are complete. Continue to Level ${next.ordinal}.`;
-      levelCompleteCount.textContent = progressSummaryText(progress);
-      stayLevelBtn.textContent = 'Stay here';
+      renderLocalized(levelCompleteEyebrow, uiText('levelCompleteEyebrow'));
+      renderLocalized(levelCompleteTitle, isTpLanguage() ? `ma musi ${levelNo} li pini` : `Level ${levelNo} complete`);
+      renderLocalized(levelCompleteText, isTpLanguage()
+        ? `sitelen wile ${progress.requiredTotal} pi ma musi ${levelNo} en wile musi ale li pini. sina ken tawa ma musi ${next.ordinal}.`
+        : `All ${progress.requiredTotal} required Level ${levelNo} glyphs and mandatory objectives are complete. Continue to Level ${next.ordinal}.`);
+      renderLocalized(levelCompleteCount, progressSummaryText(progress));
+      renderLocalized(stayLevelBtn, uiText('stayHere'));
     }
-    continueLevelBtn.textContent = next ? `Continue to Level ${next.ordinal}` : 'Continue';
+    renderLocalized(continueLevelBtn, next ? (isTpLanguage() ? `o tawa ma musi ${next.ordinal}` : `Continue to Level ${next.ordinal}`) : uiText('continue'));
     continueLevelBtn.hidden = !next;
     openModal(levelCompleteOverlay);
     (next ? continueLevelBtn : stayLevelBtn).focus({ preventScroll: true });
@@ -6050,13 +6684,25 @@
   }
 
   function mobileJoystickCatchUpActive() {
-    return mobileMove.moveStrength > MOBILE_JOYSTICK_CATCHUP_THRESHOLD || mobileMove.turnStrength > MOBILE_JOYSTICK_CATCHUP_THRESHOLD;
+    // Any deliberate joystick input should remain time-based, not only the
+    // outer-rim boost. On a slow phone a 70-120 ms render frame must advance
+    // the player by the corresponding elapsed time even when the thumb is only
+    // part-way from the centre. The input strength still controls the speed.
+    return Boolean(
+      mobileMove.forward || mobileMove.back || mobileMove.turnLeft || mobileMove.turnRight ||
+      mobileMove.moveStrength > 0 || mobileMove.turnStrength > 0
+    );
   }
 
   function mobileJoystickSimulationTiming(dt) {
-    const normalDt = Math.min(0.05, Math.max(0, dt));
+    const elapsedDt = Math.max(0, Number(dt) || 0);
+    const normalDt = Math.min(0.05, elapsedDt);
     const catchUp = mobileJoystickCatchUpActive();
-    const controlDt = catchUp ? Math.min(MOBILE_JOYSTICK_MAX_FRAME_DT, Math.max(0, dt)) : normalDt;
+    // requestAnimationFrame's elapsed time is the render-speed feedback. If a
+    // phone draws fewer frames, each rendered frame consumes proportionally more
+    // movement time. Keep a bounded ceiling for tab resumes and split the
+    // displacement into collision-safe substeps rather than teleporting.
+    const controlDt = catchUp ? Math.min(MOBILE_JOYSTICK_MAX_FRAME_DT, elapsedDt) : normalDt;
     const simSteps = catchUp ? Math.max(1, Math.ceil(controlDt / MOBILE_JOYSTICK_MAX_SIM_STEP)) : 1;
     return {normalDt, catchUp, controlDt, simSteps, stepDt:simSteps ? controlDt / simSteps : 0};
   }
@@ -6066,10 +6712,9 @@
       currentTarget = null; promptEl.textContent = ''; updateHUD(); return;
     }
 
-    // Preserve the historical 50 ms simulation cap for every existing control
-    // path. Only a strongly deflected mobile joystick may consume more elapsed
-    // time after a slow render frame, and that catch-up is split into small
-    // collision-safe simulation steps below.
+    // Preserve the historical 50 ms simulation cap for non-joystick control
+    // paths. Any active mobile joystick consumes real elapsed frame time (within
+    // a bounded resume cap), split into collision-safe simulation substeps.
     const timing = mobileJoystickSimulationTiming(dt);
     const mapSteering = updateMapSteering(timing.normalDt);
     if (!mapSteering) {
@@ -6119,20 +6764,38 @@
     }
 
     currentTarget = findInteractionTarget();
-    promptEl.textContent = interactionText(currentTarget);
+    renderLocalized(promptEl, interactionTextLocalized(currentTarget));
     updateHUD();
   }
 
   function frame(now) {
-    // Pass real elapsed time into update (with a conservative resume cap).
-    // update() still applies the old 50 ms cap except for outer-rim joystick
-    // catch-up, so slow drawing no longer makes strong mobile input crawl.
-    const dt = Math.min(0.20, Math.max(0, (now - lastTime) / 1000));
+    // The rAF timestamp already measures the combined effect of drawing cost and
+    // scheduling delay. Preserve enough of that elapsed time for mobile joystick
+    // catch-up; update() applies the smaller legacy cap to non-joystick controls.
+    const dt = Math.min(0.25, Math.max(0, (now - lastTime) / 1000));
     lastTime = now; update(dt); renderScene(); requestAnimationFrame(frame);
   }
 
+  function renderExactPlayerText(el, source) {
+    const raw=String(source ?? '');
+    const localized=exactText(raw);
+    // English source copy that has no Toki Pona mapping must never be passed to the
+    // sitelen-pona ligature font: doing so can collapse its spaces/words into a run.
+    const untranslatedTpFallback=isTpLanguage() && localized===raw;
+    renderLocalized(el, localized, {sitelen:!untranslatedTpFallback});
+  }
+
   function showMessage(text) {
-    clearTimeout(messageTimer); messageEl.textContent = text; messageEl.classList.add('show');
+    clearTimeout(messageTimer);
+    renderExactPlayerText(messageEl, text);
+    messageEl.classList.add('show');
+    messageTimer = setTimeout(() => messageEl.classList.remove('show'), 3200);
+  }
+
+  function showLocalizedMessage(text) {
+    clearTimeout(messageTimer);
+    renderLocalized(messageEl, text, {sitelen:isTpLanguage()});
+    messageEl.classList.add('show');
     messageTimer = setTimeout(() => messageEl.classList.remove('show'), 3200);
   }
 
@@ -6143,8 +6806,8 @@
 
   function renderLog() {
     fieldLogEl.textContent = '';
-    if (!state.log.length) { const d = document.createElement('div'); d.textContent = 'No field notes yet.'; fieldLogEl.appendChild(d); return; }
-    for (const entry of state.log) { const d = document.createElement('div'); d.className = 'fieldLogEntry'; d.textContent = entry.text; fieldLogEl.appendChild(d); }
+    if (!state.log.length) { const d = document.createElement('div'); renderLocalized(d, uiText('noFieldNotes')); fieldLogEl.appendChild(d); return; }
+    for (const entry of state.log) { const d = document.createElement('div'); d.className = 'fieldLogEntry'; renderExactPlayerText(d, entry.text); fieldLogEl.appendChild(d); }
   }
 
   function ensureAudio() {
@@ -6216,7 +6879,9 @@
 
   function openResetConfirm() {
     if (!resetConfirmOverlay) { resetGame(); return; }
-    resetConfirmProgress.textContent = `${collectionCount()} / ${STANDARD_120.length} glyphs recovered`;
+    renderLocalized(resetConfirmProgress, isTpLanguage()
+      ? `${collectionCount()} / ${STANDARD_120.length} sitelen li kama`
+      : `${collectionCount()} / ${STANDARD_120.length} glyphs recovered`);
     openModal(resetConfirmOverlay);
     resetConfirmCancelBtn?.focus({ preventScroll: true });
   }
@@ -6305,9 +6970,10 @@
   function mobileJoystickIntent(dx, dy, deadRadius) {
     const radius = Math.hypot(dx, dy);
     if (!Number.isFinite(radius) || radius <= deadRadius) return 'idle';
-    const degrees = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-    const sectors = ['N','NE','E','SE','S','SW','W','NW'];
-    return sectors[Math.floor((degrees + 22.5) / 45) % 8];
+    // Four absolute quadrants with 45-degree boundaries. Vertical quadrants
+    // translate; side quadrants rotate in place.
+    if (Math.abs(dy) >= Math.abs(dx)) return dy < 0 ? 'N' : 'S';
+    return dx < 0 ? 'W' : 'E';
   }
 
   function mobileJoystickStrength(radius, deadRadius, outerRadius) {
@@ -6341,41 +7007,45 @@
     const absoluteIntent = mobileJoystickIntent(dx, dy, deadRadius);
     const strength = mobileJoystickStrength(radius, deadRadius, outerRadius);
     if (!Number.isFinite(radius) || radius <= deadRadius) {
-      gesture.lastPointerAngle = null;
-      return { intent:'idle', moveStrength:0, turnStrength:0, drive:gesture.drive, steering:0, strength };
+      resetMobileJoystickGesture(gesture);
+      return { intent:'idle', moveStrength:0, turnStrength:0, drive:'idle', steering:0, strength };
     }
 
     const pointerAngle = Math.atan2(dx, -dy); // clockwise from north
-    if (gesture.drive === 'idle') {
-      if (absoluteIntent.includes('N')) {
-        gesture.drive = 'forward';
-        gesture.steeringAngle = mobileJoystickSignedAngle(pointerAngle);
-        gesture.lastPointerAngle = pointerAngle;
-      } else if (absoluteIntent.includes('S')) {
-        gesture.drive = 'back';
-        // Screen-left/right should keep their familiar meaning while reversing.
-        gesture.steeringAngle = -mobileJoystickSignedAngle(pointerAngle - Math.PI);
-        gesture.lastPointerAngle = pointerAngle;
-      } else {
-        gesture.lastPointerAngle = pointerAngle;
-        return {
-          intent:absoluteIntent,
-          moveStrength:strength.move,
-          turnStrength:strength.turn,
-          drive:'idle',
-          steering:absoluteIntent.includes('W') ? -1 : absoluteIntent.includes('E') ? 1 : 0,
-          strength
-        };
-      }
+
+    // Left/right are always rotate-only. Crossing into either side quadrant
+    // immediately cancels forward/backward translation and any accumulated
+    // steering from the vertical quadrant.
+    if (absoluteIntent === 'W' || absoluteIntent === 'E') {
+      gesture.drive = 'idle';
+      gesture.steeringAngle = 0;
+      gesture.lastPointerAngle = pointerAngle;
+      return {
+        intent:absoluteIntent,
+        moveStrength:0,
+        turnStrength:strength.turn,
+        drive:'idle',
+        steering:absoluteIntent === 'W' ? -1 : 1,
+        strength
+      };
+    }
+
+    const nextDrive = absoluteIntent === 'N' ? 'forward' : 'back';
+    if (gesture.drive !== nextDrive) {
+      // Entering/re-entering a vertical quadrant starts straight. The initial
+      // touch position inside that quadrant must never imply rotation.
+      gesture.drive = nextDrive;
+      gesture.steeringAngle = 0;
+      gesture.lastPointerAngle = pointerAngle;
     } else if (gesture.lastPointerAngle == null) {
       gesture.lastPointerAngle = pointerAngle;
     } else {
       const angularDrag = mobileJoystickSignedAngle(pointerAngle - gesture.lastPointerAngle);
-      // Once forward/backward drive is established, sweeping around the ring acts
-      // like steering a wheel. Crossing another absolute sector never flips the
-      // latched travel direction; release is required before a new drive mode.
+      // Sideways drag while remaining in the same vertical quadrant adds
+      // steering. Reverse the angular sign while backing so dragging toward
+      // screen-right still rotates right, and screen-left still rotates left.
       gesture.steeringAngle += gesture.drive === 'back' ? -angularDrag : angularDrag;
-      gesture.steeringAngle = Math.max(-Math.PI * 2, Math.min(Math.PI * 2, gesture.steeringAngle));
+      gesture.steeringAngle = Math.max(-MOBILE_JOYSTICK_STEER_FULL_ANGLE, Math.min(MOBILE_JOYSTICK_STEER_FULL_ANGLE, gesture.steeringAngle));
       gesture.lastPointerAngle = pointerAngle;
     }
 
@@ -6709,8 +7379,26 @@
   stayLevelBtn.addEventListener('click', () => closeModal(levelCompleteOverlay));
   resetConfirmCancelBtn?.addEventListener('click', () => closeModal(resetConfirmOverlay));
   resetConfirmStartBtn?.addEventListener('click', (e) => { e.preventDefault(); resetGame(); });
+  languageSelect?.addEventListener('change', () => {
+    uiLanguage = I18N?.setLanguage?.(languageSelect.value) || (languageSelect.value === 'en' ? 'en' : 'tp');
+    applyStaticLanguage();
+    renderLog();
+    renderCollection();
+    updateHUD();
+    if (activePanelId && sentenceOverlay && !sentenceOverlay.hidden) {
+      const panel = PANELS[activePanelId];
+      renderLocalized(sentenceTitle, isTpLanguage() ? (activePanelId === 'entrySentence' ? 'sitelen open' : 'sitelen tomo sewi') : panel?.title || 'Inscription');
+      renderSentencePanel();
+    }
+    if (activeCampaignPuzzle && puzzleOverlay && !puzzleOverlay.hidden) renderCampaignPuzzle();
+    if (levelIntroOverlay && !levelIntroOverlay.hidden) showLevelIntro();
+    if (levelCompleteOverlay && !levelCompleteOverlay.hidden) openLevelComplete();
+    if (resetConfirmOverlay && !resetConfirmOverlay.hidden) openResetConfirm();
+    canvas?.focus({preventScroll:true});
+  });
 
   async function init() {
+    applyStaticLanguage();
     try { db = await openDb(); } catch (err) { console.warn('[game] IndexedDB unavailable', err); db = null; }
     let saved = await dbGet();
 
@@ -6738,6 +7426,7 @@
     state.campaign = campaignAdapter.snapshot();
     restoreDoorState();
     syncWorldFromCampaign();
+    repairLevel10TextileState();
     markCellExplored(Math.floor(state.x), Math.floor(state.y));
 
     if (document.fonts?.load) {
@@ -6757,9 +7446,9 @@
       showMessage('Campaign complete: 120 / 120 glyphs recovered.');
       window.setTimeout(() => { if (!modalOpen) openLevelComplete(); }, 120);
     } else if (recoveredTestReset) {
-      showMessage(`Testing reset restored: Level ${restoredLevelNo} is back at its exact start.`);
+      showMessage(`Level ${restoredLevelNo} has returned to its starting point.`);
     } else {
-      showMessage(restored ? `Saved Level ${restoredLevelNo} progress restored from IndexedDB.` : 'Campaign ready.');
+      showMessage(restored ? `Welcome back. Your Level ${restoredLevelNo} progress has been restored.` : 'Campaign ready.');
     }
     if (state.levelIntroPending) window.setTimeout(() => showLevelIntro(), 80);
     window.setInterval(() => { saveState(); flushSave(); }, 1200);

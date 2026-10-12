@@ -150,6 +150,36 @@ button:focus-visible, a:focus-visible, canvas:focus-visible, summary:focus-visib
   border-radius: 5px;
   background: rgba(0,0,0,0.35);
 }
+/* Renderer-backed numeric cartouches are black-on-transparent canvases.
+   The HUD sits on a dark translucent surface, so invert those monochrome canvases
+   to the same light foreground as the surrounding HUD text. Keep the Latin fallback
+   light as well. This is HUD-only; puzzle/cartouche canvases on light cards remain black. */
+.hudTop .tpNumericCanvas {
+  filter: invert(1);
+  opacity: .96;
+}
+.hudTop .tpNumeric::after,
+.hudTop .tpNumeric--fallback {
+  color: #fff;
+  opacity: .90;
+  text-shadow: 0 1px 3px #000;
+}
+
+/* Toast/overlay messages also sit on a dark surface, so their inline numeric
+   cartouches need the same light foreground treatment as the HUD. */
+.messageOverlay .tpNumericCanvas,
+.interactionPrompt .tpNumericCanvas {
+  filter: invert(1);
+  opacity: .96;
+}
+.messageOverlay .tpNumeric::after,
+.messageOverlay .tpNumeric--fallback,
+.interactionPrompt .tpNumeric::after,
+.interactionPrompt .tpNumeric--fallback {
+  color: #fff;
+  opacity: .92;
+  text-shadow: 0 1px 3px #000;
+}
 
 .crosshair {
   position: absolute;
@@ -584,6 +614,44 @@ kbd {
   font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   color: var(--muted);
 }
+
+.puzzleAnswerGroups {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+}
+.puzzleAnswerGroup {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(132px,.72fr) minmax(0,2.28fr);
+  gap: 8px;
+  align-items: center;
+  padding: 6px 7px;
+  border: 1px solid rgba(17,17,17,.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,.13);
+}
+.puzzleAnswerGroupText { min-width: 0; display: grid; gap: 2px; }
+.puzzleAnswerGroupTitle { font-size: 12px; line-height: 1.15; }
+.puzzleAnswerGroupClue { color: var(--muted); font-size: 10.5px; line-height: 1.2; }
+.puzzleAnswerGroupSlots {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--answer-cols, 1), minmax(0,1fr));
+  gap: 4px;
+}
+.puzzleAnswerGroupSlots .puzzleSlot {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 54px;
+  min-height: 54px;
+  padding: 2px 1px;
+  border-radius: 8px;
+}
+.puzzleAnswerGroupSlots .puzzleSlotGlyph { min-height: 31px; font-size: 30px; }
+.puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph { min-height: 28px; font-size: 20px; }
+.puzzleAnswerGroupSlots .puzzleSlotLabel { font-size: 8px; }
 .puzzleTrayWrap {
   min-height: 0;
   border-top: 1px solid rgba(17,17,17,.16);
@@ -802,6 +870,21 @@ kbd {
   .puzzleSlotGlyph { min-height: 35px; font-size: 34px; }
   .puzzleSlot.empty .puzzleSlotGlyph { min-height: 32px; font-size: 23px; }
   .puzzleSlotLabel { font-size: 9px; }
+  .puzzleAnswerGroups { gap: 4px; }
+  .puzzleAnswerGroup {
+    grid-template-columns: 1fr;
+    gap: 3px;
+    padding: 4px 5px;
+    border-radius: 8px;
+  }
+  .puzzleAnswerGroupText { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+  .puzzleAnswerGroupTitle { font-size: 10.5px; }
+  .puzzleAnswerGroupClue { font-size: 9.5px; }
+  .puzzleAnswerGroupSlots { gap: 3px; }
+  .puzzleAnswerGroupSlots .puzzleSlot { height: 44px; min-height: 44px; padding: 1px; }
+  .puzzleAnswerGroupSlots .puzzleSlotGlyph { min-height: 25px; font-size: 25px; }
+  .puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph { min-height: 23px; font-size: 17px; }
+  .puzzleAnswerGroupSlots .puzzleSlotLabel { font-size: 7px; }
   .puzzleLiveCartoucheWrap { padding: 4px 6px 3px; }
   .puzzleLiveCartoucheCanvas { max-height: 54px; }
   .puzzleLiveCartoucheLabel { font-size: 9px; }
@@ -864,6 +947,15 @@ kbd {
   .puzzleSlot { height: 48px; min-height: 48px; max-width: 58px; }
   .puzzleSlotGlyph { min-height: 28px; font-size: 27px; }
   .puzzleSlot.empty .puzzleSlotGlyph { min-height: 26px; font-size: 20px; }
+  .puzzleAnswerGroups { gap: 2px; }
+  .puzzleAnswerGroup { gap: 1px; padding: 2px 4px; }
+  .puzzleAnswerGroupTitle { font-size: 9px; }
+  .puzzleAnswerGroupClue { font-size: 8px; line-height: 1.05; }
+  .puzzleAnswerGroupSlots { gap: 2px; }
+  .puzzleAnswerGroupSlots .puzzleSlot { height: 34px; min-height: 34px; border-width: 1px; }
+  .puzzleAnswerGroupSlots .puzzleSlotGlyph { min-height: 20px; font-size: 21px; }
+  .puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph { min-height: 18px; font-size: 15px; }
+  .puzzleAnswerGroupSlots .puzzleSlotLabel { display: none; }
   .puzzleLiveCartoucheHeader { display: none; }
   .puzzleLiveCartoucheCanvas { max-height: 42px; }
   .puzzleTrayLabel { display: none; }
@@ -1131,7 +1223,7 @@ kbd {
 
 /* Level 4 mechanisms: varied, tap-first, and bounded to the existing fixed puzzle viewport. */
 .jugTarget{display:flex;align-items:center;justify-content:center;gap:10px;font:800 12px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em}.jugTarget .sitelenGlyph{font-size:34px}.jugTarget small{font-size:11px;text-transform:none;letter-spacing:0;color:var(--muted)}
-.jugVessels{display:flex;justify-content:center;align-items:flex-end;gap:34px;width:100%;}.jugUnit{display:flex;flex-direction:column;align-items:center;gap:5px}.jugVessel{position:relative;width:92px;height:150px;border:3px solid rgba(17,17,17,.45);border-top-width:2px;border-radius:8px 8px 16px 16px;overflow:hidden;background:rgba(255,255,255,.32)}.jugVesselFill{position:absolute;left:0;right:0;bottom:0;background:#9cc9d8;transition:height .16s ease}.jugReadout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 1px rgba(255,255,255,.75)}.jugReadout .sitelenGlyph{font-size:42px;line-height:.9}.jugReadout small,.jugLabel{font:800 11px/1.1 system-ui,sans-serif}.jugControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:min(100%,520px)}.jugAction{min-height:42px;padding:6px 8px}
+.jugVessels{display:flex;justify-content:center;align-items:flex-end;gap:34px;width:100%;}.jugUnit{display:flex;flex-direction:column;align-items:center;gap:5px}.jugVessel{position:relative;width:92px;height:150px;border:3px solid rgba(17,17,17,.45);border-top-width:2px;border-radius:8px 8px 16px 16px;overflow:hidden;background:rgba(255,255,255,.32)}.jugVesselFill{position:absolute;left:0;right:0;bottom:0;background:#9cc9d8;transition:height .16s ease}.jugReadout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0 5px;text-shadow:0 1px rgba(255,255,255,.75);box-sizing:border-box}.jugReadoutCartouche{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;overflow:hidden}.jugReadoutLatin{font:800 10px/1 system-ui,sans-serif}.jugReadout .sitelenGlyph{font-size:42px;line-height:.9}.jugLabel{font:800 11px/1.1 system-ui,sans-serif}.jugControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:min(100%,520px)}.jugAction{min-height:42px;padding:6px 8px}
 .hanoiBoard{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,620px);height:min(240px,34dvh)}.hanoiRod{position:relative;min-width:0;min-height:0;padding:5px 4px 20px;border:2px solid rgba(17,17,17,.2);background:rgba(255,255,255,.25);overflow:hidden}.hanoiRod.selected{background:#e8d5b7;border-color:#564b3d}.hanoiPost{position:absolute;left:50%;bottom:29px;top:14px;width:6px;transform:translateX(-50%);background:#685b4c;border-radius:4px}.hanoiBase{position:absolute;left:10%;right:10%;bottom:25px;height:7px;background:#685b4c;border-radius:4px}.hanoiStack{position:absolute;left:5%;right:5%;bottom:32px;display:flex;flex-direction:column-reverse;align-items:center;gap:3px;pointer-events:none}.hanoiDisk{height:34px;border:2px solid rgba(17,17,17,.28);border-radius:12px;background:#d9c3a3;display:flex;align-items:center;justify-content:center}.hanoiDisk .sitelenGlyph{font-size:23px}.hanoiRod small{position:absolute;bottom:5px;left:0;right:0;font:800 10px/1 system-ui,sans-serif}.hanoiMoves{font:800 12px/1 system-ui,sans-serif}
 .codeLegend{display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;font:800 11px/1 system-ui,sans-serif}.codeLegend>strong{text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.codeLegendGlyph{display:grid;place-items:center;width:48px;height:48px;padding:0;border-radius:8px;background:rgba(17,17,17,.07)}.codeLegendGlyph .sitelenGlyph{font-size:31px;line-height:1}.codeGuess{display:grid;grid-template-columns:repeat(var(--code-cols,4),70px);gap:9px;justify-content:center;max-width:100%}.codeSymbol{width:70px;height:70px;min-height:70px;padding:0}.codeSymbol .sitelenGlyph{font-size:40px;line-height:1}.codeSubmit{min-height:42px;padding:8px 20px}.codeHistory{display:grid;gap:4px;width:min(100%,500px)}.codeHistoryRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;padding:5px 8px;border-radius:7px;background:rgba(17,17,17,.06);font:700 11px/1.2 system-ui,sans-serif}.codeHistorySymbols{display:flex;align-items:center;gap:8px}.codeHistorySymbols .sitelenGlyph{font-size:24px;line-height:1}
 .equivalenceWrap{display:flex;align-items:center;justify-content:center;width:100%;min-height:0}.equivalenceGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:min(100%,680px)}.equivalenceHeader{text-align:center;font:900 10px/1 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em}.equivalenceCard{min-width:0;min-height:0;padding:4px;border:2px solid rgba(17,17,17,.16);border-radius:8px;background:rgba(255,255,255,.28);display:flex;flex-direction:column;align-items:center;justify-content:center}.equivalenceCard.movable{cursor:pointer}.equivalenceCard.selected{background:#e8d5b7;border-color:#564b3d}.equivalenceCanvas{display:block;width:100%;height:auto;max-height:58px}.equivalenceCard small{font:700 9px/1 ui-monospace,monospace;color:var(--muted)}
@@ -1517,15 +1609,18 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .coldControls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.coldControl{min-height:75px;display:grid;gap:4px;place-items:center}.coldControl strong{font:900 11px/1 system-ui,sans-serif}.coldControl span{font:800 10px/1 system-ui,sans-serif;color:var(--muted)}
 .coldGauges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.coldGauge{padding:7px;border:1px solid rgba(17,17,17,.16);border-radius:9px;background:rgba(255,255,255,.28);display:grid;gap:3px;justify-items:center}.coldGauge.matched{background:#d8ecd9;outline:3px solid #3f784e}.coldGauge strong{font:900 10px/1 system-ui,sans-serif}.coldGauge small{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}.coldGaugeCanvas{display:block;width:100%;height:auto;max-height:56px}
 .textileFormula{display:flex;gap:9px;align-items:center;justify-content:center;padding:10px;border:1px solid rgba(17,17,17,.16);border-radius:10px;background:rgba(255,255,255,.28);font:900 11px/1 system-ui,sans-serif}.textileFormula .sitelenGlyph{font-size:42px}.textileRatioOptions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.textileRatio{min-height:68px;font:900 15px/1 system-ui,sans-serif}.textileRatio.selected{outline:3px solid #111;background:#e8ddc5}
+.recordClassifyWrap{display:grid;gap:8px;width:min(100%,760px);min-width:0}.recordClassifyLead{padding:7px 9px;border:2px solid rgba(17,17,17,.22);border-radius:9px;background:#efe4ca;text-align:center;font-weight:800}.recordClassifyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.recordClassifyCard{display:grid;gap:7px;padding:8px;border:1px solid rgba(17,17,17,.18);border-radius:10px;background:rgba(255,255,255,.32);min-width:0}.recordClassifyHead{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}.recordClassifyGlyph{font-size:42px}.recordClassifyHead strong{font:900 12px/1.15 system-ui,sans-serif}.recordClassifyFacts{display:grid;gap:4px}.recordClassifyFact{padding:5px 7px;border-radius:7px;background:rgba(255,255,255,.42);font:750 10px/1.22 system-ui,sans-serif;min-width:0}.recordClassifyDecision{display:grid;gap:5px}.recordClassifyDecision>strong{font:900 10px/1.1 system-ui,sans-serif}.recordClassifyChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.recordClassifyChoice{min-height:42px;padding:5px;font-weight:900}.recordClassifyChoice.selected{background:#d8ecd9;outline:3px solid #3f784e}
 @media (pointer:coarse), (max-width:600px){
   .marketTillCards{grid-template-columns:1fr}.marketTillCard{padding:7px}.marketTillHead .sitelenGlyph{font-size:40px}.marketTillTarget{grid-template-columns:1fr;justify-items:center;gap:4px}.marketTillTarget>strong{white-space:normal}.marketTillTokens{grid-template-columns:repeat(3,minmax(0,1fr))}.marketToken{min-height:46px}
   .coldControls,.coldGauges{grid-template-columns:1fr 1fr 1fr;gap:4px}.coldControl{min-height:58px}.coldGauge{padding:4px}.coldGaugeCanvas{max-height:44px}
   .textileRatioOptions{grid-template-columns:repeat(2,minmax(0,1fr))}.textileRatio{min-height:52px}
+  .recordClassifyWrap{gap:5px}.recordClassifyLead{padding:5px 7px;font-size:10px}.recordClassifyGrid{grid-template-columns:1fr;gap:5px}.recordClassifyCard{padding:6px;gap:5px}.recordClassifyGlyph{font-size:34px}.recordClassifyFact{padding:4px 5px;font-size:9px}.recordClassifyChoice{min-height:36px;padding:3px}
 }
 @media (max-width:390px){.marketTillTokens{grid-template-columns:repeat(2,minmax(0,1fr))}.marketTillHead .sitelenGlyph{font-size:36px}.marketTillCanvas{max-height:70px}.marketTillTarget .marketTillCanvas{max-height:78px}}
 @media (max-height:620px){
   .marketTillWrap,.coldChainWrap,.textileMixerWrap{gap:5px}.marketTillCard{padding:4px}.marketTillHead .sitelenGlyph{font-size:34px}.marketTillCanvas{max-height:58px}.marketTillTarget .marketTillCanvas{max-height:64px}.marketTillTokens{gap:3px}.marketToken{min-height:38px}
   .coldControl{min-height:46px}.coldGaugeCanvas{max-height:38px}.textileFormula{padding:5px}.textileFormula .sitelenGlyph{font-size:32px}.textileRatio{min-height:42px}
+  .recordClassifyLead{padding:4px;font-size:9px}.recordClassifyCard{padding:4px;gap:3px}.recordClassifyHead{gap:5px}.recordClassifyGlyph{font-size:28px}.recordClassifyFact{padding:3px 4px;font-size:8px}.recordClassifyChoice{min-height:31px}
 }
 
 /* Level 11 — nocturnal wildlife sanctuary / field station. */
@@ -1594,7 +1689,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .habitatRecord ul{font-size:7px;line-height:1.12}.habitatRecord li:nth-child(n+2){display:list-item}
 }
 
-/* Level 12 — final expert Sudoku. Keep the entire working board usable in the
+/* Level 12 — final medium Sudoku. Keep the entire working board usable in the
    fixed mechanism viewport. Desktop uses a board + side controls layout;
    phones stack controls below a smaller square board. Digit glyphs are never
    stretched and Latin fallbacks remain visible at every breakpoint. */
@@ -1800,4 +1895,256 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .callTriangCell { width: 38px; height: 38px; min-height: 38px; }
   .nonogramWrap { --nonogram-cell: 31px; grid-template-columns: minmax(48px, auto) auto; }
   .sudokuGrid { width: min(100%, 245px, 32dvh); }
+}
+
+/* v0.68 bilingual Toki Pona / English presentation */
+.pageTitleBlock { min-width: 0; }
+.languageControl {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 11px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  flex: 0 0 auto;
+}
+.languageControl label { color: var(--muted); }
+.languageControl select {
+  min-height: 32px;
+  padding: 4px 28px 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: #111;
+  font: 700 12px/1.1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* Latin Toki Pona is passed to the existing nasin nanpa font, whose ligatures
+   provide sitelen pona. References to exact clue tokens stay Latin so a player
+   can identify the named token unambiguously. */
+.tpProse {
+  font-family: "NasinNanpaGame", sans-serif !important;
+  font-variant-ligatures: normal !important;
+  font-feature-settings: "liga" 1, "dlig" 1, "calt" 1 !important;
+  letter-spacing: 0;
+}
+.tpProse .tpLiteral,
+.tpLiteral {
+  display: inline-block;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings: normal !important;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.15;
+  padding: 0 .04em;
+}
+.tpProse .tpNumeric,
+.tpNumeric {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: "NasinNanpaGame", sans-serif !important;
+  font-variant-ligatures: normal !important;
+  font-feature-settings: "liga" 1, "dlig" 1, "calt" 1 !important;
+  letter-spacing: 0;
+  line-height: 1.08;
+  vertical-align: -0.12em;
+  margin: 0 .06em;
+  min-height: 1.15em;
+}
+.tpNumericCanvas {
+  display: block;
+  height: 1.32em;
+  width: auto;
+  max-width: none;
+}
+.tpNumeric--fallback {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings: normal !important;
+  font-weight: 700;
+  vertical-align: 0;
+}
+.tpNumeric--fallback::after { display:none !important; }
+.mechanismClue .tpLiteral { margin: 0 .12em; }
+.mechanismClue .tpNumeric { margin: 0 .12em; }
+.mechanismClue .tpNumeric::after { margin-left: .34em; }
+
+.tpNumeric::after {
+  content: attr(data-latin);
+  display: inline-block;
+  margin-left: .24em;
+  vertical-align: .16em;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings: normal !important;
+  font-size: .58em;
+  font-weight: 700;
+  line-height: 1;
+  opacity: .72;
+}
+
+.tpProse .tpTerm,
+.tpTerm {
+  display: inline-block;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+  font-variant-ligatures: none !important;
+  font-feature-settings: normal !important;
+  font-weight: 800;
+  letter-spacing: .01em;
+  line-height: 1.15;
+  padding: .04em .22em;
+  margin: 0 .03em;
+  border-radius: .28em;
+  background: rgba(17,17,17,.07);
+  box-shadow: inset 0 0 0 1px rgba(17,17,17,.10);
+}
+
+/* Keep language names themselves readable in Latin even while the page is in
+   sitelen pona mode. */
+.languageControl,
+.languageControl * { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important; }
+
+@media (max-width: 620px) {
+  .pageHeadingRow { flex-wrap: wrap; }
+  .pageTitleBlock { flex: 1 1 calc(100% - 42px); }
+  .languageControl { width: 100%; justify-content: flex-end; margin-top: 2px; }
+}
+
+/* v0.75 numeric-display audit: outside Sudoku, Toki Pona mechanism values use
+   explicit abbreviated Nanpa-format cartouches.  Compact mechanism surfaces
+   scale the cartouche rather than falling back to bare digit glyphs. */
+.dialValue .tpNumeric{font-size:20px;margin:0;line-height:1}
+.dialValue .tpNumeric::after{display:block;margin:.16em 0 0;font-size:.48em;text-align:center}
+.balanceWeight .tpNumeric{font-size:20px;margin:0;line-height:1}
+.balanceWeight .tpNumeric::after{display:block;margin:.16em 0 0;font-size:.48em;text-align:center}
+.jugTargetValue .tpNumeric{font-size:24px;margin:0}
+.jugReadoutCartouche .tpNumeric{font-size:17px;margin:0;line-height:1;max-width:100%;justify-content:center;text-shadow:0 1px rgba(255,255,255,.75)}
+.jugReadoutCartouche .tpNumeric::after{display:none}
+.jugReadoutCartouche .tpNumericCanvas{height:1.08em;max-width:100%;width:auto}
+.hanoiDisk .tpNumeric{font-size:14px;margin:0;line-height:1}
+.hanoiDisk .tpNumeric::after{font-size:.45em;margin-left:.12em}
+.scheduleRank .tpNumeric{font-size:10px;margin:0;line-height:1}
+.scheduleRank .tpNumeric::after{display:block;margin:.12em 0 0;font-size:.52em;text-align:center}
+.slidingTile .tpNumeric{font-size:25px;margin:0;line-height:1}
+.slidingTile .tpNumeric::after{display:block;margin:.15em 0 0;font-size:.44em;text-align:center}
+.nonogramClueNumber .tpNumeric{font-size:15px;margin:0;line-height:1}
+.nonogramClueNumber .tpNumeric::after{font-size:.42em;margin-left:.1em}
+.tonePadNumber .tpNumeric{font-size:21px;margin:0;line-height:1}
+.tonePadNumber .tpNumeric::after{display:block;margin:.12em 0 0;font-size:.45em;text-align:center}
+.pulseLaneLabel .tpNumeric{font-size:11px;margin:0;line-height:1}
+.pulseLaneLabel .tpNumeric::after{display:block;margin:.08em 0 0;font-size:.52em;text-align:center}
+.deductionSlot .tpNumeric{font-size:7px;margin:0;line-height:1}
+.deductionSlot .tpNumeric::after{display:none}
+.truthBit .tpNumeric{font-size:14px;margin:0;line-height:1}
+.truthBit .tpNumeric::after{font-size:.45em;margin-left:.12em}
+.exactPathStep .tpNumeric{font-size:6px;margin:0;line-height:1}
+.exactPathStep .tpNumeric::after{display:none}
+.exactPathValue .tpNumeric{font-size:15px;margin:0;line-height:1}
+.exactPathValue .tpNumeric::after{display:block;margin:.1em 0 0;font-size:.42em;text-align:center}
+.coupledLamp .tpNumeric{font-size:9px;margin:0;line-height:1;color:inherit}
+.coupledLamp .tpNumeric::after{display:none}
+.coupledLeverNumber .tpNumeric{font-size:16px;margin:0;line-height:1}
+.coupledLeverNumber .tpNumeric::after{display:block;margin:.1em 0 0;font-size:.42em;text-align:center}
+.callTriangDistanceGlyph .tpNumeric{font-size:16px;margin:0;line-height:1}
+.callTriangDistanceGlyph .tpNumeric::after{font-size:.48em;margin-left:.15em}
+.marketToken .tpNumeric{font-size:16px;margin:0;line-height:1}
+.marketToken .tpNumeric::after{display:block;margin:.12em 0 0;font-size:.46em;text-align:center}
+.textileRatio{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
+.textileRatioNumber .tpNumeric{font-size:14px;margin:0;line-height:1}
+.textileRatioNumber .tpNumeric::after{font-size:.45em;margin-left:.1em}
+.coldControl .tpNumeric{font-size:12px;margin:0;line-height:1}
+.coldControl .tpNumeric::after{font-size:.48em;margin-left:.12em}
+
+@media (max-width:700px), (max-height:620px){
+  .dialValue .tpNumeric,.balanceWeight .tpNumeric{font-size:17px}
+  .jugTargetValue .tpNumeric{font-size:20px}.jugReadoutCartouche .tpNumeric{font-size:13px}.jugReadoutLatin{font-size:9px}
+  .hanoiDisk .tpNumeric{font-size:11px}.slidingTile .tpNumeric{font-size:20px}
+  .nonogramClueNumber .tpNumeric{font-size:12px}.tonePadNumber .tpNumeric{font-size:17px}
+  .truthBit .tpNumeric{font-size:12px}.exactPathValue .tpNumeric{font-size:12px}
+  .coupledLeverNumber .tpNumeric{font-size:13px}.callTriangDistanceGlyph .tpNumeric{font-size:13px}
+  .textileRatioNumber .tpNumeric{font-size:12px}
+}
+
+
+/* v0.80 numeric-control fit: renderer-backed mechanism cartouches must fit
+   inside the control that owns them. The renderer canvas has an intrinsic
+   width based on its source; do not let that intrinsic width expand a tile.
+   Latin fallbacks sit below the cartouche, never beside it, so all values in
+   one puzzle keep the same cartouche scale and stay inside their controls. */
+.mechanismNumberHost{min-width:0;box-sizing:border-box}
+.mechanismNumberHost>.tpNumeric{
+  max-width:100%;
+  min-width:0;
+  margin:0;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.08em;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+.mechanismNumberHost>.tpNumeric>.tpNumericCanvas{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:calc(100% - 4px);
+  max-height:1.32em;
+  object-fit:contain;
+  flex:0 1 auto;
+}
+.mechanismNumberHost>.tpNumeric::after{
+  flex:0 0 auto;
+  margin:.06em 0 0 !important;
+  line-height:1;
+  text-align:center;
+}
+
+/* A sliding-number tile is deliberately a compact square. Reserve padding for
+   the rounded border and make every one-digit cartouche use the same available
+   box. This prevents the Level 5 cartouches/fallbacks from crossing tile edges. */
+.slidingTile.mechanismNumberHost{padding:7px 6px;overflow:hidden}
+.slidingTile.mechanismNumberHost>.tpNumeric{width:100%;height:100%;justify-content:center}
+.slidingTile.mechanismNumberHost>.tpNumeric>.tpNumericCanvas{max-width:100%;max-height:32px}
+.slidingTile.mechanismNumberHost>.tpNumeric::after{font-size:10px;margin-top:4px !important}
+@media (max-width:700px){
+  .slidingTile.mechanismNumberHost{padding:5px 4px}
+  .slidingTile.mechanismNumberHost>.tpNumeric>.tpNumericCanvas{max-height:25px}
+  .slidingTile.mechanismNumberHost>.tpNumeric::after{font-size:9px;margin-top:2px !important}
+}
+@media (max-height:620px){
+  .slidingTile.mechanismNumberHost{padding:4px 3px}
+  .slidingTile.mechanismNumberHost>.tpNumeric>.tpNumericCanvas{max-height:22px}
+  .slidingTile.mechanismNumberHost>.tpNumeric::after{font-size:8px;margin-top:2px !important}
+}
+
+/* Tight mechanism surfaces use the same preservation rule. Their existing
+   font-size declarations still choose the visual hierarchy; this only prevents
+   the renderer canvas/fallback pair from escaping the available box. */
+.dialValue.mechanismNumberHost,.balanceWeight.mechanismNumberHost,.hanoiDisk.mechanismNumberHost,
+.scheduleRank.mechanismNumberHost,.tonePadNumber.mechanismNumberHost,.pulseLaneLabel.mechanismNumberHost,
+.deductionSlot.mechanismNumberHost,.truthBit.mechanismNumberHost,.exactPathStep.mechanismNumberHost,
+.exactPathValue.mechanismNumberHost,.coupledLamp.mechanismNumberHost,.coupledLeverNumber.mechanismNumberHost,
+.callTriangDistanceGlyph.mechanismNumberHost,.marketToken.mechanismNumberHost,.textileRatioNumber.mechanismNumberHost,
+.coldControl.mechanismNumberHost,.jugTargetValue.mechanismNumberHost,.jugReadoutCartouche.mechanismNumberHost{
+  overflow:hidden;
+}
+
+/* v0.78: a level indicator is semantic `ma musi`/`Level` outside one dedicated
+   Nanpa-format number cartouche.  Keep the ordinary decimal as a small fallback
+   beside that cartouche; never create a second inline numeric cartouche here. */
+.levelIntroNumberRow{display:flex;align-items:center;justify-content:center;gap:8px;max-width:100%;margin:0 auto}
+.levelIntroNumberRow #levelIntroCartouche{display:block;max-width:min(420px,78vw);height:auto}
+.levelIntroLatinNumber{font:700 18px/1 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted);flex:0 0 auto}
+@media (max-width:520px){.levelIntroNumberRow{gap:6px}.levelIntroNumberRow #levelIntroCartouche{max-width:min(360px,76vw)}.levelIntroLatinNumber{font-size:16px}}
+
+
+/* v0.79: the Toki Pona level label must remain lowercase so the nasin-nanpa
+   ligatures can turn `ma musi` into its two sitelen pona glyphs. The generic
+   eyebrow style uppercases text, which breaks those ligatures. */
+#levelIntroEyebrow.tpProse{
+  text-transform:none;
+  letter-spacing:0;
+  font-size:18px;
+  line-height:1.1;
 }

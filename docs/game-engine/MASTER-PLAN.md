@@ -280,9 +280,9 @@ Exact Level 9 reset start:
 - Level 9 intro pending
 - physical start on the upper floor
 
-## Level 12 finale requirement — IMPLEMENTED / superseded by v0.42
+## Level 12 finale requirement — IMPLEMENTED / revised in v0.67
 
-The earlier moderate-difficulty Sudoku note has been superseded by the explicit final-level direction: Level 12 is the hardest campaign level and the **expert 9×9 nanpa-linja-n Sudoku is the last puzzle solved**. The shipped grid has a verified unique solution, supports notes, preserves Latin numeric fallbacks, and gives no correctness indication until **Try answer** is submitted.
+Level 12 remains the hardest campaign level and the **medium 9×9 nanpa-linja-n Sudoku is the last puzzle solved**. The shipped grid has 29 givens and a verified unique solution, supports notes, preserves Latin numeric fallbacks, and gives no correctness indication until **Try answer** is submitted. The reduction from expert to medium prevents the final Sudoku from becoming an endurance wall after the four preceding master trials.
 
 ## Level 10 — cold market / logistics tower — IMPLEMENTED IN v0.35
 
@@ -305,23 +305,25 @@ Implemented object/navigation mechanic:
 - the freight system, basement route, chilled lift and awning shortcut become available through puzzle world-state changes
 
 Required chains:
-1. **Market Permit / Till** → `esun + mani`
-   - exact-payment token manipulation using decimal pricing and a percentage reduction
+1. **Market Allocation Ledger** → `esun + mani`
+   - derive three related shipment percentages (31.25%, 43.75%, 25%) from a 16-lot allocation
+   - encode all three as abbreviated nanpa-format percentage cartouches
    - powers the freight system
 2. **Delivery Manifest / Freight Routing** → `pan + suwi`
    - route `0042` bread and `0017` sweet cargo using quantity/date/time manifest information
    - correct deliveries open basement access
-3. **Cold-chain Control** → `lete + ko`
+3. **Cold-chain Control + Scientific Record** → `lete + ko`
    - coupled signed-decimal temperature controls with one verified solution
-   - success activates the chilled service lift to the upper floor
+   - stabilized controls activate a second recorder requiring three normalized scientific-notation answers
+   - only the completed scientific record activates the chilled service lift
 4. **Textile/Dye Loft** → `len + laso`
-   - set a 2:1:1 dye mixture and physically route recoverable cloth batches
+   - derive and encode three mixed-fraction dye-batch totals, then physically route recoverable cloth batches
    - success opens the upper-to-ground awning shortcut
 5. **Inspection / Quarantine** → `jaki + walo`
    - reuse the actual delivery records to dispatch the clean bread sample and quarantine the sweet sample with the bad temperature history
    - completes Level 10
 
-Nanpa-linja-n is contextual throughout the level: prices, percentages, signed temperatures, dates/times, quantities and leading-zero stock identifiers are operational information rather than detached notation quizzes.
+Nanpa-linja-n is contextual throughout the level: percentages, scientific notation and mixed fractions are derived from operational information before being encoded, while signed temperatures, dates/times and leading-zero stock identifiers remain part of the physical logistics environment.
 
 The detailed implemented specification and v0.35 acceptance coverage are recorded in `LEVEL-10-DESIGN.md`.
 
@@ -394,10 +396,10 @@ Required chain:
    - 3 beams, 10 shared binary mirrors
    - exhaustive `2^10` validation: exactly one orientation state
    - all ten mirrors participate in the unique solution
-5. **Final expert Sudoku** → `a + li`
+5. **Final medium Sudoku** → `a + li`
    - final puzzle of Level 12 and of the campaign
    - FINAL hatch appears only when Identity, Totality and Relation are all complete
-   - sparse expert 9×9 grid, notes mode, nanpa-linja-n digits + persistent Latin fallback
+   - 29-given medium 9×9 grid, notes mode, nanpa-linja-n digits + persistent Latin fallback
    - automated solver confirms exactly one solution
    - completion sets `l12ExitUnlocked` and reaches 120/120 canonical glyphs
 

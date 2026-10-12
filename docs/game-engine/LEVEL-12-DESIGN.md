@@ -16,7 +16,7 @@ Five required stages award exactly two glyphs each:
 2. Identity permutation → `mi + sina`
 3. Six-glyph totality cipher → `ale + mute`
 4. Triple relation mirror array → `olin + pi`
-5. Final expert Sudoku → `a + li`
+5. Final medium Sudoku → `a + li`
 
 Completing the Sudoku sets `l12ExitUnlocked` and completes the 120/120 campaign.
 
@@ -101,13 +101,13 @@ Exhaustive enumeration of all `2^10 = 1024` mirror states confirms exactly one s
 
 Reward/state: `olin + pi`, `l12RelationDone=true`.
 
-## Trial 5 — Final expert Sudoku
+## Trial 5 — Final medium Sudoku
 
 Type: 9×9 nanpa-linja-n Sudoku.
 
 This is **always the final puzzle of Level 12 and of the complete campaign**. The FINAL hatch does not open until the Identity, Totality and Relation states are all complete.
 
-The authored grid is deliberately expert-level and sparse, with 23 givens. Automated backtracking validation confirms exactly one solution. The puzzle provides:
+The authored grid is now deliberately **medium difficulty**, with 29 well-distributed givens. It keeps the same validated unique solution but removes the expert-level endurance spike after the four preceding master trials. Automated backtracking validation confirms exactly one solution. The puzzle provides:
 
 - nanpa-linja-n digit glyphs 1–9 as the primary entries
 - a small Latin numeral on every filled cell as a readable fallback

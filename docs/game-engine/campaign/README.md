@@ -76,7 +76,7 @@ All glyph-key puzzle types use the same shared letter-family picker.
 
 Puzzle UI descriptors may now include an optional `ui.objective` string. The constructor preserves it so the HUD can give a location-aware next action instead of only repeating the puzzle title. Required-for-minimum puzzles are preferred over optional bonus puzzles when choosing the current objective.
 
-For the first Level 2 map chain, solving the coordinate map sets `cacheRevealed=true`, while the hidden-cache puzzle remains physically located in `l2Archive`. The archive is already reachable before the map can be solved. Completing `l2-hidden-cache` sets `l2LabAccess=true`; the engine then opens the corresponding Laboratory door immediately. The later `l2-full-form-bridge` sets `l2VaultAccess=true` and opens both physical vault doors.
+For the first Level 2 map chain, solving the coordinate map sets `cacheRevealed=true`, while the hidden-cache puzzle remains physically located in `l2Archive`. The archive is already reachable before the map can be solved. Completing `l2-hidden-cache` recovers `nena` and sets `l2LabAccess=true`; the engine then opens the corresponding Laboratory door immediately. The later `l2-full-form-bridge` requires the verified thousands full-sitelen sequence `nena → e → kulupu → e` (`NEKE`), rewards `en`, sets `l2VaultAccess=true`, and opens both physical vault doors. The canonical Level 2 glyph set is unchanged.
 
 The hidden-cache puzzle also carries `ui.payload.displaySequence = ["kiwen", "ma", "kiwen"]`, allowing the engine to render the source inscription explicitly rather than asking the player to copy an unseen sequence.
 

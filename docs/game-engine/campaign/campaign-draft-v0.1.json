@@ -1196,7 +1196,7 @@
           ],
           "rewards": {
             "glyphs": [
-              "en"
+              "nena"
             ],
             "setStates": {
               "l2LabAccess": true
@@ -1255,7 +1255,7 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "Thousands grouping",
-            "instructions": "Arrange 1, 2, 3, 4 in order. The grouping mechanism reveals the thousands marker."
+            "instructions": "Arrange 1, 2, 3, 4 in order to recover kulupu, the thousands-grouping marker used in abbreviated numeric cartouches."
           }
         },
         {
@@ -1306,20 +1306,20 @@
           "requirements": {
             "glyphs": [
               "e",
-              "en",
-              "nanpa",
+              "nena",
+              "kulupu",
               "kala"
             ]
           },
           "inputSequence": [
+            "nena",
             "e",
-            "en",
-            "e",
-            "nanpa"
+            "kulupu",
+            "e"
           ],
           "rewards": {
             "glyphs": [
-              "nena"
+              "en"
             ],
             "setStates": {
               "l2VaultAccess": true
@@ -1335,8 +1335,8 @@
           "ui": {
             "presentation": "fullscreen",
             "canExit": true,
-            "title": "Full-form bridge",
-            "instructions": "The full-form diagram labels four surviving positions E → EN → E → NANPA. Reconstruct them."
+            "title": "Thousands full form",
+            "instructions": "The thousands marker is NEKE in full punctuation and kulupu when abbreviated. Reconstruct the four full-sitelen glyphs."
           }
         },
         {
@@ -4808,6 +4808,7 @@
         "l10DeliveryDone": false,
         "l10BasementOpen": false,
         "l10ColdStable": false,
+        "l10ColdRecorded": false,
         "l10UpperLift": false,
         "l10DyeReady": false,
         "l10TextileDone": false,
@@ -4876,7 +4877,12 @@
           "id": "l10-market-dispatch",
           "from": "l10Market",
           "to": "l10Dispatch",
-          "bidirectional": true
+          "bidirectional": true,
+          "requirements": {
+            "states": {
+              "l10ExitUnlocked": true
+            }
+          }
         },
         {
           "id": "l10-market-cold",
@@ -4893,7 +4899,12 @@
           "id": "l10-cold-quarantine",
           "from": "l10Cold",
           "to": "l10Quarantine",
-          "bidirectional": true
+          "bidirectional": true,
+          "requirements": {
+            "states": {
+              "l10ExitUnlocked": true
+            }
+          }
         },
         {
           "id": "l10-cold-textile",
@@ -4910,7 +4921,12 @@
           "id": "l10-textile-ledger",
           "from": "l10Textile",
           "to": "l10Ledger",
-          "bidirectional": true
+          "bidirectional": true,
+          "requirements": {
+            "states": {
+              "l10TextileDone": true
+            }
+          }
         },
         {
           "id": "l10-textile-market",
@@ -4928,9 +4944,35 @@
         {
           "id": "l10-market-till",
           "chain": "permit",
-          "type": "market-till",
+          "type": "glyph-key-code",
           "area": "l10Market",
           "sourceClass": "canonical",
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "seli",
+            "wan",
+            "o",
+            "tu",
+            "luka",
+            "kipisi",
+            "nanpa",
+            "nanpa",
+            ":",
+            "awen",
+            "seli",
+            "o",
+            "mun",
+            "luka",
+            "kipisi",
+            "nanpa",
+            "nanpa",
+            ":",
+            "tu",
+            "luka",
+            "kipisi",
+            "nanpa"
+          ],
           "rewards": {
             "glyphs": [
               "esun",
@@ -4950,30 +4992,38 @@
           "ui": {
             "presentation": "fullscreen",
             "canExit": true,
-            "title": "Market permit till",
-            "objective": "Balance the market transaction to power the freight spine.",
-            "instructions": "The price cards reuse earlier number forms. Pay the exact final amount using the physical mani tokens: pan costs 2.40; suwi costs 1.20 with a 25% discount. Select tokens totalling the exact combined price.",
+            "title": "Market allocation ledger",
+            "objective": "Derive three market percentages and record all three as abbreviated nanpa-format cartouches.",
+            "instructions": "Sixteen equal shipment lots must be allocated before the freight spine can power on. Each lot is 1/16 of the shipment. Bakery receives 5 lots, sweet-goods receives 7, and reserve receives 4. Work out all three percentages, then construct the three abbreviated percentage cartouches.",
+            "helpLink": {
+              "href": "./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11",
+              "label": "nanpa-linja-n PDF cheat sheet",
+              "target": "_blank",
+              "downloadTrackType": "pdf",
+              "downloadTrackName": "nanpa-linja-n-cheat-sheet.pdf"
+            },
             "payload": {
-              "items": [
+              "answerGroups": [
                 {
-                  "word": "pan",
-                  "price": "2.40"
+                  "label": "Bakery allocation",
+                  "clue": "5 of 16 equal lots",
+                  "length": 9
                 },
                 {
-                  "word": "suwi",
-                  "price": "1.20",
-                  "discount": "25%",
-                  "final": "0.90"
+                  "label": "Sweet-goods allocation",
+                  "clue": "7 of 16 equal lots",
+                  "length": 9
+                },
+                {
+                  "label": "Reserve allocation",
+                  "clue": "4 of 16 equal lots",
+                  "length": 6
                 }
               ],
-              "targetCents": 330,
-              "tokens": [
-                200,
-                100,
-                50,
-                20,
-                10,
-                5
+              "expectedValues": [
+                "31.25%",
+                "43.75%",
+                "25%"
               ]
             }
           }
@@ -5050,30 +5100,19 @@
           "chain": "cold",
           "type": "cold-chain",
           "area": "l10Cold",
-          "sourceClass": "canonical",
+          "sourceClass": "required-state",
           "requirements": {
             "states": {
               "l10DeliveryDone": true
             }
           },
           "rewards": {
-            "glyphs": [
-              "lete",
-              "ko"
-            ],
             "setStates": {
-              "l10ColdStable": true,
-              "l10UpperLift": true
+              "l10ColdStable": true
             }
           },
-          "skipIfRewardsOwned": true,
-          "skipSafe": true,
-          "alreadyOwnedEffects": {
-            "setStates": {
-              "l10ColdStable": true,
-              "l10UpperLift": true
-            }
-          },
+          "skipIfRewardsOwned": false,
+          "skipSafe": false,
           "ui": {
             "presentation": "fullscreen",
             "canExit": true,
@@ -5100,16 +5139,143 @@
           }
         },
         {
-          "id": "l10-textile-mixer",
-          "chain": "textile",
-          "type": "textile-mixer",
-          "area": "l10Textile",
-          "sourceClass": "required-state",
+          "id": "l10-cold-record",
+          "chain": "cold",
+          "type": "glyph-key-code",
+          "area": "l10Cold",
+          "sourceClass": "canonical",
           "requirements": {
             "states": {
               "l10ColdStable": true
             }
           },
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "awen",
+            "o",
+            "tu",
+            "kala",
+            "ona",
+            "seli",
+            "nanpa",
+            "nanpa",
+            ":",
+            "mun",
+            "o",
+            "luka",
+            "kala",
+            "ona",
+            "awen",
+            "nanpa",
+            "nanpa",
+            ":",
+            "wan",
+            "o",
+            "tu",
+            "luka",
+            "kala",
+            "tu",
+            "nanpa"
+          ],
+          "rewards": {
+            "glyphs": [
+              "lete",
+              "ko"
+            ],
+            "setStates": {
+              "l10ColdRecorded": true,
+              "l10UpperLift": true
+            }
+          },
+          "skipIfRewardsOwned": true,
+          "skipSafe": true,
+          "alreadyOwnedEffects": {
+            "setStates": {
+              "l10ColdStable": true,
+              "l10ColdRecorded": true,
+              "l10UpperLift": true
+            }
+          },
+          "ui": {
+            "presentation": "fullscreen",
+            "canExit": true,
+            "title": "Cold-chain scientific record",
+            "objective": "Normalize three instrument readings and record them as abbreviated scientific-notation cartouches.",
+            "instructions": "The stabilized recorder exposes three raw calibration readings: 0.0042, 0.00075 and 125. Convert each to normalized scientific notation, then construct all three abbreviated nanpa-format scientific-notation cartouches. The service lift unlocks only when the complete record is correct.",
+            "helpLink": {
+              "href": "./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11",
+              "label": "nanpa-linja-n PDF cheat sheet",
+              "target": "_blank",
+              "downloadTrackType": "pdf",
+              "downloadTrackName": "nanpa-linja-n-cheat-sheet.pdf"
+            },
+            "payload": {
+              "answerGroups": [
+                {
+                  "label": "Sensor A",
+                  "clue": "raw reading 0.0042",
+                  "length": 9
+                },
+                {
+                  "label": "Sensor B",
+                  "clue": "raw reading 0.00075",
+                  "length": 9
+                },
+                {
+                  "label": "Sensor C",
+                  "clue": "raw reading 125",
+                  "length": 9
+                }
+              ],
+              "expectedValues": [
+                "4.2e-3",
+                "7.5e-4",
+                "1.25e2"
+              ]
+            }
+          }
+        },
+        {
+          "id": "l10-textile-mixer",
+          "chain": "textile",
+          "type": "glyph-key-code",
+          "area": "l10Textile",
+          "sourceClass": "required-state",
+          "requirements": {
+            "states": {
+              "l10ColdRecorded": true
+            }
+          },
+          "inputSequence": [
+            "nanpa",
+            ":",
+            "tu",
+            "kin",
+            "seli",
+            "o",
+            "o",
+            "awen",
+            "nanpa",
+            "nanpa",
+            ":",
+            "luka",
+            "kin",
+            "wan",
+            "o",
+            "o",
+            "tu",
+            "nanpa",
+            "nanpa",
+            ":",
+            "pipi",
+            "kin",
+            "wan",
+            "o",
+            "o",
+            "awen",
+            "nanpa"
+          ],
           "rewards": {
             "setStates": {
               "l10DyeReady": true
@@ -5120,33 +5286,39 @@
           "ui": {
             "presentation": "fullscreen",
             "canExit": true,
-            "title": "Dye mixture",
-            "objective": "Prepare the loft dye bath before placing the cloth batches.",
-            "instructions": "The batch card calls for 50% laso dye, 25% water and 25% binder. Set the four equal measures to the matching 2:1:1 ratio.",
+            "title": "Dye-batch reconciliation",
+            "objective": "Add the marked measures and record three mixed-fraction totals before routing the cloth.",
+            "instructions": "The loft has three batch records. A combines 1 1/2 + 1 1/4 measures. B combines 2 3/4 + 2 3/4. C combines 3 1/2 + 4 3/4. Calculate each total and construct all three abbreviated mixed-fraction cartouches.",
+            "helpLink": {
+              "href": "./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=11",
+              "label": "nanpa-linja-n PDF cheat sheet",
+              "target": "_blank",
+              "downloadTrackType": "pdf",
+              "downloadTrackName": "nanpa-linja-n-cheat-sheet.pdf"
+            },
             "payload": {
-              "options": [
-                [
-                  1,
-                  1,
-                  1
-                ],
-                [
-                  2,
-                  1,
-                  1
-                ],
-                [
-                  2,
-                  2,
-                  1
-                ],
-                [
-                  3,
-                  1,
-                  0
-                ]
+              "answerGroups": [
+                {
+                  "label": "Batch A",
+                  "clue": "1 1/2 + 1 1/4 measures",
+                  "length": 9
+                },
+                {
+                  "label": "Batch B",
+                  "clue": "2 3/4 + 2 3/4 measures",
+                  "length": 9
+                },
+                {
+                  "label": "Batch C",
+                  "clue": "3 1/2 + 4 3/4 measures",
+                  "length": 9
+                }
               ],
-              "correctIndex": 1
+              "expectedValues": [
+                "2+3/4",
+                "5+1/2",
+                "8+1/4"
+              ]
             }
           }
         },
@@ -5214,7 +5386,7 @@
         {
           "id": "l10-inspection-audit",
           "chain": "inspection",
-          "type": "inspection-audit",
+          "type": "record-classification",
           "area": "l10Ledger",
           "sourceClass": "canonical",
           "requirements": {
@@ -5239,23 +5411,43 @@
             }
           },
           "ui": {
-            "presentation": "physical",
+            "presentation": "fullscreen",
             "canExit": true,
-            "title": "Inspection / quarantine",
-            "objective": "Use the Level 10 records to quarantine the bad sample and dispatch the clean one.",
-            "instructions": "The Ledger Office releases two inspection samples from deliveries already handled. The suwi sample records an unsafe +8.5 cold-history excursion and must go to Quarantine. The pan sample remained within limits and must go to Dispatch. Both samples are recoverable after a wrong placement.",
+            "title": "Final shipment audit",
+            "objective": "Review the two shipment records in the Ledger Office and classify each one as Dispatch or Quarantine.",
+            "instructions": "These are records for the same pan and suwi shipments you routed earlier; you are not moving the goods again. The pan record stayed within safe cold limits. The suwi record shows an unsafe +8.5 cold-history excursion. Classify pan as Dispatch and suwi as Quarantine.",
             "payload": {
-              "samples": [
+              "destinations": [
                 {
-                  "id": "bread-sample",
+                  "id": "dispatch",
+                  "label": "Dispatch",
+                  "tpLabel": "ma pana"
+                },
+                {
+                  "id": "quarantine",
+                  "label": "Quarantine",
+                  "tpLabel": "ma awen ike"
+                }
+              ],
+              "records": [
+                {
+                  "id": "bread-record",
                   "word": "pan",
-                  "result": "clean",
+                  "label": "pan shipment record",
+                  "evidence": [
+                    "Earlier delivery: pan → bakery ✓",
+                    "Cold history: remained within safe limits"
+                  ],
                   "destination": "dispatch"
                 },
                 {
-                  "id": "sweet-sample",
+                  "id": "sweet-record",
                   "word": "suwi",
-                  "result": "bad",
+                  "label": "suwi shipment record",
+                  "evidence": [
+                    "Earlier delivery: suwi → sweet-goods ✓",
+                    "Cold history: +8.5 excursion — unsafe"
+                  ],
                   "destination": "quarantine"
                 }
               ]
@@ -6431,12 +6623,12 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "Final 9×9 nanpa-linja-n Sudoku",
-            "objective": "Complete the final expert Sudoku. This is the last puzzle of the campaign.",
-            "instructions": "Fill every row, column and 3×3 box with 1–9 exactly once. The puzzle is deliberately expert-level and has exactly one solution. All entries use nanpa-linja-n digit glyphs with a small Latin fallback. Notes are available; correctness is revealed only when you press Try answer.",
+            "objective": "Complete the final medium Sudoku. This is the last puzzle of the campaign.",
+            "instructions": "Fill every row, column and 3×3 box with 1–9 exactly once. This is a medium-difficulty final Sudoku with one solution: it should require steady deduction without becoming an expert-level endurance gate. All entries use nanpa-linja-n digit glyphs with a small Latin fallback. Notes are available; correctness is revealed only when you press Try answer.",
             "payload": {
               "puzzle": [
                 1,
-                0,
+                6,
                 0,
                 0,
                 0,
@@ -6449,11 +6641,11 @@
                 0,
                 0,
                 2,
+                9,
                 0,
-                0,
-                0,
+                7,
                 8,
-                0,
+                7,
                 0,
                 9,
                 6,
@@ -6463,7 +6655,7 @@
                 0,
                 0,
                 0,
-                0,
+                7,
                 5,
                 3,
                 0,
@@ -6495,7 +6687,7 @@
                 0,
                 0,
                 0,
-                0,
+                2,
                 1,
                 0,
                 0,
