@@ -3592,6 +3592,22 @@
     return el;
   }
 
+  function renderAlwaysNanpaMechanismNumber(el, value, options = {}) {
+    if (!el) return el;
+    el.classList.add('mechanismNumberHost');
+    if (options.className) el.classList.add(...String(options.className).split(/\s+/).filter(Boolean));
+    const raw=String(value ?? '').trim();
+    const numeric=document.createElement('span');
+    numeric.className='tpNumeric';
+    numeric.setAttribute('data-nanpa-source',explicitNanpaSource(raw));
+    numeric.setAttribute('data-latin',raw);
+    numeric.setAttribute('aria-label',raw);
+    numeric.setAttribute('title',raw);
+    el.replaceChildren(numeric);
+    hydrateInlineNumericCartouches(numeric);
+    return el;
+  }
+
   function mechanismNumberNode(value, className = '') {
     const el = document.createElement('span');
     return renderMechanismNumber(el, value, { className });
@@ -4441,7 +4457,7 @@
       const btn=document.createElement('button'); btn.type='button'; btn.className=`hanoiRod${Number(st.selectedRod)===rodIndex?' selected':''}`; btn.setAttribute('aria-label',`Post ${rodIndex+1}`);
       const post=document.createElement('div'); post.className='hanoiPost';
       const stack=document.createElement('div'); stack.className='hanoiStack';
-      for(const size of rod){const disk=document.createElement('div');disk.className='hanoiDisk';disk.style.width=`${38+(Number(size)/n)*56}%`;renderMechanismNumber(disk,size);stack.appendChild(disk);}
+      for(const size of rod){const disk=document.createElement('div');disk.className='hanoiDisk';disk.style.width=`${38+(Number(size)/n)*56}%`;renderAlwaysNanpaMechanismNumber(disk,size,{className:'hanoiNanpaNumber'});stack.appendChild(disk);}
       const base=document.createElement('div'); base.className='hanoiBase'; const label=document.createElement('small');renderExact(label,`post ${rodIndex+1}`);
       btn.append(post,stack,base,label);
       btn.addEventListener('click',()=>{

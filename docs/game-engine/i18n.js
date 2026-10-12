@@ -168,6 +168,12 @@
   };
 
   const EXACT_TP = {
+    'Maze marker 1': 'sitelen nasin 1',
+    'Maze marker 2': 'sitelen nasin 2',
+    'Maze marker 3': 'sitelen nasin 3',
+    'Maze marker 1.': 'sitelen nasin 1.',
+    'Maze marker 2.': 'sitelen nasin 2.',
+    'Maze marker 3.': 'sitelen nasin 3.',
     // Existing Toki Pona source strings can pass through unchanged.
     'o tawa insa.': 'o tawa insa.',
     'o lukin. o alasa e sitelen.': 'o lukin. o alasa e sitelen.',
@@ -659,6 +665,23 @@
       const ma = m[2].toLowerCase() === 'bakery' ? 'tomo pan' : 'tomo suwi';
       return `pana poki: [[${m[1].toLowerCase()}]] → ${ma}.`;
     }
+    // Runtime-generated player responses. These must be translated as families,
+    // not as one-off literals, because the English source contains live labels,
+    // counts, puzzle titles or carried-object names.
+    if ((m = text.match(/^The Sphinx is waiting for the labyrinth survey: (\d+)\/(\d+) markers inspected\.$/i)))
+      return `jan [[Sphinx]] li awen e pini pi alasa nasin nasa: sitelen ${m[1]}/${m[2]} li kama sona.`;
+    if ((m = text.match(/^The triangulation console needs all three acoustic pylons: (\d+)\/(\d+) recorded\.$/i)))
+      return `ilo alasa ma li wile e sona pi palisa kalama ale: ${m[1]}/${m[2]} li awen lon lipu.`;
+    if (/^.+(?:door|shutter) opens\.$/i.test(text)) return 'lupa ni li open.';
+    if (/^Opened .+(?:door|shutter)\.$/i.test(text)) return 'lupa li open.';
+    if ((m = text.match(/^You take the placed ([a-z][a-z-]*) relic\.$/i)))
+      return `sina kama jo sin e ijo [[${m[1].toLowerCase()}]].`;
+    if ((m = text.match(/^You take the ([a-z][a-z-]*) relic\.$/i)))
+      return `sina kama jo e ijo [[${m[1].toLowerCase()}]].`;
+    if ((m = text.match(/^Relic placed\.\s*(.*)$/i))) {
+      const clue = m[1] ? exact(m[1], LANG_TP) : '';
+      return clue && clue !== m[1] ? `ijo li lon supa. ${clue}` : 'ijo li lon supa. o lukin e sona pi supa ni.';
+    }
     if ((m = text.match(/^You take the (laso|walo) cloth batch\.$/i))) return `sina kama jo e len [[${m[1].toLowerCase()}]].`;
     if ((m = text.match(/^You take the placed (laso|walo) cloth batch\.$/i))) return `sina kama jo sin e len [[${m[1].toLowerCase()}]].`;
     if ((m = text.match(/^(laso|walo) cloth placed at (dye-frame|finish-table)\.$/i))) {
@@ -690,7 +713,19 @@
     if ((m = text.match(/^Survey marker recorded:\s*(\d+)\/(\d+)\.$/i))) return `sitelen alasa li awen lon lipu: ${m[1]}/${m[2]}.`;
     if ((m = text.match(/^Call pylon ([A-Z]) recorded \((\d+)\/(\d+)\)\.$/i))) return `sona pi palisa kalama [[${m[1]}]] li awen lon lipu (${m[2]}/${m[3]}).`;
     if ((m = text.match(/^Call pylon ([A-Z]) is already recorded \((\d+)\/(\d+)\)\.$/i))) return `sona pi palisa kalama [[${m[1]}]] li awen lon lipu lon tenpo pini (${m[2]}/${m[3]}).`;
+    if ((m = text.match(/^Level 11 call pylon ([A-Z]) recorded \((\d+)\/(\d+)\)\.$/i))) return `ma musi 11: sona pi palisa kalama [[${m[1]}]] li awen lon lipu (${m[2]}/${m[3]}).`;
+    if ((m = text.match(/^You take the (loje|laso) parent band\.$/i))) return `sina kama jo e sitelen mama [[${m[1].toLowerCase()}]].`;
+    if ((m = text.match(/^You take the placed (loje|laso) band from the (west|east) perch\.$/i))) {
+      const side = m[2].toLowerCase() === 'west' ? 'poka loje' : 'poka laso';
+      return `sina kama jo sin e sitelen mama [[${m[1].toLowerCase()}]] tan supa ${side}.`;
+    }
+    if ((m = text.match(/^The (west|east) perch is empty\.$/i))) return `supa ${m[1].toLowerCase() === 'west' ? 'poka loje' : 'poka laso'} li jo e ijo ala.`;
+    if ((m = text.match(/^(loje|laso) band placed on the (west|east) perch\.$/i))) return `sitelen mama [[${m[1].toLowerCase()}]] li lon supa ${m[2].toLowerCase() === 'west' ? 'poka loje' : 'poka laso'}.`;
+    if ((m = text.match(/^Parent-band placement: (loje|laso) → (west|east) perch\.$/i))) return `pana sitelen mama: [[${m[1].toLowerCase()}]] → supa ${m[2].toLowerCase() === 'west' ? 'poka loje' : 'poka laso'}.`;
     if ((m = text.match(/^Recovered glyph: (.+) \((\d+)\/120\)(.*)$/i))) return `sitelen [[${m[1]}]] li kama (${m[2]}/120).`;
+    if ((m = text.match(/^Completed puzzle:\s*(.+)\.$/i))) return 'musi sona li pini pona.';
+    if ((m = text.match(/^Entered Level (\d+)\.$/i))) return `sina kama lon ma musi ${m[1]}.`;
+    if ((m = text.match(/^QA stopped:\s*(.+)$/i))) return `[[QA]] li pini: {{${m[1]}}}`;
     if ((m = text.match(/^Level (\d+) is ready\.$/i))) return `ma musi ${m[1]} li open.`;
     if ((m = text.match(/^Entered (.+)\.$/i))) return `sina kama lon ${ROOM_NAMES_TP[m[1]] || m[1]}.`;
     if ((m = text.match(/^You climb into the (.+)\.$/i))) return `sina tawa sewi tawa ${ROOM_NAMES_TP[m[1]] || m[1]}.`;
@@ -707,6 +742,7 @@
     if (/^Recorded all three Level 11 acoustic pylons\.$/i.test(text)) return 'sitelen li kama tan awen sona pi palisa kalama tu wan.';
     if (/^Puzzle completed\.$/i.test(text)) return 'musi sona li pini pona.';
     if (/^Solved .+\.$/i.test(text)) return 'musi sona li pini pona.';
+    if (/^[A-Z][^.]* complete\.$/.test(text)) return 'musi sona li pini pona.';
     if (/^Deduced from the completed sentence:/i.test(text)) return 'sitelen li kama tan toki pini.';
     if (/^Completed inscription:/i.test(text)) return 'sitelen toki li pini.';
     return text;

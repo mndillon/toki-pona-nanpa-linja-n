@@ -2057,6 +2057,8 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .jugReadoutCartouche .tpNumericCanvas{height:1.08em;max-width:100%;width:auto}
 .hanoiDisk .tpNumeric{font-size:14px;margin:0;line-height:1}
 .hanoiDisk .tpNumeric::after{font-size:.45em;margin-left:.12em}
+.hanoiNanpaNumber .tpNumeric::after{display:none}
+.hanoiNanpaNumber>.tpNumeric>.tpNumericCanvas{max-width:100%;max-height:1.45em}
 .scheduleRank .tpNumeric{font-size:10px;margin:0;line-height:1}
 .scheduleRank .tpNumeric::after{display:block;margin:.12em 0 0;font-size:.52em;text-align:center}
 .slidingTile .tpNumeric{font-size:25px;margin:0;line-height:1}
