@@ -33,9 +33,29 @@
         this.levelStates[levelId] = { solvedPuzzles:[], world:clone(level.initialStates), completed:false };
       }
       const ls = this.levelStates[levelId];
+      // Saved campaign snapshots can outlive a campaign-data revision. Merge any
+      // newly introduced world-state keys, then make solved puzzle records authoritative:
+      // if a panel is persisted as solved, its idempotent glyph/state rewards must also
+      // be present. Otherwise the world can show a green solved panel while a later gate
+      // still claims that the corresponding state is missing (for example L2 Map Access).
+      ls.solvedPuzzles = Array.isArray(ls.solvedPuzzles) ? ls.solvedPuzzles : [];
+      ls.world = Object.assign(clone(level.initialStates) || {}, ls.world || {});
+      this.reconcileSolvedPuzzleEffects(levelId);
       if (!this.currentArea && levelId === this.currentLevelId) this.currentArea = level.startArea;
       this.applyAlreadyOwned(levelId);
       return ls;
+    }
+
+    reconcileSolvedPuzzleEffects(levelId) {
+      const level = this.levelIndex.get(levelId);
+      const ls = this.levelStates[levelId];
+      if (!level || !ls) return;
+      const solved = new Set(Array.isArray(ls.solvedPuzzles) ? ls.solvedPuzzles : []);
+      for (const p of level.puzzles || []) {
+        if (!solved.has(p.id)) continue;
+        for (const g of (p.rewards && p.rewards.glyphs) || []) this.globalGlyphs.add(g);
+        for (const [k,v] of Object.entries((p.rewards && p.rewards.setStates) || {})) ls.world[k] = v;
+      }
     }
 
     snapshot() {

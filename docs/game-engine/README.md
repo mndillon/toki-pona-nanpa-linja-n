@@ -76,6 +76,34 @@ Level 10 is followed by the implemented Level 11 sanctuary and Level 12 Final Ar
 
 # Toki Pona Rooms — complete 12-level campaign
 
+# Developer QA campaign playback
+
+QA automation is deliberately disabled in normal play. Load `game-engine.html?qa=1` to install the developer API and the small QA playback badge. The primary global is `TPQA`; `TPQR` and `TRQA` are aliases for convenience.
+
+Useful console commands:
+
+```js
+await TPQA.runCampaign();          // visibly continue from the current save
+await TPQA.runCampaign({speed:2}); // faster playback
+TPQA.pause();                      // pause after the current progression action
+TPQA.resume();
+await TPQA.step();                 // one progression action while inspecting
+await TPQA.solve();                // solve the currently open/focused puzzle
+await TPQA.solveAndNext();         // solve, apply rewards, then go to the next reachable objective
+TPQA.answer();                     // print the current/generated answer without solving
+TPQA.status();                     // current level, target, speed and collection count
+TPQA.variant();                    // persisted generated variant for the current puzzle, if any
+TPQA.stop();                       // stop autoplay; leave the game/save where it is
+await TPQA.restartCampaign();      // intentional reset and QA run from Level 1
+```
+
+During QA playback the keyboard shortcuts are `P` pause/resume, `N` step once, `R` run/continue, `X` restart from Level 1 and immediately run, `S` stop, `[` slower and `]` faster. They are registered only in `?qa=1` mode and are ignored while typing in an input, textarea, select or contenteditable element. Outside QA mode, `X` keeps its normal game behavior. On touch devices the QA controls are concealed until the tester double-taps the small top-left corner hotspot **inside the game viewport**. That pauses an active run at the next safe playback boundary and reveals touch buttons for `X / P / R / N / S / − / + / Ignore`; `Ignore` hides the strip without opening a keyboard or changing the current QA state. On short landscape screens the full button set spans the game display in one compact row above gameplay and puzzle overlays.
+
+`runCampaign()` is intended as visible QA playback rather than an instant save mutation. Before accelerated transport, QA proves that the destination is physically reachable through the current map and door state. Eligible doors are opened through the normal interaction path, and floor changes use the authored ladder/hatch/maze transitions. Puzzle completion uses normal validation/completion/reward handling wherever practical; generated mechanism state is rendered before submission so the tester can see the solved puzzle. The final 120/120 celebration is deliberately left on screen.
+
+After pausing to inspect a problem, source files can be changed and the page reloaded; rerunning `TPQA.runCampaign()` continues from the campaign state preserved in the save. Use `restartCampaign()` only when a fresh Level 1 run is specifically required.
+
+
 ## Mobile first-person controls
 
 Touch gameplay uses a circular lower-left joystick with an inner dead zone and a nonlinear radial speed response: movement begins very slowly just outside the dead zone, then ramps much more strongly through the middle and outer radius for practical maze traversal, while turning ramps more gently. Outside the dead zone the joystick is divided into four 90-degree quadrants with diagonal boundaries. The top quadrant moves forward and the bottom quadrant moves backward; the initial touch in either vertical quadrant is straight with no rotation. While the same touch remains in that top or bottom quadrant, sideways dragging adds steering in the dragged direction while translation continues. The left and right quadrants always stop translation and rotate in place. Crossing from a vertical quadrant into either side quadrant immediately cancels forward/backward motion; re-entering top or bottom establishes that direction again with steering reset to straight. Strong outer-rim joystick input also catches up elapsed simulation time in small collision-safe steps when rendering is slow, so low mobile frame rates do not artificially reduce travel or turning speed. Mobile movement also uses a circular player-vs-wall collision footprint at exposed wall corners, preserving the full player radius while reducing corner snagging; wall faces, closed doors and diagonally touching solid cells remain impassable. The lower-left viewport is reserved for this control during first-person exploration; required HUD/navigation information must not depend on that area. The main 3D viewport also supports press/drag navigation: the generous central horizontal band preserves the existing left/right drag-to-turn behavior, while holding or dragging sufficiently above that band moves forward and sufficiently below it moves backward; movement begins slowly at the band edge and strengthens toward the top/bottom screen edge, and vertical movement suppresses horizontal turning until the pointer returns to the centre band. On touch devices the minimap is directional rather than destination/pathfinding control: hold anywhere on the map, including unrevealed space or background outside the drawn floor/maze, to point the player immediately in that direction and travel as far as collision permits. Once a drag begins on the minimap, pointer capture keeps steering active even when the finger moves beyond the minimap bounds; the current drag position continuously retargets the facing/travel direction until release. Normal world collision still blocks walls and closed doors. The dotted map guide is clipped to the currently revealed walkable portion and stops at the fog-of-war frontier, so touching unrevealed space does not reveal hidden maze geometry. Map steering never activates interactions or changes floors automatically. Full-screen puzzles and modal overlays hide the joystick and USE control so puzzles retain the full mobile viewport. Desktop `A`/`D` strafing is unchanged.

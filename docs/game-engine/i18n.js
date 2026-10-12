@@ -57,7 +57,7 @@
     levelCompleteEyebrow: { en: 'level complete', tp: 'ma musi li pini' },
     levelComplete: { en: 'Level complete', tp: 'ma musi li pini' },
     levelObjectivesComplete: { en: 'The level objectives are complete.', tp: 'wile ale pi ma musi ni li pini.' },
-    campaignComplete: { en: '🎉 Congratulations — all 120 glyphs recovered! 🎉', tp: '🎉 pona mute! sitelen pona 120 ale li kama! 🎉' },
+    campaignComplete: { en: '🎉 Congratulations — all 120 glyphs recovered! 🎉', tp: '🎉 pona mute a a · sitelen pona 120 ale li kama 🎉' },
     glyphsRecovered: { en: 'glyphs recovered', tp: 'sitelen li kama' },
     stayHere: { en: 'Stay here', tp: 'o awen lon ni' },
     replayCelebration: { en: 'Replay celebration', tp: 'o musi pona sin' },
@@ -110,7 +110,7 @@
     'l3-context-match': { title:'ilo pi tenpo sama', instructions:'sitelen sewi li tenpo 03:09. o anu e poki nanpa ni taso: ona li tenpo, li suno ala, li nanpa ante ala.' },
 
     'l4-jug-transfer': { title:'telo suli 4', instructions:'o pana e telo suli 4 taso. sina jo e poki suli 3 e poki suli 5. sina ken pana e telo lon poki, weka e telo, anu pana e telo tan poki wan tawa poki ante.' },
-    'l4-hanoi-stack': { title:'kiwen lon palisa', instructions:'o tawa e kiwen sike tu wan tan palisa poka loje tawa palisa poka laso. tenpo wan la o tawa e kiwen wan. kiwen suli li ken ala lon sewi kiwen lili.' },
+    'l4-hanoi-stack': { title:'kiwen lon palisa', instructions:'o tawa e kiwen sike tu tu tan palisa poka loje tawa palisa poka laso. tenpo wan la o tawa e kiwen wan. kiwen suli li ken ala lon sewi kiwen lili.' },
     'l4-codebreaker': { title:'o alasa e linja len', instructions:'o alasa e linja sitelen tu tu. sina pana e linja tawa ilo la ilo li pana e nanpa tu: sitelen seme li lon ma sama, sitelen seme li pona taso li lon ma ante. lon musi sin la sitelen jo tu tu li ante.' },
     'l4-equivalence': { title:'nanpa sama', instructions:'lon linja ale la kipisi {{(}}1/2{{)}}, nanpa pi sitelen . {{(}}0.5{{)}}, en nanpa % {{(}}50%{{)}} o sama. o luka e lipu tu lon kulupu sama la ona li ante ma.' },
     'l4-schedule-order': { title:'lipu tenpo', instructions:'o pana e pali tu tu lon nasin tenpo tan open tawa pini. o lukin e poki [[suno]] e poki [[tenpo]].' },

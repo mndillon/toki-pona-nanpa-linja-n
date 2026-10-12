@@ -31,6 +31,10 @@
   const MAX_RAY_DISTANCE = 24;
   const NASIN_NANPA_FONT = 'NasinNanpaGame';
   const I18N = window.TokiPonaRoomsI18n || null;
+  const QA_MODE = (() => {
+    try { return new URLSearchParams(window.location.search).get('qa') === '1'; }
+    catch (_) { return false; }
+  })();
   let uiLanguage = I18N?.getLanguage?.() || 'tp';
 
   function isTpLanguage() { return uiLanguage !== 'en'; }
@@ -2906,7 +2910,11 @@
     syncCampaignArea(puzzle.area);
     if (campaignSolved(puzzleId)) { showMessage('This puzzle is already complete.'); softTone(); return; }
     if (!campaignPuzzleAvailable(puzzleId)) {
-      if (puzzleId === 'l9-sphinx-riddles') {
+      if (puzzleId === 'l2-map-cache') {
+        showLocalizedMessage(isTpLanguage()
+          ? 'sitelen ma nanpa li awen. o pini e musi lon tomo lipu anpa lon open.'
+          : 'The Coordinate Map is waiting for the Archive Sequence in the Lower Archive. Complete that panel first.');
+      } else if (puzzleId === 'l9-sphinx-riddles') {
         const survey=l9MarkerProgress();
         showMessage(`The Sphinx is waiting for the labyrinth survey: ${survey.found}/${survey.needed} markers inspected.`);
       } else if (puzzleId === 'l11-call-triangulation') {
@@ -2922,9 +2930,9 @@
     campaignAdapter.openPuzzle(puzzleId);
   }
 
-  function performInteraction() {
+  function performInteraction(targetOverride = null) {
     if (modalOpen) return;
-    const target = findInteractionTarget();
+    const target = targetOverride || findInteractionTarget();
     if (!target) { showMessage('Nothing within reach.'); blockedTone(); return; }
 
     if (target.kind === 'door') {
@@ -3555,6 +3563,21 @@
     const n = Number(value);
     const word = Number.isInteger(n) && n >= 0 && n <= 9 ? DIGIT_GLYPH_WORDS[n] : null;
     return word ? glyphChar(word) : String(value);
+  }
+
+
+  function bareNanpaDigitsText(value) {
+    return [...String(value ?? '')].map(ch => /[0-9]/.test(ch) ? glyphChar(DIGIT_GLYPH_WORDS[Number(ch)]) : ch).join('');
+  }
+
+  function renderBareNanpaDigits(el, value, options = {}) {
+    if (!el) return el;
+    el.classList.add('bareNanpaDigits');
+    if (options.className) el.classList.add(...String(options.className).split(/\s+/).filter(Boolean));
+    el.textContent = bareNanpaDigitsText(value);
+    el.setAttribute('aria-label', String(value ?? ''));
+    el.title = String(value ?? '');
+    return el;
   }
 
   function renderMechanismNumber(el, value, options = {}) {
@@ -4270,7 +4293,7 @@
       const dial=document.createElement('div'); dial.className=`dialUnit${tutorialFeedbackMatches(puzzle,'dial',index)?' tutorialConfirmed':''}`;
       const label=document.createElement('div'); label.className='dialLabel'; label.textContent=names[index]||`dial ${index+1}`;
       const up=document.createElement('button'); up.type='button'; up.className='dialAdjust'; up.textContent='▲'; up.setAttribute('aria-label',`Increase ${label.textContent}`);
-      const display=document.createElement('div'); display.className='dialValue'; renderMechanismNumber(display,value);
+      const display=document.createElement('div'); display.className='dialValue'; renderBareNanpaDigits(display,value,{className:'dialBareDigit'});
       const down=document.createElement('button'); down.type='button'; down.className='dialAdjust'; down.textContent='▼'; down.setAttribute('aria-label',`Decrease ${label.textContent}`);
       up.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+1)%10;renderCampaignPuzzle();});
       down.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.values[index]=(Number(st.values[index])+9)%10;renderCampaignPuzzle();});
@@ -4647,7 +4670,7 @@
 
   function renderSlidingGridPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,size=Number(payload.size)||3;const grid=document.createElement('div');grid.className='slidingGrid';grid.style.setProperty('--slide-cols',String(size));
-    (st.tiles||[]).forEach((value,index)=>{const b=document.createElement('button');b.type='button';b.className=`slidingTile${Number(value)===0?' blank':''}`;if(Number(value)!==0)renderMechanismNumber(b,value);b.disabled=Number(value)===0;b.addEventListener('click',()=>{const z=st.tiles.indexOf(0),x=index%size,y=Math.floor(index/size),zx=z%size,zy=Math.floor(z/size);if(Math.abs(x-zx)+Math.abs(y-zy)!==1){blockedTone();return;}[st.tiles[index],st.tiles[z]]=[st.tiles[z],st.tiles[index]];renderCampaignPuzzle();});grid.appendChild(b);});
+    (st.tiles||[]).forEach((value,index)=>{const b=document.createElement('button');b.type='button';b.className=`slidingTile${Number(value)===0?' blank':''}`;if(Number(value)!==0)renderBareNanpaDigits(b,value,{className:'slidingBareDigit'});b.disabled=Number(value)===0;b.addEventListener('click',()=>{const z=st.tiles.indexOf(0),x=index%size,y=Math.floor(index/size),zx=z%size,zy=Math.floor(z/size);if(Math.abs(x-zx)+Math.abs(y-zy)!==1){blockedTone();return;}[st.tiles[index],st.tiles[z]]=[st.tiles[z],st.tiles[index]];renderCampaignPuzzle();});grid.appendChild(b);});
     puzzleSlots.appendChild(grid);setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The panel is in numerical order. Press Try answer to confirm the gallery.':'Slide tiles into ascending order, with the empty space last.');
   }
 
@@ -5241,8 +5264,13 @@
 
     for(let index=0;index<freqs.length;index++){
       const btn=document.createElement('button');btn.type='button';btn.className='tonePad';btn.dataset.toneIndex=String(index);
-      const glyph=mechanismNumberNode(index+1,'tonePadNumber');
-      const label=document.createElement('small');renderExact(label,`tone ${index+1}`);
+      // Resonance pads are physical nanpa-linja-n artefacts: always show the bare
+      // digit glyph itself, independent of UI language. Do not wrap these pad
+      // identifiers in numeric cartouches or duplicate them as decimal numerals.
+      const glyph=document.createElement('span');
+      renderBareNanpaDigits(glyph,index+1,{className:'tonePadNumber'});
+      const label=document.createElement('small');renderLocalized(label,isTpLanguage()?'kalama':'tone');
+      btn.setAttribute('aria-label',`${isTpLanguage()?'kalama':'tone'} ${index+1}`);
       btn.append(glyph,label);
       btn.addEventListener('click',()=>{
         if(st.playing||st.solved)return;
@@ -5489,8 +5517,8 @@
     for(let y=0;y<height;y++)for(let x=0;x<width;x++){
       const key=`${x},${y}`,idx=pathIndex.get(key),btn=document.createElement('button');btn.type='button';
       btn.className=`exactPathCell${idx!=null?' visited':''}${idx===path.length-1?' current':''}${x===Number(end[0])&&y===Number(end[1])?' exit':''}`;
-      const step=document.createElement('span');step.className='exactPathStep';if(idx!=null)renderMechanismNumber(step,idx+1);
-      const glyph=mechanismNumberNode(Number(values?.[y]?.[x])||0,'exactPathValue');
+      const step=document.createElement('span');step.className='exactPathStep';if(idx!=null)renderBareNanpaDigits(step,idx+1,{className:'exactPathBareStep'});
+      const glyph=document.createElement('span'); glyph.className='exactPathValue'; renderBareNanpaDigits(glyph,Number(values?.[y]?.[x])||0,{className:'exactPathBareValue'});
       btn.append(step,glyph);
       const dist=Math.abs(x-Number(last[0]))+Math.abs(y-Number(last[1])),canMove=dist===1&&idx==null&&path.length<Number(payload.moves)+1;
       btn.disabled=!canMove;
@@ -6631,7 +6659,7 @@
     setCampaignCelebration(isCampaignComplete);
     if (isCampaignComplete) {
       renderLocalized(levelCompleteEyebrow, isTpLanguage() ? 'musi ale li pini' : 'campaign complete');
-      renderLocalized(levelCompleteTitle, isTpLanguage() ? 'pona mute!' : 'Congratulations!');
+      renderLocalized(levelCompleteTitle, isTpLanguage() ? 'pona mute a a' : 'Congratulations!');
       renderLocalized(levelCompleteText, isTpLanguage()
         ? `sina alasa pona e sitelen pona ${STANDARD_120.length} ale. sina pini e ma musi ${campaignAdapter?.runtime?.campaign?.levels?.length || levelNo} ale.`
         : `You recovered all ${STANDARD_120.length} glyphs and completed all ${campaignAdapter?.runtime?.campaign?.levels?.length || levelNo} levels.`);
@@ -6923,6 +6951,786 @@
     clearMovement();
     transitionLevel('main', 3.2, 9.3, 0, 'You return to the maze entrance. The solved maze remains open.');
     return true;
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // QA campaign runner. This is deliberately absent from normal gameplay and is
+  // installed only for game-engine.html?qa=1. It uses the real campaign adapter,
+  // door requirements and puzzle completion path, while accelerating navigation
+  // after proving a legal route exists.
+  // ---------------------------------------------------------------------------
+  const qaState = {
+    installed:false, running:false, paused:false, stopped:false, stepBudget:0,
+    speed:1, includeOptional:true, focusPuzzleId:null, lastAction:'idle',
+    actionNo:0, runPromise:null, inPlaybackAction:false, badge:null, statusText:null, pauseBtn:null,
+    stepBtn:null, runBtn:null, restartBtn:null, stopBtn:null, slowerBtn:null, fasterBtn:null, ignoreBtn:null,
+    hotspot:null, lastHotspotTapAt:0, touchPanelOpen:false
+  };
+
+  const QA_TRANSITION_DESTINATIONS = Object.freeze({
+    mazeEnter:'maze', mazeExit:'main', ladderUp:'upper', ladderDown:'main', trapdoor:'lower', lowerLadderUp:'upper',
+    l9UpperToMaze:'l9maze', l9MazeToUpper:'l9upper', l9UpperShortcutToSphinx:'l9maze', l9SphinxToUpper:'l9upper',
+    l9SphinxToLower:'l9lower', l9LowerToSphinx:'l9maze', l9WeightsToUpper:'l9upper', l9UpperShortcutToWeights:'l9lower',
+    l9UpperToVault:'l9lower', l9VaultToUpper:'l9upper',
+    l10GroundToLower:'l10lower', l10LowerToGround:'l10ground', l10LowerToUpper:'l10upper', l10UpperToLower:'l10lower',
+    l10GroundToUpper:'l10upper', l10UpperToGround:'l10ground',
+    l11GroundToCanopy:'l11canopy', l11CanopyToGround:'l11ground', l11CanopyToLower:'l11lower', l11LowerToCanopy:'l11canopy',
+    l11CanopyToRecovery:'l11ground', l11RecoveryToCanopy:'l11canopy',
+    l12GroundToUpper:'l12upper', l12UpperToGround:'l12ground', l12GroundToLower:'l12lower', l12LowerToGround:'l12ground',
+    l12LowerToFinal:'l12final', l12FinalToLower:'l12lower'
+  });
+
+
+  const QA_TRANSITION_PAIRS = Object.freeze({
+    mazeEnter:'mazeExit', mazeExit:'mazeEnter', ladderUp:'ladderDown', ladderDown:'ladderUp', trapdoor:'lowerLadderUp', lowerLadderUp:'trapdoor',
+    l9UpperToMaze:'l9MazeToUpper', l9MazeToUpper:'l9UpperToMaze',
+    l9UpperShortcutToSphinx:'l9SphinxToUpper', l9SphinxToUpper:'l9UpperShortcutToSphinx',
+    l9SphinxToLower:'l9LowerToSphinx', l9LowerToSphinx:'l9SphinxToLower',
+    l9WeightsToUpper:'l9UpperShortcutToWeights', l9UpperShortcutToWeights:'l9WeightsToUpper',
+    l9UpperToVault:'l9VaultToUpper', l9VaultToUpper:'l9UpperToVault',
+    l10GroundToLower:'l10LowerToGround', l10LowerToGround:'l10GroundToLower',
+    l10LowerToUpper:'l10UpperToLower', l10UpperToLower:'l10LowerToUpper',
+    l10GroundToUpper:'l10UpperToGround', l10UpperToGround:'l10GroundToUpper',
+    l11GroundToCanopy:'l11CanopyToGround', l11CanopyToGround:'l11GroundToCanopy',
+    l11CanopyToLower:'l11LowerToCanopy', l11LowerToCanopy:'l11CanopyToLower',
+    l11CanopyToRecovery:'l11RecoveryToCanopy', l11RecoveryToCanopy:'l11CanopyToRecovery',
+    l12GroundToUpper:'l12UpperToGround', l12UpperToGround:'l12GroundToUpper',
+    l12GroundToLower:'l12LowerToGround', l12LowerToGround:'l12GroundToLower',
+    l12LowerToFinal:'l12FinalToLower', l12FinalToLower:'l12LowerToFinal'
+  });
+
+  function qaDelayMs(base) {
+    return Math.max(35, Math.round((Number(base) || 0) / Math.max(.15, Number(qaState.speed) || 1)));
+  }
+
+  function qaSleep(base=500) {
+    return new Promise(resolve => window.setTimeout(resolve, qaDelayMs(base)));
+  }
+
+  function qaLog(message, data) {
+    const levelNo=campaignAdapter?.currentLevel?.()?.ordinal || state.chapter || '?';
+    const prefix=`[TPQA L${levelNo}]`;
+    if(data===undefined) console.log(prefix,message); else console.log(prefix,message,data);
+    qaState.lastAction=String(message||'');
+    qaUpdateBadge();
+  }
+
+  function qaTouchControlsPreferred() {
+    try { return Boolean(window.matchMedia?.('(pointer: coarse)')?.matches); }
+    catch (_) { return false; }
+  }
+
+  function qaSetTouchPanelOpen(open) {
+    if(!QA_MODE || !qaState.badge) return false;
+    qaState.touchPanelOpen=Boolean(open);
+    qaState.badge.classList.toggle('qaPanel--touchOpen',qaState.touchPanelOpen);
+    qaState.badge.classList.toggle('qaPanel--touchConcealed',qaTouchControlsPreferred()&&!qaState.touchPanelOpen);
+    qaState.badge.setAttribute('aria-hidden',qaTouchControlsPreferred()&&!qaState.touchPanelOpen?'true':'false');
+    return qaState.touchPanelOpen;
+  }
+
+  function qaRevealTouchControls() {
+    if(!QA_MODE) return false;
+    if(qaState.running&&!qaState.paused) qaPause();
+    qaSetTouchPanelOpen(true);
+    qaLog('touch controls opened');
+    return true;
+  }
+
+  function qaIgnoreTouchControls() {
+    if(!QA_MODE) return false;
+    qaSetTouchPanelOpen(false);
+    return true;
+  }
+
+  function qaHandleHotspotPointerUp(e) {
+    if(!QA_MODE) return;
+    const now=window.performance?.now?.() ?? Date.now();
+    const gap=now-qaState.lastHotspotTapAt;
+    qaState.lastHotspotTapAt=now;
+    if(gap>0&&gap<=360){
+      qaState.lastHotspotTapAt=0;
+      e.preventDefault(); e.stopPropagation();
+      qaRevealTouchControls();
+    }
+  }
+
+  function qaUpdateBadge() {
+    if(!QA_MODE || !qaState.badge) return;
+    const levelNo=campaignAdapter?.currentLevel?.()?.ordinal || state.chapter || '?';
+    const mode=qaState.running?(qaState.paused?'PAUSED':'RUNNING'):'READY';
+    const focus=activeCampaignPuzzle?.id || qaState.focusPuzzleId || 'next objective';
+    qaState.statusText.textContent=`QA ${mode} · L${levelNo} · ×${qaState.speed.toFixed(2)} · ${focus}`;
+    qaState.pauseBtn.textContent='P';
+    qaState.pauseBtn.title=qaState.paused?'Resume (P)':'Pause (P)';
+    qaState.pauseBtn.setAttribute('aria-label',qaState.paused?'Resume QA playback':'Pause QA playback');
+  }
+
+  function qaInstallBadge() {
+    if(!QA_MODE || qaState.badge) return;
+    const panel=document.createElement('div'); panel.className='qaPanel'; panel.setAttribute('role','status'); panel.setAttribute('aria-live','polite');
+    const text=document.createElement('span'); text.className='qaStatusText';
+    const controls=document.createElement('span'); controls.className='qaControls';
+    const restart=document.createElement('button'); restart.type='button'; restart.className='qaMiniButton qaRestartButton'; restart.title='Restart campaign from Level 1 and run (X)'; restart.setAttribute('aria-label','Restart campaign from Level 1 and run'); restart.textContent='X';
+    const pause=document.createElement('button'); pause.type='button'; pause.className='qaMiniButton'; pause.title='Pause / resume QA playback (P)'; pause.setAttribute('aria-label','Pause or resume QA playback'); pause.textContent='P';
+    const run=document.createElement('button'); run.type='button'; run.className='qaMiniButton'; run.title='Run / continue campaign QA (R)'; run.setAttribute('aria-label','Run or continue QA campaign'); run.textContent='R';
+    const step=document.createElement('button'); step.type='button'; step.className='qaMiniButton'; step.title='One QA step (N)'; step.setAttribute('aria-label','Run one QA step'); step.textContent='N';
+    const stop=document.createElement('button'); stop.type='button'; stop.className='qaMiniButton'; stop.title='Stop QA playback (S)'; stop.setAttribute('aria-label','Stop QA playback'); stop.textContent='S';
+    const slower=document.createElement('button'); slower.type='button'; slower.className='qaMiniButton'; slower.title='Slow QA playback ([)'; slower.setAttribute('aria-label','Slow QA playback'); slower.textContent='−';
+    const faster=document.createElement('button'); faster.type='button'; faster.className='qaMiniButton'; faster.title='Speed up QA playback (])'; faster.setAttribute('aria-label','Speed up QA playback'); faster.textContent='+';
+    const ignore=document.createElement('button'); ignore.type='button'; ignore.className='qaMiniButton qaIgnoreButton'; ignore.title='Hide QA touch controls'; ignore.setAttribute('aria-label','Hide QA touch controls'); ignore.textContent='Ignore';
+    controls.append(restart,pause,run,step,stop,slower,faster,ignore); panel.append(text,controls); viewportWrap?.appendChild(panel);
+    const hotspot=document.createElement('div'); hotspot.className='qaHotspot'; hotspot.setAttribute('aria-label','QA controls: double tap'); hotspot.setAttribute('role','button'); hotspot.setAttribute('tabindex','-1'); viewportWrap?.appendChild(hotspot);
+    qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
+    pause.addEventListener('click',()=>qaTogglePause());
+    step.addEventListener('click',()=>qaStep().catch(err=>qaFail(err)));
+    run.addEventListener('click',()=>qaRunCampaign().catch(err=>qaFail(err)));
+    restart.addEventListener('click',()=>qaRestartCampaign().catch(err=>qaFail(err)));
+    stop.addEventListener('click',()=>qaStop());
+    slower.addEventListener('click',()=>qaSetSpeed(qaState.speed/1.35));
+    faster.addEventListener('click',()=>qaSetSpeed(qaState.speed*1.35));
+    ignore.addEventListener('click',()=>qaIgnoreTouchControls());
+    hotspot.addEventListener('pointerup',qaHandleHotspotPointerUp,{passive:false});
+    qaSetTouchPanelOpen(!qaTouchControlsPreferred());
+    qaUpdateBadge();
+  }
+
+  async function qaBoundary() {
+    // Pause/step is a playback boundary, not a mid-puzzle freeze. Once one QA
+    // progression action has started, let that atomic action finish normally.
+    if(!qaState.running || qaState.inPlaybackAction) return;
+    if(qaState.stopped) throw new Error('QA run stopped');
+    while(qaState.paused && qaState.stepBudget<=0 && !qaState.stopped) await new Promise(r=>window.setTimeout(r,80));
+    if(qaState.stopped) throw new Error('QA run stopped');
+    if(qaState.paused && qaState.stepBudget>0) qaState.stepBudget-=1;
+  }
+
+  function qaPause() { if(!QA_MODE) return false; qaState.paused=true; qaLog('paused'); return true; }
+  function qaResume() { if(!QA_MODE) return false; qaState.paused=false; qaState.stepBudget=0; qaLog('resumed'); return true; }
+  function qaTogglePause() { return qaState.paused?qaResume():qaPause(); }
+  function qaStop() { if(!QA_MODE) return false; qaState.stopped=true; qaState.paused=false; qaState.stepBudget=0; qaLog('stopping after current atomic action'); return true; }
+  function qaSetSpeed(value) { const n=Number(value); if(!Number.isFinite(n)) return qaState.speed; qaState.speed=Math.max(.15,Math.min(8,n)); qaLog(`speed ×${qaState.speed.toFixed(2)}`); return qaState.speed; }
+  function qaStep() {
+    if(!QA_MODE) return Promise.resolve(false);
+    if(qaState.running){ qaState.paused=true; qaState.stepBudget+=1; qaUpdateBadge(); return Promise.resolve(true); }
+    return qaSolveAndNext({singleStep:true});
+  }
+
+  function qaObjectVisible(obj) {
+    try { return !obj?.visibleWhen || Boolean(obj.visibleWhen()); } catch (_) { return false; }
+  }
+
+  function qaFindObjectById(id) {
+    for(const [levelId,levelData] of Object.entries(levels)){
+      const obj=(levelData.objects||[]).find(item=>item.id===id);
+      if(obj) return {levelId,obj};
+    }
+    return null;
+  }
+
+  function qaFindObjectsForPuzzle(puzzleId) {
+    const out=[];
+    for(const [levelId,levelData] of Object.entries(levels)) for(const obj of levelData.objects||[]){
+      if(obj.puzzleId===puzzleId) out.push({levelId,obj});
+    }
+    return out;
+  }
+
+  function qaLevelIdForArea(areaId) {
+    for(const [levelId,levelData] of Object.entries(levels)) if((levelData.rooms||[]).some(room=>room.areaId===areaId)) return levelId;
+    return null;
+  }
+
+  function qaTransitionAllowed(interact) {
+    const world=campaignWorld();
+    if(interact==='mazeEnter') return Boolean(world.mazeEntranceUnlocked);
+    if(interact==='mazeExit') return Boolean(world.mazeExitReleased);
+    if(interact==='ladderUp') return Boolean(world.upperAccess);
+    if(interact==='trapdoor') return Boolean(world.maintenanceAccess);
+    return true;
+  }
+
+  function qaTransitionEdges(levelId) {
+    const out=[];
+    for(const obj of levels[levelId]?.objects||[]){
+      const dest=QA_TRANSITION_DESTINATIONS[obj.interact];
+      if(!dest || !qaObjectVisible(obj) || !qaTransitionAllowed(obj.interact)) continue;
+      out.push({from:levelId,to:dest,obj});
+    }
+    return out;
+  }
+
+  function qaLevelRoute(from,to) {
+    if(from===to) return [];
+    const q=[from], seen=new Set([from]), prev=new Map();
+    for(let i=0;i<q.length;i++){
+      const here=q[i];
+      for(const edge of qaTransitionEdges(here)){
+        if(seen.has(edge.to)) continue;
+        seen.add(edge.to); prev.set(edge.to,{from:here,edge}); q.push(edge.to);
+        if(edge.to===to){
+          const path=[]; let cur=to;
+          while(cur!==from){const p=prev.get(cur);path.push(p.edge);cur=p.from;}
+          return path.reverse();
+        }
+      }
+    }
+    return null;
+  }
+
+  function qaCellInfo(levelId,x,y,allowUnlockable=true) {
+    const data=levels[levelId]; if(!data) return {passable:false};
+    if(y<0||y>=data.map.length||x<0||x>=data.map[y].length) return {passable:false};
+    const ch=data.map[y][x]; if(ch==='#') return {passable:false};
+    if(ch==='D'||ch==='P'){
+      const door=(data.doors||[]).find(d=>d.x===x&&d.y===y);
+      if(!door) return {passable:false};
+      if(door.open) return {passable:true,door};
+      const status=doorRequirementStatus(door);
+      return {passable:Boolean(allowUnlockable&&status.ok),door,status};
+    }
+    return {passable:true};
+  }
+
+  function qaGridPath(levelId,start,target,allowUnlockable=true) {
+    const sx=Math.floor(start[0]),sy=Math.floor(start[1]),tx=Math.floor(target[0]),ty=Math.floor(target[1]);
+    const key=(x,y)=>`${x},${y}`, q=[[sx,sy]], prev=new Map(), seen=new Set([key(sx,sy)]);
+    if(!qaCellInfo(levelId,sx,sy,allowUnlockable).passable || !qaCellInfo(levelId,tx,ty,allowUnlockable).passable) return null;
+    for(let i=0;i<q.length;i++){
+      const [x,y]=q[i]; if(x===tx&&y===ty){const path=[];let cur=[x,y];while(cur){path.push(cur);cur=prev.get(key(cur[0],cur[1]))||null;}return path.reverse();}
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+        const nx=x+dx,ny=y+dy,k=key(nx,ny); if(seen.has(k)||!qaCellInfo(levelId,nx,ny,allowUnlockable).passable) continue;
+        seen.add(k);prev.set(k,[x,y]);q.push([nx,ny]);
+      }
+    }
+    return null;
+  }
+
+  async function qaOpenDoorsAlongPath(path) {
+    if(!Array.isArray(path)) return;
+    for(let i=1;i<path.length;i++){
+      const [x,y]=path[i], info=qaCellInfo(state.levelId,x,y,true), door=info.door;
+      if(!door || door.open) continue;
+      const [px,py]=path[i-1]; state.x=px+.5;state.y=py+.5;state.angle=Math.atan2((y+.5)-state.y,(x+.5)-state.x);updateHUD();renderScene();
+      await qaSleep(280); performInteraction({kind:'door',door,dist:1}); await qaSleep(550);
+      if(!door.open) throw new Error(`Door ${door.id||door.label} did not open on a QA-proven route`);
+    }
+  }
+
+  function qaPlaceNearObject(obj) {
+    const candidates=[];
+    for(const r of [.45,.65,.85,1.05]) for(let i=0;i<8;i++){const a=i*Math.PI/4;candidates.push([obj.x-Math.cos(a)*r,obj.y-Math.sin(a)*r]);}
+    const spot=candidates.find(([x,y])=>canOccupy(x,y)&&interactionLineOfSightClear(obj.x,obj.y,.08));
+    if(spot){state.x=spot[0];state.y=spot[1];} else {state.x=Math.floor(obj.x)+.5;state.y=Math.floor(obj.y)+.5;}
+    state.angle=Math.atan2(obj.y-state.y,obj.x-state.x);markCellExplored(Math.floor(state.x),Math.floor(state.y));updateHUD();renderScene();
+  }
+
+  function qaFindObjectByInteract(interact, levelId = null) {
+    for(const [id,data] of Object.entries(levels)) {
+      if(levelId && id!==levelId) continue;
+      const obj=(data.objects||[]).find(o=>o.interact===interact && qaObjectVisible(o));
+      if(obj) return {levelId:id,obj};
+    }
+    return null;
+  }
+
+  async function qaBridgeDisconnectedTarget(ref) {
+    if(state.levelId!==ref.levelId) return false;
+    const targetLevel=levels[ref.levelId];
+    if(!targetLevel) return false;
+    // Some authored floors intentionally contain disconnected regions reached by
+    // different ladders/trapdoors (Level 9's Counterweight Chamber and Alignment
+    // Vault are the canonical example). Find an exit in the target component,
+    // then approach through its paired transition from the adjoining floor.
+    for(const outObj of targetLevel.objects||[]) {
+      const pairInteract=QA_TRANSITION_PAIRS[outObj.interact];
+      if(!pairInteract || !qaObjectVisible(outObj) || !qaTransitionAllowed(outObj.interact)) continue;
+      const targetComponentPath=qaGridPath(ref.levelId,[outObj.x,outObj.y],[ref.obj.x,ref.obj.y],true);
+      if(!targetComponentPath) continue;
+      const inverse=qaFindObjectByInteract(pairInteract);
+      if(!inverse || !qaTransitionAllowed(inverse.obj.interact)) continue;
+      await qaTravelToObjectRef(inverse);
+      await qaBoundary();
+      performInteraction({kind:'object',obj:inverse.obj,dist:1});
+      await qaSleep(750);
+      if(state.levelId!==ref.levelId) continue;
+      if(qaGridPath(ref.levelId,[state.x,state.y],[ref.obj.x,ref.obj.y],true)) {
+        qaLog(`entered disconnected ${ref.levelId} component via ${inverse.obj.id||inverse.obj.interact}`);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async function qaTravelToObjectRef(ref) {
+    if(!ref?.obj) throw new Error('QA target object missing');
+    if(state.levelId!==ref.levelId) await qaRouteToLevel(ref.levelId);
+    let path=qaGridPath(state.levelId,[state.x,state.y],[ref.obj.x,ref.obj.y],true);
+    if(!path && state.levelId===ref.levelId) {
+      const bridged=await qaBridgeDisconnectedTarget(ref);
+      if(bridged) path=qaGridPath(state.levelId,[state.x,state.y],[ref.obj.x,ref.obj.y],true);
+    }
+    if(!path) throw new Error(`No legal physical route to ${ref.obj.id||ref.obj.interact} on ${state.levelId}`);
+    await qaOpenDoorsAlongPath(path);
+    path=qaGridPath(state.levelId,[state.x,state.y],[ref.obj.x,ref.obj.y],false);
+    if(!path) throw new Error(`Route to ${ref.obj.id||ref.obj.interact} remained blocked after opening eligible doors`);
+    const last=path[Math.max(0,path.length-2)]||path[path.length-1];
+    state.x=last[0]+.5;state.y=last[1]+.5;qaPlaceNearObject(ref.obj);saveState();
+    qaLog(`arrived at ${ref.obj.id||ref.obj.interact}`); await qaSleep(650);
+    return ref;
+  }
+
+  async function qaRouteToLevel(targetLevelId) {
+    if(state.levelId===targetLevelId) return true;
+    const visited=new Set();
+    for(let guard=0;guard<24 && state.levelId!==targetLevelId;guard++){
+      const current=state.levelId;
+      const candidates=[];
+      for(const edge of qaTransitionEdges(current)){
+        const localPath=qaGridPath(current,[state.x,state.y],[edge.obj.x,edge.obj.y],true);
+        if(!localPath) continue; // a transition in another disconnected room is not usable from here
+        const tail=edge.to===targetLevelId?[]:qaLevelRoute(edge.to,targetLevelId);
+        if(edge.to!==targetLevelId && !tail) continue;
+        const score=(tail?.length||0)+1;
+        candidates.push({edge,score,localPath});
+      }
+      candidates.sort((a,b)=>a.score-b.score || a.localPath.length-b.localPath.length);
+      const choice=candidates.find(c=>!visited.has(`${current}:${c.edge.obj.id||c.edge.obj.interact}`)) || candidates[0];
+      if(!choice) throw new Error(`No physically reachable floor transition from ${current} toward ${targetLevelId}`);
+      visited.add(`${current}:${choice.edge.obj.id||choice.edge.obj.interact}`);
+      await qaTravelToObjectRef({levelId:current,obj:choice.edge.obj});
+      performInteraction({kind:'object',obj:choice.edge.obj,dist:1}); await qaSleep(750);
+      if(state.levelId!==choice.edge.to) throw new Error(`Transition ${choice.edge.obj.interact} did not reach ${choice.edge.to}`);
+    }
+    if(state.levelId!==targetLevelId) throw new Error(`QA floor routing exceeded guard while travelling to ${targetLevelId}`);
+    return true;
+  }
+
+  async function qaUseObject(ref, label='interaction') {
+    await qaTravelToObjectRef(ref); await qaBoundary(); performInteraction({kind:'object',obj:ref.obj,dist:0}); qaLog(label); await qaSleep(700); return true;
+  }
+
+  function qaOwnedWordForLetter(letter) {
+    const upper=String(letter||'').toUpperCase();
+    return puzzleOwnedCandidates().find(word=>String(word)[0]?.toUpperCase()===upper) || null;
+  }
+
+  function qaCrosswordSlots(puzzle) {
+    const model=countryCrosswordModel(puzzle), entries=model.entries;
+    let chosen=null;
+    const walk=(i,letters)=>{
+      if(chosen) return;
+      if(i>=entries.length){chosen=new Map(letters);return;}
+      const entry=entries[i];
+      for(const answer of entry.acceptedAnswers){
+        let ok=true; const next=new Map(letters);
+        for(let off=0;off<entry.length;off++){
+          const y=entry.row+(entry.direction==='down'?off:0),x=entry.col+(entry.direction==='across'?off:0),k=`${y},${x}`,ch=answer[off];
+          if(next.has(k)&&next.get(k)!==ch){ok=false;break;} next.set(k,ch);
+        }
+        if(ok) walk(i+1,next); if(chosen) return;
+      }
+    };
+    walk(0,new Map()); if(!chosen) throw new Error(`No compatible crossword answer set for ${puzzle.id}`);
+    return model.cells.map(cell=>{const letter=chosen.get(`${cell.row},${cell.col}`);const word=qaOwnedWordForLetter(letter);if(!word)throw new Error(`No owned glyph family ${letter} for ${puzzle.id}`);return word;});
+  }
+
+  function qaSlotSolution(puzzle) {
+    const seq=puzzleSequence(puzzle); if(seq.length) return seq;
+    if(puzzle.type==='country-cartouche'){
+      const answer=String(puzzle.ui?.payload?.answer||'').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
+      return [...answer].map(letter=>{const word=qaOwnedWordForLetter(letter);if(!word)throw new Error(`No owned glyph family ${letter} for ${puzzle.id}`);return word;});
+    }
+    if(puzzle.type==='country-crossword') return qaCrosswordSlots(puzzle);
+    return [];
+  }
+
+  function qaFindSubset(values,target) {
+    const n=values.length;
+    for(let mask=0;mask<(1<<n);mask++){let sum=0;const selected=values.map((v,i)=>{const on=Boolean(mask&(1<<i));if(on)sum+=Number(v)||0;return on;});if(Math.abs(sum-Number(target))<1e-9)return selected;}
+    return null;
+  }
+
+  function qaRouteRotations(puzzle,airflow=false) {
+    const tiles=puzzle.ui?.payload?.tiles||[], limits=tiles.map(tile=>airflow?4:(tile.type==='straight'?2:4)), rot=Array(tiles.length).fill(0);
+    let found=null;
+    const test=()=>airflow?airflowConnectivity(puzzle,{rotations:rot}).solved:routeConnectivity(puzzle,rot).solved;
+    const walk=i=>{if(found)return;if(i===rot.length){if(test())found=rot.slice();return;}for(let r=0;r<limits[i];r++){rot[i]=r;walk(i+1);if(found)return;}};
+    walk(0); return found;
+  }
+
+  function qaPegSolution(initial) {
+    const start=Array.from(initial||[]).map(v=>Number(v)?1:0), seen=new Set();
+    const dfs=(pegs,moves)=>{const k=pegs.join('');if(seen.has(k))return null;seen.add(k);if(pegs.reduce((a,b)=>a+b,0)===1)return {pegs,moves};for(const move of pegMoves(pegs)){const n=pegs.slice();n[move.from]=0;n[move.mid]=0;n[move.to]=1;const r=dfs(n,moves.concat(move));if(r)return r;}return null;};
+    return dfs(start,[]);
+  }
+
+  function qaSokobanSolution(puzzle) {
+    const model=sokobanModel(puzzle), fresh=freshMechanismState(puzzle), key=(pl,cr)=>`${pl.join(',')}|${cr.map(p=>p.join(',')).sort().join(';')}`;
+    const q=[{player:fresh.player,crates:fresh.crates,moves:[]}],seen=new Set([key(fresh.player,fresh.crates)]),dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(let qi=0;qi<q.length&&qi<50000;qi++){
+      const cur=q[qi],crset=new Set(cur.crates.map(p=>p.join(','))); if([...model.goals].every(g=>crset.has(g))) return cur;
+      for(const [dx,dy] of dirs){const [px,py]=cur.player,nx=px+dx,ny=py+dy,nk=`${nx},${ny}`;if(model.walls.has(nk))continue;const ci=cur.crates.findIndex(([x,y])=>x===nx&&y===ny),cr=cur.crates.map(p=>p.slice());if(ci>=0){const bx=nx+dx,by=ny+dy,bk=`${bx},${by}`;if(model.walls.has(bk)||cr.some(([x,y])=>x===bx&&y===by))continue;cr[ci]=[bx,by];}const pl=[nx,ny],k=key(pl,cr);if(!seen.has(k)){seen.add(k);q.push({player:pl,crates:cr,moves:cur.moves.concat([[dx,dy]])});}}
+    }
+    return null;
+  }
+
+  function qaExactPath(puzzle) {
+    const p=puzzle.ui?.payload||{},w=Number(p.width)||0,h=Number(p.height)||0,moves=Number(p.moves)||0,target=Number(p.targetSum)||0,end=p.end||[],values=p.values||[],start=p.start||[0,0];
+    const path=[start.slice()]; let found=null;
+    const dfs=(x,y,steps,sum)=>{if(found)return;if(steps===moves){if(x===Number(end[0])&&y===Number(end[1])&&sum===target)found=path.map(v=>v.slice());return;}for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h)continue;path.push([nx,ny]);dfs(nx,ny,steps+1,sum+(Number(values?.[ny]?.[nx])||0));path.pop();if(found)return;}};
+    dfs(Number(start[0]),Number(start[1]),0,Number(values?.[start[1]]?.[start[0]])||0);return found;
+  }
+
+  function qaCoupledSwitchPresses(payload) {
+    const start=Array.from(payload.start||[]).map(v=>Number(v)?1:0),target=Array.from(payload.target||[]).map(v=>Number(v)?1:0),masks=payload.masks||[];
+    for(let bits=0;bits<(1<<masks.length);bits++){const lamps=start.slice();for(let i=0;i<masks.length;i++)if(bits&(1<<i))for(const lamp of masks[i])lamps[lamp]=lamps[lamp]?0:1;if(JSON.stringify(lamps)===JSON.stringify(target))return {lamps,presses:masks.map((_,i)=>Boolean(bits&(1<<i)))};}
+    return null;
+  }
+
+  function qaSolvedMechanismState(puzzle) {
+    const p=puzzle.ui?.payload||{}, fresh=freshMechanismState(puzzle);
+    switch(puzzle.type){
+      case 'dial-bank': return {...fresh,values:(p.targetValues||[]).map(Number)};
+      case 'route-board': {const rotations=qaRouteRotations(puzzle,false);return {...fresh,rotations};}
+      case 'path-grid': return {...fresh,x:Number(p.end?.[0]??fresh.x),y:Number(p.end?.[1]??fresh.y),nextCheckpoint:(p.checkpoints||[]).length,finished:true};
+      case 'lights-out': return {...fresh,lights:Array.from(fresh.lights||[]).map(()=>Number(p.target??1))};
+      case 'balance-scale': return {...fresh,selected:qaFindSubset(p.weights||[],p.target)};
+      case 'context-match': return {...fresh,selectedIndex:Number(p.correctIndex)};
+      case 'jug-transfer': {const a=Array.from(fresh.amounts||[]);if(a.length)a[a.length-1]=Number(p.target);return {...fresh,amounts:a};}
+      case 'hanoi-stack': {const n=Math.max(1,Number(p.discCount)||3),target=Math.max(0,Number(p.targetRod)||2),rods=[[],[],[]];rods[target]=Array.from({length:n},(_,i)=>n-i);return {...fresh,rods,selectedRod:null,moves:Math.pow(2,n)-1};}
+      case 'codebreaker': {const v=getCodebreakerVariant(puzzle);return {...fresh,guess:v.secret.slice(),solved:true,history:[{guess:v.secret.slice(),exact:v.secret.length,misplaced:0}]};}
+      case 'equivalence-grid': {const fr=p.fractions||[],dec=p.decimals||[],pct=p.percents||[];const match=(arr,v)=>arr.findIndex(x=>Math.abs(Number(x.value)-Number(v))<1e-9);return {...fresh,decimalOrder:fr.map(x=>match(dec,x.value)),percentOrder:fr.map(x=>match(pct,x.value)),selected:null};}
+      case 'schedule-order': return {...fresh,order:Array.from(p.targetOrder||[])};
+      case 'river-crossing': return {...fresh,playerSide:Number(p.targetSide??1),itemSides:(p.travellers||[]).map(()=>Number(p.targetSide??1)),selectedItem:null,moves:7};
+      case 'sokoban': {const s=qaSokobanSolution(puzzle);if(!s)throw new Error(`No Sokoban solution for ${puzzle.id}`);return {...fresh,player:s.player,crates:s.crates};}
+      case 'sliding-grid': return {...fresh,tiles:Array.from(p.target||[])};
+      case 'peg-solitaire': {const s=qaPegSolution(p.initial||[]);if(!s)throw new Error(`No peg solution for ${puzzle.id}`);return {...fresh,pegs:s.pegs,selected:null,moves:s.moves.length};}
+      case 'pattern-sequence': return {...fresh,selectedIndex:Number(p.correctIndex)};
+      case 'nonogram': {const rows=Array.from(p.target||[]),cells=[];for(const row of rows)for(const ch of String(row))cells.push(ch==='1'?1:0);return {...fresh,cells};}
+      case 'card-sort': return {...fresh,order:Array.from(p.targetOrder||[]),selected:null};
+      case 'calculator-sequence': return {...fresh,stage:Math.max(0,(p.problems||[]).length-1),input:'',solved:true,message:'QA solved'};
+      case 'base-match': return {...fresh,stage:Math.max(0,(fresh.rounds||[]).length-1),selectedIndex:null,solved:true,message:'QA solved',answers:(fresh.rounds||[]).map(r=>r.correctIndex)};
+      case 'ring-lock': return {...fresh,positions:Array.from(p.targetPositions||[]).map(Number)};
+      case 'tone-sequence': return {...fresh,input:Array.from(p.sequence||[]),solved:true,playing:false,message:'QA solved'};
+      case 'airflow-network': {const rotations=qaRouteRotations(puzzle,true);if(!rotations)throw new Error(`No airflow solution for ${puzzle.id}`);return {...fresh,rotations};}
+      case 'pulse-sync': return {...fresh,phases:(p.periods||[]).map(period=>((Number(p.targetColumn)||0)%Number(period)+Number(period))%Number(period))};
+      case 'spectrum-order': return {...fresh,order:Array.from(p.targetOrder||[]),selected:null};
+      case 'power-balance': return {...fresh,selected:qaFindSubset(p.loads||[],p.target)};
+      case 'deduction-order': return {...fresh,order:Array.from(p.targetOrder||[]),selected:null};
+      case 'dual-mirror': return {...fresh,orientations:Array.from(p.targetOrientations||[]).map(Number)};
+      case 'truth-gates': return {...fresh,gates:Array.from(p.targetGates||[])};
+      case 'dependency-order': return {...fresh,order:Array.from(p.targetOrder||[]),selected:null};
+      case 'exact-path': {const path=qaExactPath(puzzle);if(!path)throw new Error(`No exact path for ${puzzle.id}`);return {...fresh,path,message:'QA solved'};}
+      case 'sphinx-riddles': {const v=getSphinxVariant(puzzle);return {...fresh,stage:v.riddleOrder.length,mistakes:0,solved:true,message:'QA solved',riddleOrder:v.riddleOrder,choiceOrders:v.choiceOrders};}
+      case 'coupled-switches': {const s=qaCoupledSwitchPresses(p);if(!s)throw new Error(`No coupled-switch solution for ${puzzle.id}`);return {...fresh,lamps:s.lamps,moves:s.presses.filter(Boolean).length};}
+      case 'layer-alignment': return {...fresh,rotations:(p.layers||[]).map(layer=>Number(layer.targetRotation)||0)};
+      case 'market-till': return {...fresh,selected:qaFindSubset(p.tokens||[],p.targetCents)};
+      case 'cold-chain': {for(let A=0;A<3;A++)for(let B=0;B<3;B++)for(let C=0;C<3;C++){const s={...fresh,controls:[A,B,C]};if(l10ColdSolved(puzzle,s))return s;}throw new Error(`No cold-chain solution for ${puzzle.id}`);}
+      case 'textile-mixer': return {...fresh,selectedIndex:Number(p.correctIndex)};
+      case 'record-classification': {const assignments={};for(const r of p.records||[])assignments[r.id]=r.destination;return {...fresh,assignments};}
+      case 'call-triangulation': return {...fresh,selected:Array.from(p.target||[]).map(Number)};
+      case 'lineage-match': return {...fresh,assignments:Array.from(p.targetAssignments||[])};
+      case 'habitat-triage': return {...fresh,akesi:p.target?.akesi,moli:p.target?.moli};
+      case 'sudoku': return {...fresh,cells:Array.from(p.solution||[]).map(Number),notes:Array.from({length:81},()=>[]),selected:null,noteMode:false};
+      default: throw new Error(`TPQA has no mechanism solver for ${puzzle.type}`);
+    }
+  }
+
+  function qaAnswerForPuzzle(puzzle) {
+    if(!puzzle) return null; const p=puzzle.ui?.payload||{};
+    if(puzzleSequence(puzzle).length) return {id:puzzle.id,type:puzzle.type,sequence:puzzleSequence(puzzle)};
+    if(puzzle.type==='country-cartouche') return {id:puzzle.id,type:puzzle.type,answer:p.answer};
+    if(puzzle.type==='country-crossword') return {id:puzzle.id,type:puzzle.type,entries:(p.entries||[]).map(e=>({number:e.number,answer:e.acceptedAnswers?.[0]}))};
+    if(puzzle.type==='coordinate-map') return {id:puzzle.id,type:puzzle.type,target:[Number(p.targetX),Number(p.targetY)],source:p.source};
+    if(puzzle.type==='codebreaker'){const v=getCodebreakerVariant(puzzle);return {id:puzzle.id,type:puzzle.type,words:v.words,secret:v.secret,answer:v.secret.map(i=>v.words[i])};}
+    if(puzzle.type==='sphinx-riddles'){const v=getSphinxVariant(puzzle);return {id:puzzle.id,type:puzzle.type,answers:v.riddleOrder.map((ri,stage)=>{const r=p.riddles[ri];return {prompt:r.prompt||r.clue,answer:r.answer,choices:v.choiceOrders[stage]};})};}
+    if(puzzle.type==='sudoku') return {id:puzzle.id,type:puzzle.type,solution:Array.from(p.solution||[])};
+    const solved=isMechanismPuzzle(puzzle)?qaSolvedMechanismState(puzzle):null;
+    return {id:puzzle.id,type:puzzle.type,solution:solved,payload:p};
+  }
+
+  async function qaSolveOpenPuzzle() {
+    const puzzle=activeCampaignPuzzle; if(!puzzle) return false;
+    qaLog(`solving ${puzzle.id}`); await qaBoundary();
+    if(puzzle.type==='coordinate-map'){
+      const payload=puzzle.ui?.payload||{};
+      const cell=puzzleSlots.querySelector(`.coordinateMapCell[data-x="${Number(payload.targetX)}"][data-y="${Number(payload.targetY)}"]`);
+      if(!cell) throw new Error(`QA could not find coordinate cell for ${puzzle.id}`);
+      cell.click(); await qaSleep(800); qaState.focusPuzzleId=null; return campaignSolved(puzzle.id);
+    }
+    if(isMechanismPuzzle(puzzle)){
+      puzzleMechanismState=qaSolvedMechanismState(puzzle);
+      if(!mechanismSolved(puzzle)) throw new Error(`QA generated state does not solve ${puzzle.id}`);
+      renderCampaignPuzzle(); await qaSleep(700);
+    }else{
+      const solution=qaSlotSolution(puzzle);
+      if(solution.length){
+        puzzleSlotValues=Array(puzzleSlotValues.length).fill(null);
+        for(let i=0;i<solution.length;i++){puzzleSlotValues[i]=solution[i];if(i===solution.length-1||i%3===2){renderCampaignPuzzle();await qaSleep(150);}}
+        if(!validateCampaignPuzzleSlots()) throw new Error(`QA generated slots do not solve ${puzzle.id}`);
+      }
+      renderCampaignPuzzle(); await qaSleep(500);
+    }
+    completeActiveCampaignPuzzle(); await qaSleep(800); qaState.focusPuzzleId=null; return true;
+  }
+
+  function qaPrimaryPhysicalObject(puzzle) {
+    const refs=qaFindObjectsForPuzzle(puzzle.id).filter(ref=>qaObjectVisible(ref.obj));
+    if(puzzle.id==='l1-ball-table') return qaFindObjectById('ball');
+    if(puzzle.id==='l11-call-survey') return qaFindObjectById('l11CallA');
+    if(puzzle.id==='l9-maze-survey') return qaFindObjectById('l9MarkerNorth');
+    if(puzzle.id==='l9-counterweight') return qaFindObjectById('l9OrbRelic');
+    if(puzzle.id==='l10-delivery-routing') return qaFindObjectById('l10BreadCrate');
+    if(puzzle.id==='l10-textile-routing') return qaFindObjectById('l10BlueCloth');
+    if(puzzle.id==='l11-parent-bands') return qaFindObjectById('l11RedBand');
+    return refs[0]||null;
+  }
+
+  async function qaSolvePhysicalPuzzle(puzzle) {
+    qaLog(`solving physical ${puzzle.id}`); await qaBoundary();
+    if(puzzle.type==='pickup'){
+      const ref=qaFindObjectsForPuzzle(puzzle.id).find(r=>qaObjectVisible(r.obj)); if(!ref)throw new Error(`Pickup object missing for ${puzzle.id}`); await qaUseObject(ref,`pickup ${puzzle.id}`); return true;
+    }
+    if(puzzle.id==='l1-ball-table'){
+      if(!state.ballOnTable){if(state.carrying!=='ball')await qaUseObject(qaFindObjectById('ball'),'take sike');await qaUseObject(qaFindObjectById('table'),'place sike on supa');}return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l9-maze-survey'){
+      for(const id of ['l9MarkerNorth','l9MarkerWest','l9MarkerSouth']){const ref=qaFindObjectById(id);if(ref&&!state.l9Markers?.[ref.obj.markerId])await qaUseObject(ref,`survey ${ref.obj.markerId}`);}return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l11-call-survey'){
+      for(const id of ['l11CallA','l11CallB','l11CallC']){const ref=qaFindObjectById(id);if(ref&&!state.l11CallMarkers?.[ref.obj.pylonId])await qaUseObject(ref,`record pylon ${ref.obj.pylonId}`);}return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l9-counterweight'){
+      const p=puzzle.ui?.payload||{};
+      for(const ped of p.pedestals||[]){if(state.l9Placements?.[ped.id]===ped.accept)continue;let ref=null;for(const [levelId,d] of Object.entries(levels)){const obj=(d.objects||[]).find(o=>o.interact==='l9CarryRelic'&&o.carryId===ped.accept);if(obj){ref={levelId,obj};break;}}if(!ref)throw new Error(`Relic ${ped.accept} missing`);if(state.carrying!==`l9:${ped.accept}`)await qaUseObject(ref,`take ${ped.accept} relic`);const pedestal=qaFindObjectById(`l9Pedestal${ped.id[0].toUpperCase()+ped.id.slice(1)}`);if(!pedestal)throw new Error(`Pedestal ${ped.id} missing`);await qaUseObject(pedestal,`place ${ped.accept} on ${ped.id}`);}return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l10-delivery-routing'){
+      if(state.l10CartDock!=='receiving') await qaUseObject(qaFindObjectById('l10CartCtlReceiving'),'call cart to Receiving');
+      for(const id of ['l10BreadCrate','l10SweetCrate']){const ref=qaFindObjectById(id);if(ref&&state.l10ParcelLocations?.[ref.obj.parcelId]==='receiving')await qaUseObject(ref,`load ${ref.obj.word}`);}
+      if(state.l10CartDock!=='market') await qaUseObject(qaFindObjectById('l10CartCtlReceiving'),'send cart to Market Arcade');
+      for(const id of ['l10BakeryStand','l10SweetStand']){const ref=qaFindObjectById(id);const expected=ref?.obj.expectedParcel;if(ref&&state.l10DeliveryPlacements?.[ref.obj.standId]!==expected)await qaUseObject(ref,`deliver ${expected}`);}
+      return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l10-textile-routing'){
+      const jobs=[['l10BlueCloth','l10DyeFrame','blue-cloth','dye-frame'],['l10WhiteCloth','l10FinishTable','white-cloth','finish-table']];
+      for(const [parcelId,stationId,batch,dest] of jobs){if(state.l10TextilePlacements?.[dest]===batch)continue;if(state.carrying!==`l10:textile:${batch}`)await qaUseObject(qaFindObjectById(parcelId),`take ${batch}`);await qaUseObject(qaFindObjectById(stationId),`place ${batch}`);}return campaignSolved(puzzle.id);
+    }
+    if(puzzle.id==='l11-parent-bands'){
+      const jobs=[['l11RedBand','l11WestPerch','red-band','west-perch'],['l11BlueBand','l11EastPerch','blue-band','east-perch']];
+      for(const [bandObj,perchObj,band,dest] of jobs){if(state.l11BandPlacements?.[dest]===band)continue;if(state.carrying!==`l11:band:${band}`)await qaUseObject(qaFindObjectById(bandObj),`take ${band}`);await qaUseObject(qaFindObjectById(perchObj),`place ${band}`);}return campaignSolved(puzzle.id);
+    }
+    throw new Error(`TPQA has no physical solver for ${puzzle.id} (${puzzle.type})`);
+  }
+
+  function qaIsPhysicalPuzzle(puzzle) {
+    return ['pickup','world-action','maze-survey','carry-placement','delivery-routing','textile-routing','band-placement'].includes(puzzle?.type);
+  }
+
+  function qaPuzzleInputUsable(puzzle) {
+    if(puzzle?.type==='country-cartouche'){
+      const answer=String(puzzle.ui?.payload?.answer||'').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'');
+      return [...answer].every(letter=>Boolean(qaOwnedWordForLetter(letter)));
+    }
+    if(puzzle?.type==='country-crossword'){
+      try { qaCrosswordSlots(puzzle); return true; } catch (_) { return false; }
+    }
+    return true;
+  }
+
+  function qaCurrentUnsolvedPuzzles() {
+    const levelDef=campaignAdapter?.currentLevel?.(); if(!levelDef) return [];
+    return (levelDef.puzzles||[]).filter(p=>!campaignSolved(p.id));
+  }
+
+  function qaPuzzleRequirementsMet(puzzle) {
+    // The normal campaign availability API is intentionally area-local: it only
+    // reports puzzles in runtime.currentArea. QA, however, must discover the next
+    // objective anywhere the player can legally reach. Check the authored puzzle
+    // prerequisites independently of currentArea, then let the physical route
+    // proof below decide whether the player can actually get there.
+    const req=puzzle?.requirements||{};
+    for(const glyph of req.glyphs||[]) if(!collected(glyph)) return false;
+    for(const solvedId of req.solvedPuzzles||[]) if(!campaignSolved(solvedId)) return false;
+    const world=campaignWorld();
+    for(const [key,value] of Object.entries(req.states||{})) if(world[key]!==value) return false;
+    return true;
+  }
+
+  function qaPuzzleReachable(puzzle) {
+    if(!qaPuzzleRequirementsMet(puzzle) || !qaPuzzleInputUsable(puzzle)) return false;
+    const ref=qaIsPhysicalPuzzle(puzzle)?qaPrimaryPhysicalObject(puzzle):(qaFindObjectsForPuzzle(puzzle.id).find(r=>qaObjectVisible(r.obj))||null);
+    if(!ref) return false;
+    const route=qaLevelRoute(state.levelId,ref.levelId); if(route===null)return false;
+    if(state.levelId===ref.levelId) return Boolean(qaGridPath(state.levelId,[state.x,state.y],[ref.obj.x,ref.obj.y],true));
+    return true;
+  }
+
+  function qaNextPuzzle() {
+    const unsolved=qaCurrentUnsolvedPuzzles();
+    for(const puzzle of unsolved){
+      if(!qaState.includeOptional && ['bonus','story'].includes(String(puzzle.sourceClass||''))) continue;
+      if(qaPuzzleReachable(puzzle)) return puzzle;
+    }
+    return null;
+  }
+
+  async function qaMoveToPuzzle(puzzle) {
+    const ref=qaIsPhysicalPuzzle(puzzle)?qaPrimaryPhysicalObject(puzzle):(qaFindObjectsForPuzzle(puzzle.id).find(r=>qaObjectVisible(r.obj))||null);
+    if(!ref) throw new Error(`No world object for ${puzzle.id}`);
+    await qaTravelToObjectRef(ref); qaState.focusPuzzleId=puzzle.id; qaLog(`next: ${puzzle.id}`); await qaSleep(700);
+    if(!qaIsPhysicalPuzzle(puzzle)){
+      performInteraction({kind:'object',obj:ref.obj,dist:0}); await qaSleep(650);
+      if(activeCampaignPuzzle?.id!==puzzle.id && !campaignSolved(puzzle.id)) throw new Error(`Could not open ${puzzle.id}`);
+    }
+    qaUpdateBadge(); return puzzle;
+  }
+
+  async function qaDismissGlyphRewards() {
+    while(glyphPopup&&!glyphPopup.hidden){await qaSleep(950);glyphPopupClose.click();await qaSleep(300);}
+  }
+
+  async function qaEnsureIntroDismissed() {
+    if(levelIntroOverlay&&!levelIntroOverlay.hidden){await qaSleep(300);levelIntroShownAt=0;startLevelFromIntro();await qaSleep(550);}
+  }
+
+  async function qaSolveCurrent() {
+    await qaEnsureIntroDismissed();
+    if(activeCampaignPuzzle) return qaSolveOpenPuzzle();
+    if(qaState.focusPuzzleId){const p=campaignPuzzle(qaState.focusPuzzleId);if(p&&!campaignSolved(p.id)){const ok=await qaSolvePhysicalPuzzle(p);if(!ok)throw new Error(`Physical QA solver did not complete ${p.id}`);qaState.focusPuzzleId=null;return true;}qaState.focusPuzzleId=null;}
+    return false;
+  }
+
+  async function qaAdvanceLevelIfReady() {
+    if(!campaignAdapter?.isLevelComplete?.()) return false;
+    const remaining=qaNextPuzzle();
+    if(remaining){if(levelCompleteOverlay&&!levelCompleteOverlay.hidden)closeModal(levelCompleteOverlay);return false;}
+    const next=campaignAdapter?.nextLevel?.();
+    if(!next){if(levelCompleteOverlay?.hidden)openLevelComplete();qaLog('campaign complete — final celebration left on screen');return 'complete';}
+    await qaDismissGlyphRewards();
+    if(levelCompleteOverlay?.hidden)openLevelComplete(); await qaSleep(1200);
+    goToNextCampaignLevel(); qaState.focusPuzzleId=null; await qaSleep(900); await qaEnsureIntroDismissed(); qaLog(`entered Level ${next.ordinal}`); return true;
+  }
+
+  async function qaSolveAndNext(options={}) {
+    if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
+    await qaBoundary();
+    if(resetConfirmOverlay&&!resetConfirmOverlay.hidden) closeModal(resetConfirmOverlay);
+    await qaEnsureIntroDismissed();
+    const solved=await qaSolveCurrent(); if(solved){qaState.actionNo+=1;await qaDismissGlyphRewards();await qaSleep(550);}
+    const advanced=await qaAdvanceLevelIfReady(); if(advanced==='complete')return {complete:true}; if(advanced) return {advanced:true};
+    if(activeCampaignPuzzle) return {current:activeCampaignPuzzle.id};
+    const puzzle=qaNextPuzzle();
+    if(!puzzle){
+      const unsolved=qaCurrentUnsolvedPuzzles();
+      const details=unsolved.map(p=>({
+        id:p.id,
+        requirementsMet:qaPuzzleRequirementsMet(p),
+        currentAreaAvailable:campaignPuzzleAvailable(p.id),
+        area:p.area,
+        requirements:p.requirements||{}
+      }));
+      throw new Error(`No physically reachable unsolved QA puzzle remains in Level ${campaignAdapter?.currentLevel?.()?.ordinal}. ${JSON.stringify(details)}`);
+    }
+    await qaMoveToPuzzle(puzzle); qaState.actionNo+=1; return {next:puzzle.id};
+  }
+
+  function qaStatus() {
+    const levelDef=campaignAdapter?.currentLevel?.();
+    const status={enabled:QA_MODE,running:qaState.running,paused:qaState.paused,speed:qaState.speed,level:levelDef?.ordinal||state.chapter,levelId:state.levelId,activePuzzle:activeCampaignPuzzle?.id||null,focusPuzzle:qaState.focusPuzzleId,nextPuzzle:qaNextPuzzle()?.id||null,collection:`${collectionCount()}/120`,levelComplete:Boolean(campaignAdapter?.isLevelComplete?.()),lastAction:qaState.lastAction};
+    console.table?.([status]); return status;
+  }
+
+  function qaAnswer() {
+    const puzzle=activeCampaignPuzzle || (qaState.focusPuzzleId?campaignPuzzle(qaState.focusPuzzleId):qaNextPuzzle());
+    if(!puzzle){console.info('[TPQA] no current/next puzzle');return null;} const answer=qaAnswerForPuzzle(puzzle);console.info('[TPQA answer]',answer);return answer;
+  }
+
+  function qaVariant() {
+    const puzzle=activeCampaignPuzzle || (qaState.focusPuzzleId?campaignPuzzle(qaState.focusPuzzleId):qaNextPuzzle());
+    if(!puzzle)return null; const variant=state.puzzleVariants?.[puzzle.id]||null;console.info('[TPQA variant]',puzzle.id,variant);return variant;
+  }
+
+  function qaSeed() {
+    const value=state.saveEpoch; console.info('[TPQA save/campaign identity]',value); return value;
+  }
+
+  async function qaRunCampaign(options={}) {
+    if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
+    for(let i=0;!campaignAdapter&&i<100;i++) await new Promise(r=>window.setTimeout(r,50));
+    if(!campaignAdapter) throw new Error('Campaign engine is not ready yet');
+    if(qaState.running){if(qaState.paused)qaResume();return qaState.runPromise;}
+    if(options.reset){await resetGame();await qaSleep(400);}
+    if(options.speed!=null)qaSetSpeed(options.speed);
+    qaState.includeOptional=options.includeOptional!==false;qaState.stopped=false;qaState.paused=false;qaState.stepBudget=0;qaState.running=true;qaUpdateBadge();qaLog('campaign playback started');
+    qaState.runPromise=(async()=>{
+      try{
+        let guard=0;
+        while(!qaState.stopped&&guard++<300){
+          await qaBoundary();
+          qaState.inPlaybackAction=true;
+          let result;
+          try { result=await qaSolveAndNext(); }
+          finally { qaState.inPlaybackAction=false; }
+          if(result?.complete)break;
+          await qaSleep(650);
+        }
+        if(guard>=300)throw new Error('QA campaign guard exceeded 300 progression actions');
+        return qaStatus();
+      }finally{qaState.inPlaybackAction=false;qaState.running=false;qaState.paused=false;qaState.stepBudget=0;qaUpdateBadge();}
+    })();
+    return qaState.runPromise;
+  }
+
+  async function qaRestartCampaign() {
+    if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
+    const speed=qaState.speed, includeOptional=qaState.includeOptional;
+    if(qaState.running){
+      qaState.stopped=true; qaState.paused=false; qaState.stepBudget=0; qaUpdateBadge();
+      try { await qaState.runPromise; } catch (_) {}
+    }
+    qaState.running=false; qaState.stopped=false; qaState.paused=false; qaState.stepBudget=0; qaState.inPlaybackAction=false;
+    qaLog('restarting campaign from Level 1');
+    await resetGame();
+    await qaSleep(450);
+    return qaRunCampaign({speed,includeOptional});
+  }
+
+  function qaEditableTarget(target) {
+    if(!target || !(target instanceof Element)) return false;
+    return Boolean(target.closest('input,textarea,select,[contenteditable="true"],[contenteditable=""]'));
+  }
+
+  function qaHandleShortcut(e) {
+    if(!QA_MODE || e.repeat || qaEditableTarget(e.target)) return false;
+    if(e.code==='KeyP'){qaTogglePause();e.preventDefault();return true;}
+    if(e.code==='KeyN'){qaStep().catch(err=>qaFail(err));e.preventDefault();return true;}
+    if(e.code==='KeyR'){qaRunCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
+    if(e.code==='KeyX'){qaRestartCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
+    if(e.code==='KeyS'){qaStop();e.preventDefault();return true;}
+    if(e.code==='BracketLeft'){qaSetSpeed(qaState.speed/1.35);e.preventDefault();return true;}
+    if(e.code==='BracketRight'){qaSetSpeed(qaState.speed*1.35);e.preventDefault();return true;}
+    return false;
+  }
+
+  function qaFail(error) {
+    const err=error instanceof Error?error:new Error(String(error));qaState.running=false;qaState.paused=true;qaState.lastAction=`FAILED: ${err.message}`;qaUpdateBadge();console.error('[TPQA]',err);showMessage(`QA stopped: ${err.message}`);return err;
+  }
+
+  function installTPQA() {
+    if(!QA_MODE || qaState.installed) return;
+    qaState.installed=true;qaInstallBadge();
+    const api={
+      get enabled(){return true;}, answer:qaAnswer, solve:qaSolveCurrent, next:async()=>{const p=qaNextPuzzle();if(!p)throw new Error('No reachable next puzzle');return qaMoveToPuzzle(p);},
+      solveAndNext:qaSolveAndNext, runCampaign:qaRunCampaign, restartCampaign:qaRestartCampaign,
+      pause:qaPause, resume:qaResume, stop:qaStop, step:qaStep, status:qaStatus,
+      setSpeed:qaSetSpeed, seed:qaSeed, variant:qaVariant
+    };
+    window.TPQA=api;
+    // Forgiving aliases for the two shorthand spellings used during design discussion.
+    window.TPQR=api; window.TRQA=api;
+    qaLog('test mode ready · R run · P pause/resume · N step · X restart · S stop · [ ] speed');
   }
 
   function viewportGestureIntent(clientY, rectTop, rectHeight) {
@@ -7307,6 +8115,7 @@
   }
 
   document.addEventListener('keydown', (e) => {
+    if (qaHandleShortcut(e)) return;
     if (levelIntroOverlay && !levelIntroOverlay.hidden && (e.code === 'Enter' || e.code === 'Space')) { startLevelFromIntro(); e.preventDefault(); return; }
     if (!glyphPopup.hidden && (e.code === 'Enter' || e.code === 'Space')) { glyphPopupClose.click(); e.preventDefault(); return; }
     if (e.code === 'Escape' && modalOpen) {
@@ -7417,6 +8226,7 @@
 
   async function init() {
     applyStaticLanguage();
+    installTPQA();
     try { db = await openDb(); } catch (err) { console.warn('[game] IndexedDB unavailable', err); db = null; }
     let saved = await dbGet();
 

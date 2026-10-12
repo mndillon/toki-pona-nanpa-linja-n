@@ -2203,3 +2203,152 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .glyphRewardCard .overlayProgress { margin: 3px 0 5px; font-size: 11px; line-height: 1.1; }
   .glyphRewardCard button { min-width: 132px; min-height: 34px; padding: 5px 10px; font-size: 12px; }
 }
+
+/* QA playback controls exist only when game-engine.html?qa=1 installs them. */
+.qaPanel {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 20px);
+  padding: 6px 7px;
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 8px;
+  background: rgba(0,0,0,.88);
+  color: #fff;
+  font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-shadow: 0 2px 8px rgba(0,0,0,.32);
+  touch-action: manipulation;
+}
+.qaPanel--touchConcealed { display: none !important; }
+.qaStatusText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qaControls { display: inline-flex; gap: 4px; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
+.qaMiniButton {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255,255,255,.38);
+  border-radius: 6px;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font: 800 12px/1 system-ui, sans-serif;
+  touch-action: manipulation;
+}
+.qaMiniButton:hover { background: rgba(255,255,255,.22); }
+.qaIgnoreButton { min-width: 54px; font-size: 10px; }
+/* QA-only double-tap target: anchored to the game viewport, not the page/screen. */
+.qaHotspot {
+  position: absolute;
+  z-index: 10049;
+  left: 0;
+  top: 0;
+  width: 54px;
+  height: 54px;
+  background: transparent;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (pointer:coarse) {
+  .qaMiniButton { min-width: 40px; min-height: 40px; }
+}
+/* On short landscape phones, the revealed QA controls form a single full-width
+   row inside the game display. All X/P/R/N/S and speed/dismiss buttons remain
+   visible at once without summoning a keyboard. */
+@media (pointer:coarse) and (max-height:520px) and (orientation:landscape) {
+  .qaPanel.qaPanel--touchOpen {
+    left: 4px;
+    right: 4px;
+    top: 4px;
+    bottom: auto;
+    max-width: none;
+    width: auto;
+    display: grid;
+    grid-template-columns: minmax(0,1fr);
+    gap: 3px;
+    padding: 4px;
+    border-radius: 7px;
+  }
+  .qaPanel.qaPanel--touchOpen .qaStatusText {
+    max-width: none;
+    width: 100%;
+    padding: 0 2px;
+    font-size: 9px;
+    line-height: 1.05;
+    text-align: center;
+  }
+  .qaPanel.qaPanel--touchOpen .qaControls {
+    display: grid;
+    grid-template-columns: repeat(8,minmax(0,1fr));
+    gap: 3px;
+    width: 100%;
+    max-width: none;
+  }
+  .qaPanel.qaPanel--touchOpen .qaMiniButton {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    padding: 2px 3px;
+    font-size: 11px;
+  }
+  .qaPanel.qaPanel--touchOpen .qaIgnoreButton { font-size: 9px; }
+  .qaHotspot { width: 48px; height: 48px; }
+  /* Keep solved-maze quick exit beside, rather than on top of, the USE button. */
+  .mazeQuickExitBtn {
+    top: auto;
+    right: 98px;
+    bottom: 20px;
+    min-width: 100px;
+    min-height: 48px;
+    max-width: calc(100% - 210px);
+    padding: 6px 9px;
+  }
+}
+@media (pointer:coarse) and (max-width:520px) {
+  .qaPanel.qaPanel--touchOpen .qaControls { grid-template-columns: repeat(4,minmax(0,1fr)); }
+}
+
+
+/* v0.99 fixed glyph-display mechanisms: these puzzle surfaces are themselves
+   nanpa-linja-n artefacts, so they use bare digit glyphs in every UI language. */
+.bareNanpaDigits{
+  font-family:"NasinNanpaGame",sans-serif !important;
+  font-variant-ligatures:normal !important;
+  font-feature-settings:"liga" 1,"dlig" 1,"calt" 1 !important;
+  line-height:1;
+}
+.dialValue.bareNanpaDigits{font-size:42px}
+.slidingTile.bareNanpaDigits{font-size:43px}
+.exactPathStep.bareNanpaDigits{font-size:11px}
+.exactPathValue.bareNanpaDigits{font-size:31px}
+.tonePadNumber.bareNanpaDigits{font-size:40px}
+@media (pointer:coarse), (max-width:600px){
+  .dialValue.bareNanpaDigits{font-size:34px}
+  .slidingTile.bareNanpaDigits{font-size:34px}
+  .exactPathValue.bareNanpaDigits{font-size:27px}
+  .tonePadNumber.bareNanpaDigits{font-size:31px}
+}
+@media (max-height:620px){
+  .slidingTile.bareNanpaDigits{font-size:30px}
+  .exactPathValue.bareNanpaDigits{font-size:24px}
+  .tonePadNumber.bareNanpaDigits{font-size:28px}
+}
+/* Four-disk Hanoi must remain completely visible on short landscape phones. */
+@media (max-height:520px){
+  .hanoiBoard{height:138px}
+  .hanoiRod{padding-bottom:17px}
+  .hanoiPost{bottom:25px;top:9px;width:5px}
+  .hanoiBase{bottom:21px;height:6px}
+  .hanoiStack{bottom:27px;gap:2px}
+  .hanoiDisk{height:22px;border-radius:9px}
+  .hanoiDisk .sitelenGlyph{font-size:15px}
+  .hanoiRod small{bottom:3px;font-size:9px}
+  .hanoiMoves{font-size:10px}
+}

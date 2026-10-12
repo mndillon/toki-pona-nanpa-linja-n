@@ -339,7 +339,7 @@
             requirements:{states:{l4BranchAccess:true}},
             rewards:{glyphs:['palisa','supa'],setStates:{l4StackDone:true}},skipIfRewardsOwned:true,skipSafe:true,
             alreadyOwnedEffects:{setStates:{l4StackDone:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'Stackworks',instructions:'Move the three discs from the left post to the right post. Move one disc at a time; a larger disc may never sit on a smaller one.',payload:{discCount:3,startRod:0,targetRod:2}}
+            ui:{presentation:'fullscreen',canExit:true,title:'Stackworks',instructions:'Move the four discs from the left post to the right post. Move one disc at a time; a larger disc may never sit on a smaller one.',payload:{discCount:4,startRod:0,targetRod:2}}
           },
           {
             id:'l4-codebreaker',chain:'code',type:'codebreaker',area:'l4Code',sourceClass:'canonical',

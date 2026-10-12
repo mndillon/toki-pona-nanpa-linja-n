@@ -2081,9 +2081,9 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "Stackworks",
-            "instructions": "Move the three discs from the left post to the right post. Move one disc at a time; a larger disc may never sit on a smaller one.",
+            "instructions": "Move the four discs from the left post to the right post. Move one disc at a time; a larger disc may never sit on a smaller one.",
             "payload": {
-              "discCount": 3,
+              "discCount": 4,
               "startRod": 0,
               "targetRod": 2
             }
