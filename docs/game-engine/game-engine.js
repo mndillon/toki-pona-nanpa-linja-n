@@ -5487,29 +5487,47 @@
 
   function renderTruthGatesPuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,options=payload.gateOptions||['AND','OR','XOR'],rows=payload.rows||[];
-    const wrap=document.createElement('div');wrap.className='truthGateWrap';
+    const gates=st.gates||[];
+    const currentOutputs=rows.map(row=>truthGateOutput(gates,row));
+    const rowMatches=rows.map((row,index)=>currentOutputs[index]===Number(row.y));
+    const matchCount=rowMatches.filter(Boolean).length;
+    const solved=rows.length>0&&matchCount===rows.length;
+    const wrap=document.createElement('div');wrap.className=`truthGateWrap${solved?' solved':''}`;
     const diagram=document.createElement('div');diagram.className='truthGateDiagram';
     const labels=['G1: A,B','G2: B,C','G3: G1,G2'];
     for(let i=0;i<3;i++){
-      const gate=document.createElement('button');gate.type='button';gate.className='truthGateSelect';
+      const gate=document.createElement('button');gate.type='button';gate.className=`truthGateSelect gate-${String(gates[i]||options[0]).toLowerCase()}`;
       const label=document.createElement('small');label.textContent=labels[i];
-      const value=document.createElement('strong');value.textContent=st.gates?.[i]||options[0];
+      const value=document.createElement('strong');value.textContent=gates[i]||options[0];
       gate.append(label,value);
+      gate.setAttribute('aria-label',`${labels[i]} is ${value.textContent}. Tap to change gate.`);
       gate.addEventListener('click',()=>{
+        clearTutorialSubmissionFeedback();
         const current=options.indexOf(st.gates[i]);st.gates[i]=options[(current+1+options.length)%options.length];renderCampaignPuzzle();
       });
       diagram.appendChild(gate);
     }
     const table=document.createElement('div');table.className='truthTable';
-    for(const head of ['A','B','C','Y']){const h=document.createElement('strong');h.textContent=head;table.appendChild(h);}
-    rows.forEach(row=>{
-      for(const value of [row.a,row.b,row.c,row.y]){
-        const cell=mechanismNumberNode(Number(value),'truthBit');table.appendChild(cell);
-      }
+    const heads=['A','B','C',isTpLanguage()?'Y wile':'Y target',isTpLanguage()?'Y ni':'Y now'];
+    for(const head of heads){const h=document.createElement('strong');h.textContent=head;table.appendChild(h);}
+    rows.forEach((row,rowIndex)=>{
+      const match=rowMatches[rowIndex];
+      const values=[row.a,row.b,row.c,row.y,currentOutputs[rowIndex]];
+      values.forEach((value,colIndex)=>{
+        const classes=['truthBit'];
+        if(colIndex===3)classes.push('truthTargetBit');
+        if(colIndex===4)classes.push('truthCurrentBit',match?'match':'mismatch');
+        const cell=mechanismNumberNode(Number(value),classes.join(' '));
+        if(colIndex===4) cell.setAttribute('aria-label',`Row ${rowIndex+1}: current output ${Number(value)}, target ${Number(row.y)}, ${match?'match':'mismatch'}`);
+        table.appendChild(cell);
+      });
     });
+    const progress=document.createElement('div');progress.className=`truthGateProgress${solved?' solved':''}`;
+    if(isTpLanguage()) renderLocalized(progress,`linja pona: ${matchCount} / ${rows.length}${solved?' · ale li pona; o luka e [[o alasa]].':''}`);
+    else progress.textContent=`${matchCount} / ${rows.length} rows match${solved?' — grid solved; press Try answer to confirm.':''}`;
     const key=document.createElement('div');key.className='truthGateKey';renderExact(key,'AND: both · OR: either · XOR: different');
-    wrap.append(diagram,table,key);puzzleSlots.appendChild(wrap);
-    setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The circuit matches all eight rows. Press Try answer to confirm the rack.':'Set G1, G2 and G3 so one circuit satisfies every truth-table row.');
+    wrap.append(diagram,table,progress,key);puzzleSlots.appendChild(wrap);
+    setMechanismStatus(puzzle,'','Choose gates and watch the Y now column. Make every row match Y target, then press Try answer.');
   }
 
   function renderDependencyOrderPuzzle(puzzle){renderOrderConstraintPuzzle(puzzle,{tokensKey:'tasks',clueClass:'dependencyClues',rowClass:'dependencyTokens'});}
@@ -6312,39 +6330,60 @@
   }
 
   function clearMobileLandscapePuzzleFit() {
-    if (!puzzleBody) return;
-    puzzleBody.classList.remove('mobileLandscapeAutoFit');
-    puzzleBody.style.removeProperty('--mobile-puzzle-fit-scale');
-    puzzleBody.removeAttribute('data-mobile-fit-scale');
+    if (!puzzleSlots) return;
+    puzzleSlots.classList.remove('mobileLandscapeAutoFit');
+    puzzleSlots.style.removeProperty('--mobile-puzzle-fit-scale');
+    puzzleSlots.removeAttribute('data-mobile-fit-scale');
+  }
+
+  function visibleReservedPuzzleBoundaryTop() {
+    if (!puzzleSlots) return null;
+    const candidates = [puzzleLiveCartoucheWrap, puzzleTrayWrap, puzzleCompleteBtn?.closest?.('.overlayButtonRow')];
+    let top = Infinity;
+    for (const el of candidates) {
+      if (!el || el.hidden) continue;
+      const style = window.getComputedStyle?.(el);
+      if (style && (style.display === 'none' || style.visibility === 'hidden')) continue;
+      const rect = el.getBoundingClientRect?.();
+      if (rect && Number.isFinite(rect.top)) top = Math.min(top, rect.top);
+    }
+    return Number.isFinite(top) ? top : null;
   }
 
   function applyMobileLandscapePuzzleFit() {
     mobileLandscapePuzzleFitRaf = 0;
-    if (!puzzleBody || !puzzleOverlay || puzzleOverlay.hidden || !shortMobileLandscapePuzzleMode()) {
+    if (!puzzleSlots || !puzzleOverlay || puzzleOverlay.hidden || !shortMobileLandscapePuzzleMode()) {
       clearMobileLandscapePuzzleFit();
       return 1;
     }
 
-    // Measure the unscaled layout. The puzzle card deliberately has overflow hidden;
-    // scrollWidth/scrollHeight still report content that would otherwise be clipped.
+    // Only the actual puzzle surface may use the flexible display area. The live
+    // cartouche, A-W/. glyph picker and Reset/Try/Leave controls are reserved docks
+    // and must never be treated as space available to the puzzle itself.
     clearMobileLandscapePuzzleFit();
-    const availableWidth = Math.max(1, puzzleBody.clientWidth);
-    const availableHeight = Math.max(1, puzzleBody.clientHeight);
-    const requiredWidth = Math.max(availableWidth, puzzleBody.scrollWidth);
-    const requiredHeight = Math.max(availableHeight, puzzleBody.scrollHeight);
+    const slotRect = puzzleSlots.getBoundingClientRect();
+    const boundaryTop = visibleReservedPuzzleBoundaryTop();
+    const geometricHeight = boundaryTop == null
+      ? puzzleSlots.clientHeight
+      : Math.max(1, Math.floor(boundaryTop - slotRect.top - 4));
+    const availableWidth = Math.max(1, puzzleSlots.clientWidth);
+    const availableHeight = Math.max(1, Math.min(puzzleSlots.clientHeight || geometricHeight, geometricHeight));
+    const requiredWidth = Math.max(availableWidth, puzzleSlots.scrollWidth);
+    const requiredHeight = Math.max(availableHeight, puzzleSlots.scrollHeight);
     let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
 
-    // Leave a tiny safety margin for fractional-pixel rounding. Scaling the complete
-    // body preserves pointer hit testing and keeps arrows/keypads/mirrors aligned.
+    // Leave a little extra clearance above the fixed input/action docks. Scaling
+    // puzzleSlots preserves pointer hit testing for mirrors, arrows, dials and grids
+    // while preventing any transformed puzzle UI from sitting behind those docks.
     if (scale < 0.997) {
-      scale = Math.max(0.20, scale * 0.985);
+      scale = Math.max(0.20, scale * 0.97);
       const value = scale.toFixed(4);
-      puzzleBody.style.setProperty('--mobile-puzzle-fit-scale', value);
-      puzzleBody.classList.add('mobileLandscapeAutoFit');
-      puzzleBody.dataset.mobileFitScale = value;
+      puzzleSlots.style.setProperty('--mobile-puzzle-fit-scale', value);
+      puzzleSlots.classList.add('mobileLandscapeAutoFit');
+      puzzleSlots.dataset.mobileFitScale = value;
     } else {
-      puzzleBody.dataset.mobileFitScale = '1';
+      puzzleSlots.dataset.mobileFitScale = '1';
     }
     return scale;
   }
@@ -7616,13 +7655,43 @@
     return refs[0]||null;
   }
 
+  function qaNormalizeMutablePhysicalPuzzle(puzzle) {
+    if(!puzzle || campaignSolved(puzzle.id)) return false;
+    let changed=false;
+    if(puzzle.id==='l9-counterweight'){
+      if(String(state.carrying||'').startsWith('l9:')){state.carrying=null;changed=true;}
+      if(Object.keys(state.l9Placements||{}).length){state.l9Placements={};changed=true;}
+    }else if(puzzle.id==='l10-delivery-routing'){
+      const baselineLocations={bread:'receiving',sweet:'receiving'};
+      if(state.l10CartDock!=='receiving'){state.l10CartDock='receiving';changed=true;}
+      if((state.l10CartCargo||[]).length){state.l10CartCargo=[];changed=true;}
+      if(Object.keys(state.l10DeliveryPlacements||{}).length){state.l10DeliveryPlacements={};changed=true;}
+      if(JSON.stringify(state.l10ParcelLocations||{})!==JSON.stringify(baselineLocations)){state.l10ParcelLocations=baselineLocations;changed=true;}
+    }else if(puzzle.id==='l10-textile-routing'){
+      if(String(state.carrying||'').startsWith('l10:textile:')){state.carrying=null;changed=true;}
+      if(Object.keys(state.l10TextilePlacements||{}).length){state.l10TextilePlacements={};changed=true;}
+      const baselineLocations={'blue-cloth':'upper-rack','white-cloth':'upper-rack'};
+      if(JSON.stringify(state.l10TextileLocations||{})!==JSON.stringify(baselineLocations)){state.l10TextileLocations=baselineLocations;changed=true;}
+    }else if(puzzle.id==='l11-parent-bands'){
+      if(String(state.carrying||'').startsWith('l11:band:')){state.carrying=null;changed=true;}
+      if(Object.keys(state.l11BandPlacements||{}).length){state.l11BandPlacements={};changed=true;}
+      const baselineLocations={'red-band':'rack','blue-band':'rack'};
+      if(JSON.stringify(state.l11BandLocations||{})!==JSON.stringify(baselineLocations)){state.l11BandLocations=baselineLocations;changed=true;}
+    }
+    if(changed){spriteCache.clear();qaLog(`normalized tester-modified state for ${puzzle.id}`);}
+    return changed;
+  }
+
   async function qaSolvePhysicalPuzzle(puzzle) {
     qaLog(`solving physical ${puzzle.id}`); await qaBoundary();
+    qaNormalizeMutablePhysicalPuzzle(puzzle);
     if(puzzle.type==='pickup'){
       const ref=qaFindObjectsForPuzzle(puzzle.id).find(r=>qaObjectVisible(r.obj)); if(!ref)throw new Error(`Pickup object missing for ${puzzle.id}`); await qaUseObject(ref,`pickup ${puzzle.id}`); return true;
     }
     if(puzzle.id==='l1-ball-table'){
-      if(!state.ballOnTable){if(state.carrying!=='ball')await qaUseObject(qaFindObjectById('ball'),'take sike');await qaUseObject(qaFindObjectById('table'),'place sike on supa');}return campaignSolved(puzzle.id);
+      if(!state.ballOnTable){if(state.carrying!=='ball')await qaUseObject(qaFindObjectById('ball'),'take sike');await qaUseObject(qaFindObjectById('table'),'place sike on supa');}
+      if(state.ballOnTable&&!campaignSolved(puzzle.id)) await qaUseObject(qaFindObjectById('table'),'activate completed sike / supa puzzle');
+      return campaignSolved(puzzle.id);
     }
     if(puzzle.id==='l9-maze-survey'){
       for(const id of ['l9MarkerNorth','l9MarkerWest','l9MarkerSouth']){const ref=qaFindObjectById(id);if(ref&&!state.l9Markers?.[ref.obj.markerId])await qaUseObject(ref,`survey ${ref.obj.markerId}`);}return campaignSolved(puzzle.id);

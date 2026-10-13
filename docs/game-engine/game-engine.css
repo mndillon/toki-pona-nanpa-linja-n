@@ -1581,13 +1581,21 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .dualMirrorEdgeLabel{font:900 18px/1 system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#f7ead4;stroke-width:5;fill:#111}
 .dualMirrorEdgeLabel.out{font-size:16px}
 
-.truthGateWrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(250px,1.1fr);gap:12px;width:min(100%,680px);align-items:center}
+.truthGateWrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(300px,1.1fr);gap:10px 12px;width:min(100%,720px);align-items:center}
 .truthGateDiagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.truthGateSelect{min-height:88px;padding:7px 4px;display:grid;gap:5px;align-content:center}.truthGateSelect small{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}.truthGateSelect strong{font:900 16px/1 system-ui,sans-serif}
-.truthTable{display:grid;grid-template-columns:repeat(4,48px);gap:3px;justify-content:center}
-.truthTable>strong{display:grid;place-items:center;height:26px;font:900 10px/1 system-ui,sans-serif}
+.truthGateSelect{min-height:88px;padding:7px 4px;display:grid;gap:5px;align-content:center;border-width:2px;transition:transform .12s ease,box-shadow .12s ease}.truthGateSelect:active{transform:translateY(1px)}.truthGateSelect small{font:800 9px/1 system-ui,sans-serif;color:var(--muted)}.truthGateSelect strong{font:900 16px/1 system-ui,sans-serif}
+.truthTable{display:grid;grid-template-columns:repeat(5,48px);gap:3px;justify-content:center}
+.truthTable>strong{display:grid;place-items:center;height:26px;padding:0 2px;text-align:center;font:900 9px/1 system-ui,sans-serif}
 .truthBit{display:grid;place-items:center;width:48px;height:34px;border:1px solid rgba(17,17,17,.16);border-radius:5px;background:rgba(255,255,255,.3);font-size:23px}
+.truthTargetBit{border-style:dashed;background:rgba(255,255,255,.16)}
+.truthCurrentBit{border-width:2px;font-weight:900;animation:truthBitPulse .18s ease-out}
+.truthCurrentBit.match{background:rgba(49,145,72,.2);border-color:rgba(35,118,54,.72)}
+.truthCurrentBit.mismatch{background:rgba(177,67,67,.16);border-color:rgba(177,67,67,.72)}
+.truthGateProgress{grid-column:1/-1;text-align:center;padding:5px 7px;border:1px solid rgba(177,67,67,.35);border-radius:7px;background:rgba(177,67,67,.09);font:900 11px/1.15 system-ui,sans-serif}
+.truthGateProgress.solved{border-color:rgba(35,118,54,.65);background:rgba(49,145,72,.16)}
+.truthGateWrap.solved .truthGateSelect{box-shadow:0 0 0 2px rgba(49,145,72,.18)}
 .truthGateKey{grid-column:1/-1;text-align:center;font:800 9px/1.2 system-ui,sans-serif;color:var(--muted)}
+@keyframes truthBitPulse{0%{transform:scale(.82)}100%{transform:scale(1)}}
 
 .exactPathWrap{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:8px 12px;width:min(100%,700px);align-items:center;justify-content:center}
 .exactPathMeters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;grid-column:1}
@@ -1604,7 +1612,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .deductionWrap{grid-template-columns:1fr;gap:5px}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.deductionClue{padding:3px 4px;font-size:8.5px}
   .deductionToken{min-height:66px;padding:5px 1px 3px}.deductionGlyph{font-size:28px}.deductionLabel{font-size:7px}.dependencyTokens{gap:2px}.dependencyTokens .deductionToken{min-height:61px}.dependencyTokens .deductionGlyph{font-size:25px}
   .dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),48px);grid-template-rows:repeat(var(--mirror-rows),48px)}.dualMirrorCell{width:48px;height:48px}.dualMirrorMirror{font-size:32px}.dualMirrorLegend{font-size:9px}
-  .truthGateWrap{grid-template-columns:1fr;gap:6px}.truthGateSelect{min-height:56px}.truthTable{grid-template-columns:repeat(4,40px)}.truthBit{width:40px;height:28px;font-size:20px}
+  .truthGateWrap{grid-template-columns:1fr;gap:6px}.truthGateSelect{min-height:56px}.truthTable{grid-template-columns:repeat(5,40px)}.truthBit{width:40px;height:28px;font-size:20px}
   .exactPathWrap{grid-template-columns:1fr;grid-template-rows:auto auto auto;gap:5px;justify-items:center}.exactPathMeters{grid-column:1;width:100%}.exactPathGrid{grid-column:1;grid-row:2;grid-template-columns:repeat(var(--path-cols),52px)}.exactPathCell{width:52px;height:52px;min-height:52px}.exactPathValue{font-size:27px}.exactPathControls{grid-column:1;grid-row:3;width:100%}
 }
 @media (max-height:620px){
@@ -2382,13 +2390,13 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .hanoiMoves{font-size:10px}
 }
 
-/* v0.108 — mobile-landscape contract.
+/* v0.108/v0.109 — mobile-landscape contract.
    The game and every fullscreen puzzle must be playable without page/popup
-   scrolling on a short landscape phone. The runtime fit guard scales the
-   complete puzzle body only when these explicit compact layouts still exceed
-   the real card body; transformed descendants retain pointer hit testing. */
+   scrolling on a short landscape phone. v0.109 reserves the live input and
+   action docks and scales only the actual puzzle display surface when explicit
+   compact layouts still exceed the remaining real card area. */
 .sudokuFocus{display:none}
-.puzzleBody.mobileLandscapeAutoFit{
+.puzzleSlots.mobileLandscapeAutoFit{
   overflow:visible!important;
   transform:scale(var(--mobile-puzzle-fit-scale,1));
   transform-origin:top center;
@@ -2467,10 +2475,20 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
     margin:0!important;max-height:2.18em;overflow:hidden;
     font-size:9.5px!important;line-height:1.09!important;
   }
-  .puzzleCard .puzzleBody{min-height:0;overflow:hidden;align-content:start;gap:2px}
-  .puzzleCard .puzzleSlots{min-height:0;gap:3px;padding:1px 0}
+  /* The puzzle display, optional live cartouche and glyph picker are separate rows.
+     Only the first row is flexible. The picker and action buttons are reserved UI. */
+  .puzzleCard .puzzleBody{
+    min-height:0;overflow:hidden;align-content:stretch;gap:2px;
+    display:grid;grid-template-rows:minmax(0,1fr) auto auto;
+  }
+  .puzzleCard .puzzleSlots{min-height:0;height:100%;gap:3px;padding:1px 0;overflow:hidden}
+  .puzzleCard .puzzleLiveCartoucheWrap[hidden],
+  .puzzleCard .puzzleTrayWrap[hidden]{display:none!important}
   .puzzleCard>.puzzleStatus{display:none!important}
-  .puzzleCard>.overlayButtonRow{gap:3px!important;flex-wrap:nowrap!important}
+  .puzzleCard>.overlayButtonRow{
+    gap:3px!important;flex-wrap:nowrap!important;position:relative;z-index:4;
+    background:var(--bg);border-top:1px solid rgba(17,17,17,.14);padding-top:2px;
+  }
   .puzzleCard>.overlayButtonRow button{
     flex:1 1 0;min-width:0!important;min-height:30px!important;
     padding:2px 5px!important;font-size:9.5px!important;line-height:1.05!important;
@@ -2479,6 +2497,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   /* Glyph-key controls must fit too: no horizontal family scroller and no
      scrollable drawer in landscape. All available letter families share one row;
      the active family keys wrap into the bounded drawer. */
+  .puzzleCard .puzzleTrayWrap{position:relative;z-index:3;background:var(--bg);padding-top:2px;border-top:1px solid rgba(17,17,17,.12)}
   .puzzleFamilyRow{
     display:grid!important;grid-template-columns:repeat(auto-fit,minmax(26px,1fr))!important;
     grid-template-rows:30px!important;grid-auto-flow:row!important;grid-auto-columns:auto!important;
@@ -2543,7 +2562,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   /* L8 / L12 logic: XOR/OR and mirror arrays are explicitly landscape-first. */
   .deductionWrap{grid-template-columns:minmax(220px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.deductionClue{padding:2px 3px;font-size:7px;line-height:1.04}.deductionTokens,.dependencyTokens{grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:2px}.deductionToken,.dependencyTokens .deductionToken{min-height:44px;padding:3px 1px 2px}.deductionGlyph,.dependencyTokens .deductionGlyph{font-size:21px}.deductionLabel{font-size:6px;display:block}
   .dualMirrorWrap{gap:2px}.dualMirrorLegend{font-size:7px;line-height:1.05}.dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),30px)!important;grid-template-rows:repeat(var(--mirror-rows),30px)!important;gap:1px}.dualMirrorCell{width:30px!important;height:30px!important}.dualMirrorMirror{font-size:20px!important}.dualMirrorEdgeLabel{font-size:13px}.dualMirrorEdgeLabel.out{font-size:11px}
-  .truthGateWrap{grid-template-columns:minmax(190px,.9fr) minmax(150px,1.1fr)!important;gap:5px;width:100%}.truthGateDiagram{gap:3px}.truthGateSelect{min-height:42px;padding:2px;gap:2px}.truthGateSelect small{font-size:7px}.truthGateSelect strong{font-size:12px}.truthTable{grid-template-columns:repeat(4,32px);gap:1px}.truthTable>strong{height:17px;font-size:8px}.truthBit{width:32px;height:18px;font-size:13px}.truthGateKey{display:none}
+  .truthGateWrap{grid-template-columns:minmax(176px,.8fr) minmax(170px,1.2fr)!important;gap:3px 5px;width:100%}.truthGateDiagram{gap:3px}.truthGateSelect{min-height:42px;padding:2px;gap:2px}.truthGateSelect small{font-size:7px}.truthGateSelect strong{font-size:12px}.truthTable{grid-template-columns:repeat(5,29px);gap:1px}.truthTable>strong{height:16px;padding:0;font-size:6.5px}.truthBit{width:29px;height:18px;font-size:13px}.truthGateProgress{grid-column:1/-1;padding:2px 4px;font-size:8px;line-height:1}.truthGateKey{display:none}
   .exactPathWrap{grid-template-columns:minmax(150px,.75fr) auto;grid-template-rows:auto auto;gap:3px 6px}.exactPathMeters{grid-column:1}.exactPathGrid{grid-column:2;grid-row:1 / span 2;grid-template-columns:repeat(var(--path-cols),36px)!important;gap:2px}.exactPathCell{width:36px;height:36px;min-height:36px}.exactPathValue{font-size:19px}.exactPathControls{grid-column:1;grid-row:2;gap:3px}.exactPathControls button{min-height:27px}
 
   /* L9-L11 dense mechanisms. */
