@@ -5918,6 +5918,25 @@
     }
 
     const controls=document.createElement('div');controls.className='sudokuControls';
+    const focus=document.createElement('div');focus.className='sudokuFocus';
+    const focusLabel=document.createElement('div');focusLabel.className='sudokuFocusLabel';
+    if(selected==null){
+      renderLocalized(focusLabel,isTpLanguage()?'o luka e leko pi nanpa ala.':'Tap an empty square');
+      const placeholder=document.createElement('div');placeholder.className='sudokuFocusCell sudokuFocusCell--empty';placeholder.textContent='·';focus.append(focusLabel,placeholder);
+    }else{
+      const r=Math.floor(selected/9),c=selected%9,value=Number(cells[selected])||0;
+      renderLocalized(focusLabel,isTpLanguage()?`leko: linja ${r+1} · poka ${c+1}`:`Row ${r+1} · column ${c+1}`);
+      const focusCell=document.createElement('div');focusCell.className='sudokuFocusCell';
+      if(value){
+        const glyph=document.createElement('span');glyph.className='sudokuFocusGlyph sitelenGlyph';glyph.textContent=sudokuDigitGlyph(value);
+        const latin=document.createElement('small');latin.className='sudokuFocusLatin';latin.textContent=String(value);focusCell.append(glyph,latin);
+      }else{
+        const notes=document.createElement('span');notes.className='sudokuFocusNotes';const set=new Set(st.notes[selected]||[]);
+        for(let n=1;n<=9;n++){const note=document.createElement('small');note.textContent=set.has(n)?String(n):'';notes.appendChild(note);}focusCell.appendChild(notes);
+      }
+      focus.append(focusLabel,focusCell);
+    }
+    controls.appendChild(focus);
     const mode=document.createElement('button');mode.type='button';mode.className=`sudokuMode${st.noteMode?' active':''}`;renderExact(mode,`Notes: ${st.noteMode?'ON':'OFF'}`,{sitelen:false});mode.addEventListener('click',()=>{st.noteMode=!st.noteMode;renderCampaignPuzzle();});
     const clear=document.createElement('button');clear.type='button';renderExact(clear,'Clear cell',{sitelen:false});clear.disabled=selected==null||Boolean(givens[selected]);clear.addEventListener('click',()=>{if(selected==null||givens[selected])return;st.cells[selected]=0;st.notes[selected]=[];renderCampaignPuzzle();});
     controls.append(mode,clear);
@@ -6282,6 +6301,61 @@
     }
   }
 
+  let mobileLandscapePuzzleFitRaf = 0;
+
+  function shortMobileLandscapePuzzleMode() {
+    try {
+      return Boolean(window.matchMedia?.('(orientation: landscape) and (max-height: 520px) and (max-width: 950px)').matches);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function clearMobileLandscapePuzzleFit() {
+    if (!puzzleBody) return;
+    puzzleBody.classList.remove('mobileLandscapeAutoFit');
+    puzzleBody.style.removeProperty('--mobile-puzzle-fit-scale');
+    puzzleBody.removeAttribute('data-mobile-fit-scale');
+  }
+
+  function applyMobileLandscapePuzzleFit() {
+    mobileLandscapePuzzleFitRaf = 0;
+    if (!puzzleBody || !puzzleOverlay || puzzleOverlay.hidden || !shortMobileLandscapePuzzleMode()) {
+      clearMobileLandscapePuzzleFit();
+      return 1;
+    }
+
+    // Measure the unscaled layout. The puzzle card deliberately has overflow hidden;
+    // scrollWidth/scrollHeight still report content that would otherwise be clipped.
+    clearMobileLandscapePuzzleFit();
+    const availableWidth = Math.max(1, puzzleBody.clientWidth);
+    const availableHeight = Math.max(1, puzzleBody.clientHeight);
+    const requiredWidth = Math.max(availableWidth, puzzleBody.scrollWidth);
+    const requiredHeight = Math.max(availableHeight, puzzleBody.scrollHeight);
+    let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
+    if (!Number.isFinite(scale) || scale <= 0) scale = 1;
+
+    // Leave a tiny safety margin for fractional-pixel rounding. Scaling the complete
+    // body preserves pointer hit testing and keeps arrows/keypads/mirrors aligned.
+    if (scale < 0.997) {
+      scale = Math.max(0.20, scale * 0.985);
+      const value = scale.toFixed(4);
+      puzzleBody.style.setProperty('--mobile-puzzle-fit-scale', value);
+      puzzleBody.classList.add('mobileLandscapeAutoFit');
+      puzzleBody.dataset.mobileFitScale = value;
+    } else {
+      puzzleBody.dataset.mobileFitScale = '1';
+    }
+    return scale;
+  }
+
+  function scheduleMobileLandscapePuzzleFit() {
+    if (mobileLandscapePuzzleFitRaf) cancelAnimationFrame(mobileLandscapePuzzleFitRaf);
+    mobileLandscapePuzzleFitRaf = requestAnimationFrame(() => {
+      mobileLandscapePuzzleFitRaf = requestAnimationFrame(applyMobileLandscapePuzzleFit);
+    });
+  }
+
   function renderCampaignPuzzle() {
     const puzzle = activeCampaignPuzzle;
     if (!puzzle) return;
@@ -6381,6 +6455,7 @@
     }else puzzleMechanismState=null;
     renderCampaignPuzzle();
     openModal(puzzleOverlay);
+    scheduleMobileLandscapePuzzleFit();
     const firstControl = puzzleSlots.querySelector('.puzzleSlot.fillable') || puzzleTray.querySelector('.puzzleFamilyKey');
     (firstControl || puzzleCompleteBtn || puzzleCloseBtn).focus?.({ preventScroll:true });
   }
@@ -8279,6 +8354,13 @@
 
   async function init() {
     applyStaticLanguage();
+    if (puzzleBody && !puzzleBody.__mobileLandscapeFitObserver) {
+      const observer = new MutationObserver(() => scheduleMobileLandscapePuzzleFit());
+      observer.observe(puzzleBody, {childList:true, subtree:true});
+      puzzleBody.__mobileLandscapeFitObserver = observer;
+      window.addEventListener('resize', scheduleMobileLandscapePuzzleFit, {passive:true});
+      window.addEventListener('orientationchange', scheduleMobileLandscapePuzzleFit, {passive:true});
+    }
     installTPQA();
     try { db = await openDb(); } catch (err) { console.warn('[game] IndexedDB unavailable', err); db = null; }
     let saved = await dbGet();

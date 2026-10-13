@@ -32,7 +32,7 @@ Level 12 keeps Sudoku as the final 120-glyph action but changes it from a 23-giv
 
 ## Mobile puzzle fit
 
-Spatial puzzle boards are sized independently from desktop on coarse-pointer / narrow screens. The Level 2 coordinate map, Level 3 route/pipe board, mirror boards, airflow/network grids, path grids, nonogram, Sokoban, sliding/peg boards, triangulation and Sudoku all use smaller mobile dimensions so the full mechanism remains inside the puzzle popup. Puzzle logic and solutions are unchanged.
+Mobile landscape is a hard whole-game acceptance contract, not a per-puzzle best effort. Every level, puzzle, puzzle control, normal game control, reward/completion overlay and required interaction must fit inside the **actual available game/content area** without page or modal scrolling and without clipped controls; physical screen height is not treated as fully usable. Short landscape layouts reserve real space for the game heading/status UI, explicitly compact dense mechanisms (including pattern/shape, colour-order, XOR/OR truth gates, mirror arrays, river crossing and Sudoku), and apply a final measured overflow-fit guard to every puzzle body. Sudoku keeps the 9×9 board compact and promotes the selected square into a larger focus cell above the notes/keypad. Puzzle logic and solutions are unchanged.
 
 # v0.42 — playable Level 12 final archive / complete 120-glyph campaign
 
@@ -173,7 +173,7 @@ Country spelling puzzles label slots with Latin letters and accept any available
 
 ### Fixed-viewport puzzle layout
 
-Normal glyph-key and country-cartouche puzzles are designed to fit inside one game viewport on laptops and phones. The puzzle card itself does not vertically scroll: slots are compact, the live cartouche is a short strip, the phone letter selector uses two horizontally scrollable rows, and Clear / Activate / Leave remain visible. A selected letter opens an overlaid bottom sheet; only that bounded glyph sheet may scroll when a family contains many glyphs. Very short landscape phone viewports switch to an even tighter layout rather than pushing controls below the viewport.
+Normal glyph-key and country-cartouche puzzles are designed to fit inside one game viewport on laptops and phones. In mobile landscape the puzzle card, letter-family selector and glyph drawer do **not** depend on scrolling: available letter families share a compact row, the active family's glyphs wrap inside a bounded drawer, and Clear / Try answer / Leave remain visible. Portrait layouts may use their separate responsive behavior, but short landscape viewports must never push required controls outside the usable game area.
 
 
 ## Level progress and completion

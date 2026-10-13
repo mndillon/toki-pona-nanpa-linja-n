@@ -1299,6 +1299,33 @@ kbd {
 @media (max-width:700px){.riverPuzzle{gap:6px;width:min(100%,420px)}.riverBoardLabels{font-size:9px;grid-template-columns:1fr .12fr .76fr .12fr 1fr}.riverBoard{grid-template-rows:repeat(4,minmax(48px,1fr));gap:4px}.riverCell{min-height:48px;border-radius:9px}.riverToken .sitelenGlyph{font-size:28px}.riverToken small{font-size:9px}.riverRaftGlyph{font-size:25px}.riverControls{gap:5px}.riverControls button{min-height:38px;padding:4px 6px}.riverFooter{font-size:10px;flex-direction:column;gap:4px}.sokobanGrid{grid-template-columns:repeat(var(--soko-cols),40px)}.sokobanCell{width:40px;height:40px}.slidingGrid{grid-template-columns:repeat(var(--slide-cols),70px)}.slidingTile{width:70px;height:70px;min-height:70px}.slidingTile .sitelenGlyph{font-size:34px}.pegLine{grid-template-columns:repeat(8,42px);gap:4px}.pegHole{width:42px;height:42px;min-height:42px;font-size:22px}.patternPanel{grid-template-columns:repeat(var(--pattern-cols),17px)}.patternCell{width:17px;height:17px}.patternChoices{gap:4px}.patternChoice{padding:4px}.patternQuestion{width:66px;height:66px}}
 @media (max-height:620px){.riverRules>strong{display:none}.riverFooter{display:none}.riverBoard{grid-template-rows:repeat(4,minmax(42px,1fr))}.sokobanGrid{grid-template-columns:repeat(var(--soko-cols),34px)}.sokobanCell{width:34px;height:34px}.slidingGrid{grid-template-columns:repeat(var(--slide-cols),60px)}.slidingTile{width:60px;height:60px;min-height:60px}.pegHole{width:38px;height:38px;min-height:38px}.pegLine{grid-template-columns:repeat(8,38px)}.patternPanel{grid-template-columns:repeat(var(--pattern-cols),15px)}.patternCell{width:15px;height:15px}}
 
+/* Level 5 River Dock: short mobile landscape needs a denser board than the
+   generic phone treatment. Scale every visual/control component together so
+   all four river rows and the action controls remain inside the fixed popup. */
+@media (pointer:coarse) and (max-height:520px) and (orientation:landscape){
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverPuzzle{width:min(100%,390px);gap:3px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRules{gap:3px;font-size:9px;line-height:1}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRule{gap:2px;padding:1px 4px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRuleGlyph{gap:2px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRuleGlyph .sitelenGlyph{font-size:18px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRuleGlyph small{font-size:7px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRulePlus{font-size:9px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRuleBad{font-size:13px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverBoardWrap{gap:2px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverBoardLabels{font-size:7px;line-height:1}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverBoard{grid-template-rows:repeat(4,31px);gap:2px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverCell{min-height:31px;border-radius:6px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverWave{font-size:18px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverToken{gap:1px;padding:1px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverToken .sitelenGlyph{font-size:21px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverToken small{font-size:7px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRaft{gap:0;padding:1px 2px;border-width:1px;border-radius:6px 6px 14px 14px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRaftGlyph{font-size:19px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverRaftMeta{font-size:7px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverControls{gap:3px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverControls button{min-height:30px;padding:2px 4px;font-size:10px}
+}
+
 /* Level 5 final puzzle: 6x6 nonogram. Row/column clues use sitelen digit glyphs. */
 .nonogramWrap{
   --nonogram-cell:48px;
@@ -2353,4 +2380,246 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .hanoiDisk .sitelenGlyph{font-size:15px}
   .hanoiRod small{bottom:3px;font-size:9px}
   .hanoiMoves{font-size:10px}
+}
+
+/* v0.108 — mobile-landscape contract.
+   The game and every fullscreen puzzle must be playable without page/popup
+   scrolling on a short landscape phone. The runtime fit guard scales the
+   complete puzzle body only when these explicit compact layouts still exceed
+   the real card body; transformed descendants retain pointer hit testing. */
+.sudokuFocus{display:none}
+.puzzleBody.mobileLandscapeAutoFit{
+  overflow:visible!important;
+  transform:scale(var(--mobile-puzzle-fit-scale,1));
+  transform-origin:top center;
+  will-change:transform;
+}
+
+@media (orientation:landscape) and (max-height:520px) and (max-width:950px){
+  /* The physical screen is NOT treated as the game area. Reserve real space for
+     the compact heading and status strip and make the first-person viewport use
+     only what remains. This removes page scrolling in landscape. */
+  html,body{width:100%;height:100%;min-height:0;overflow:hidden}
+  body{margin:0}
+  main.card{
+    width:100vw;height:100dvh;max-width:none;min-height:0;
+    padding:3px 4px;border-radius:0;overflow:hidden;
+    display:grid;grid-template-rows:28px minmax(0,1fr);gap:2px;
+  }
+  .pageHeadingRow{height:28px;min-height:28px;align-items:center;gap:4px;overflow:hidden}
+  .pageTitleBlock,.introHelp,.fieldNotes{display:none!important}
+  .pageHomeLink{width:26px;height:26px;margin:0}
+  /* Keep every player-facing game control reachable in landscape. The normal
+     controls section becomes a compact toolbar in the reserved heading strip
+     instead of consuming/scrolled-off page height. */
+  .controlsPanel{
+    display:block!important;position:fixed;left:34px;right:138px;top:3px;z-index:25;
+    height:26px;margin:0!important;padding:0!important;border:0!important;
+    border-radius:0!important;background:transparent!important;overflow:hidden;
+  }
+  .controlsHeadingRow{display:block!important;height:26px;margin:0!important}
+  .controlsHeadingRow>h2,.controlLegend,.controlsPanel>.help{display:none!important}
+  .actionButtons{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px!important;height:26px}
+  .actionButtons button{
+    min-width:0!important;min-height:26px!important;height:26px!important;
+    padding:1px 3px!important;font-size:8px!important;line-height:1!important;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .languageControl{margin-left:auto;gap:4px;font-size:9px}
+  .languageControl select{min-height:26px;height:26px;padding:2px 24px 2px 6px;font-size:10px}
+  .gameFrame{height:100%;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) 44px;overflow:hidden}
+  .viewportWrap{width:100%;height:100%;min-height:0;max-height:none;aspect-ratio:auto}
+  .gameStatusGrid{height:44px;min-height:44px;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);overflow:hidden}
+  .statusBlock{min-height:0;padding:3px 6px;overflow:hidden}
+  .statusBlock + .statusBlock{border-left:1px solid var(--border);border-top:0}
+  .statusLabel{margin-bottom:1px;font-size:7px;line-height:1;white-space:nowrap}
+  .statusBlock strong{font-size:10px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .statusSecondary{font-size:8px;line-height:1.05;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .viewportWrap{--mobile-joystick-size:clamp(108px,19vw,128px)}
+  .mobileUseBtn{right:10px;bottom:10px;width:60px;height:60px;font-size:11px}
+  .mobileUseBtn.tpProse{font-size:31px}
+  #miniMap{width:clamp(86px,18%,112px);top:6px;right:6px}
+  .hudTop{top:5px;left:6px;right:118px;gap:3px}
+  .hudTop span{font-size:8px;padding:2px 4px}
+  .interactionPrompt{bottom:calc(var(--mobile-joystick-size) + 10px);font-size:10px;max-width:60%}
+
+  /* Puzzle cards deliberately fit a smaller budget than the full screen. The
+     overlay can cover the page, but its content must fit within the usable game
+     region rather than assuming every CSS pixel belongs to the puzzle. */
+  #puzzleOverlay.overlayScreen{padding:3px 5px}
+  .puzzleCard{
+    width:min(760px,calc(100vw - 10px));
+    max-height:min(calc(100dvh - 48px),330px)!important;
+    overflow:hidden!important;
+    padding:5px 7px!important;
+    gap:2px!important;
+  }
+  .puzzleCard.puzzleCard--mechanism,
+  .puzzleCard.puzzleCard--map,
+  .puzzleCard.puzzleCard--keys{
+    height:min(calc(100dvh - 48px),330px)!important;
+    max-height:min(calc(100dvh - 48px),330px)!important;
+    grid-template-rows:auto auto minmax(0,1fr) auto!important;
+  }
+  .puzzleCard>.overlayEyebrow{display:none!important}
+  .puzzleCard>h2{margin:0!important;font-size:14px!important;line-height:1.03!important}
+  .puzzleCard>#puzzleInstructions{
+    margin:0!important;max-height:2.18em;overflow:hidden;
+    font-size:9.5px!important;line-height:1.09!important;
+  }
+  .puzzleCard .puzzleBody{min-height:0;overflow:hidden;align-content:start;gap:2px}
+  .puzzleCard .puzzleSlots{min-height:0;gap:3px;padding:1px 0}
+  .puzzleCard>.puzzleStatus{display:none!important}
+  .puzzleCard>.overlayButtonRow{gap:3px!important;flex-wrap:nowrap!important}
+  .puzzleCard>.overlayButtonRow button{
+    flex:1 1 0;min-width:0!important;min-height:30px!important;
+    padding:2px 5px!important;font-size:9.5px!important;line-height:1.05!important;
+  }
+
+  /* Glyph-key controls must fit too: no horizontal family scroller and no
+     scrollable drawer in landscape. All available letter families share one row;
+     the active family keys wrap into the bounded drawer. */
+  .puzzleFamilyRow{
+    display:grid!important;grid-template-columns:repeat(auto-fit,minmax(26px,1fr))!important;
+    grid-template-rows:30px!important;grid-auto-flow:row!important;grid-auto-columns:auto!important;
+    width:100%;height:30px!important;gap:2px!important;overflow:hidden!important;padding:0!important;
+  }
+  .puzzleFamilyKey{width:auto!important;min-width:0!important;height:30px!important;min-height:30px!important;padding:2px!important;font-size:10px!important}
+  .puzzleGlyphDrawer{max-height:150px!important;padding:4px 5px!important;overflow:hidden!important}
+  .puzzleGlyphDrawerHeader{min-height:24px!important;padding-bottom:2px!important}
+  .puzzleGlyphDrawerClose{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important}
+  .puzzleGlyphDrawerFamilies{grid-template-columns:repeat(14,minmax(0,1fr))!important;gap:2px!important;margin-bottom:2px!important}
+  .puzzleGlyphDrawerFamilyKey{min-width:0!important;height:25px!important;min-height:25px!important;padding:1px!important;font-size:9px!important}
+  .puzzleGlyphDrawerKeys{grid-template-columns:repeat(auto-fit,minmax(30px,1fr))!important;gap:2px!important;max-height:none!important;overflow:hidden!important;padding:0!important}
+  .puzzleGlyphDrawerKeys .puzzleKey{width:auto!important;min-width:0!important;height:31px!important;min-height:31px!important;font-size:20px!important}
+
+  /* Generic mechanism controls: arrows/toggles remain visible, then the runtime
+     fit guard handles any residual size created by localized text or save state. */
+  .puzzleCard--mechanism .puzzleSlots{height:100%;justify-content:center;align-content:center;gap:3px}
+  .puzzleCard--mechanism button{touch-action:manipulation}
+  .mechanismClues{gap:2px}.mechanismClue{padding:2px 3px;font-size:8px;line-height:1.05}
+  .dialBank{gap:8px}.dialUnit{grid-template-rows:auto 28px 48px 28px;gap:2px}.dialAdjust{width:42px;min-width:42px;height:28px;min-height:28px}.dialValue{width:48px;height:48px}.dialValue .sitelenGlyph{font-size:27px}
+  .routeBoard{width:min(100%,190px)!important;gap:2px}.routeTile{font-size:28px!important}
+  .pathGrid{width:min(100%,194px)!important;gap:2px}.pathControls{grid-template-columns:repeat(4,38px);gap:3px}.pathMove{width:38px;height:30px;min-height:30px}
+  .lightsGrid{width:min(100%,188px)!important;gap:4px}
+  .balanceWeights{gap:4px}.balanceWeight{width:48px;height:48px}.balanceWeight .sitelenGlyph{font-size:25px}.balanceTargetCanvas{max-height:38px}
+  .contextTarget{padding:3px 7px;gap:6px}.contextChoices{gap:3px}.contextChoiceCanvas{max-height:38px}
+
+  /* L4 / code-style and ordering controls. */
+  .jugVessels{gap:12px}.jugVessel{width:62px;height:76px}.jugControls{gap:3px}.jugAction{min-height:29px;padding:2px 4px;font-size:9px}
+  .hanoiBoard{height:118px}.hanoiDisk{height:18px}.hanoiDisk .sitelenGlyph{font-size:13px}
+  .codeLegend{gap:4px;font-size:8px}.codeLegendGlyph{width:31px;height:31px}.codeLegendGlyph .sitelenGlyph{font-size:20px}
+  .codeGuess,.codeGuess[data-symbol-count="5"],.codeGuess[data-symbol-count="6"]{grid-template-columns:repeat(var(--code-cols,4),42px);gap:3px}.codeGuess[data-symbol-count="5"]{grid-template-columns:repeat(5,42px)}.codeGuess[data-symbol-count="6"]{grid-template-columns:repeat(6,42px)}
+  .codeSymbol{width:42px;height:42px;min-height:42px}.codeSymbol .sitelenGlyph{font-size:25px}.codeSubmit{min-height:29px;padding:3px 10px;font-size:9px}
+  .codeHistory{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}.codeHistoryRow{grid-template-columns:minmax(0,1fr) auto;gap:3px;padding:2px 3px;font-size:7px}.codeHistorySymbols{gap:2px}.codeHistorySymbols .sitelenGlyph{font-size:13px}
+  .equivalenceGrid{gap:2px}.equivalenceCanvas{max-height:29px}
+  .scheduleList{gap:2px}.scheduleItem{grid-template-columns:18px minmax(0,1fr) 38px;gap:2px;padding:1px 2px}.scheduleRank{font-size:12px}.scheduleControls{gap:2px}.scheduleControls button{width:18px;height:23px;min-width:18px;min-height:23px;font-size:14px}
+
+  /* L5 spatial/pattern family, including the shape/pattern puzzle. */
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverBoard{grid-template-rows:repeat(4,28px)!important}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverCell{min-height:28px!important}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverControls button{min-height:27px!important}
+  .sokobanGrid{grid-template-columns:repeat(var(--soko-cols),30px)}.sokobanCell{width:30px;height:30px}.sokobanControls{grid-template-columns:repeat(4,38px);gap:3px}.sokobanControls button{width:38px;height:29px;min-height:29px}
+  .slidingGrid{grid-template-columns:repeat(var(--slide-cols),48px);gap:3px}.slidingTile{width:48px;height:48px;min-height:48px}.slidingTile .sitelenGlyph{font-size:25px}
+  .pegLine{grid-template-columns:repeat(8,31px);gap:2px}.pegHole{width:31px;height:31px;min-height:31px;font-size:17px}
+  .patternSequence{gap:4px}.patternPanel{grid-template-columns:repeat(var(--pattern-cols),13px);gap:2px;padding:3px}.patternCell{width:13px;height:13px}.patternQuestion{width:43px;height:43px;font-size:22px}.patternChoices{gap:3px}.patternChoice{padding:2px}
+  .nonogramWrap{--nonogram-cell:27px;grid-template-columns:minmax(42px,auto) auto;gap:2px}.nonogramTopClues,.nonogramRowClues,.nonogramGrid{gap:1px}.nonogramClue.vertical{min-height:36px}.nonogramClueNumber{font-size:14px}
+
+  /* L6 records / number systems. Keep the whole five-card/shape row, keypad,
+     crossword, base choices and every ring arrow inside the body. */
+  .cardSortWrap{gap:3px}.cardSortRow{gap:2px}.cardSortCanvas{width:38px;height:54px}.cardSortNote{font-size:8px}
+  .calculatorPuzzle{grid-template-columns:minmax(0,1fr) minmax(180px,.9fr);grid-template-rows:auto auto;gap:3px 7px;width:100%}.calculatorProgress{grid-column:1/-1}.calculatorExpression{grid-column:1;grid-row:2}.calculatorAnswer{grid-column:1;grid-row:3}.calculatorKeypad{grid-column:2;grid-row:2 / span 2;align-self:center;gap:2px}.calculatorCartouche{max-height:34px}.calculatorAnswerCanvas{max-height:31px}.calculatorKey{min-height:27px;padding:1px;font-size:10px}
+  .baseMatchWrap{grid-template-columns:minmax(150px,.7fr) minmax(0,1.3fr);grid-template-rows:auto 1fr;gap:3px 6px;width:100%}.baseMatchProgress{grid-column:1/-1}.baseMatchTarget{max-height:40px}.baseMatchChoices{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}.baseMatchCanvas{max-height:34px}
+  .ringLockWrap{grid-template-columns:minmax(150px,.8fr) minmax(0,1.2fr);gap:5px}.ringLockClues{display:grid!important;grid-template-columns:1fr;gap:2px}.ringLockClue{padding:2px 3px;font-size:7px}.ringLockGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}.ringDial{width:58px;height:58px}.ringCenterGlyph{font-size:23px}.ringControls{grid-template-columns:repeat(2,29px);gap:2px}.ringControls button{width:29px;height:25px;min-height:25px;font-size:14px}
+  .countryCrosswordWrap{grid-template-columns:minmax(200px,1fr) auto;grid-template-rows:1fr;gap:5px}.countryCrosswordClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.countryCrosswordClue{padding:2px 3px;font-size:7px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),27px);grid-template-rows:repeat(var(--cross-rows),27px);gap:1px}.countryCrosswordCell{width:27px;height:27px;min-width:27px;min-height:27px}.countryCrosswordGlyph{font-size:18px}
+
+  /* L7 — colour-order remains two-column in landscape; clues must NOT disappear. */
+  .toneSequenceWrap{gap:3px}.toneProgress{font-size:10px;min-height:12px}.tonePads{gap:3px}.tonePad{min-height:45px}.tonePad .sitelenGlyph{font-size:25px}
+  .airflowGrid{grid-template-columns:repeat(var(--air-cols),37px)!important;gap:2px}.airflowTile{width:37px;height:37px;min-height:37px;font-size:23px}
+  .pulseSyncWrap,.pulseBoard{gap:3px}.pulseLane{grid-template-columns:82px minmax(0,1fr);gap:3px}.pulseControls{grid-template-columns:26px 26px 26px}.pulseControls button{width:26px;height:25px;min-height:25px}.pulseCell{height:16px}
+  .spectrumWrap{grid-template-columns:minmax(210px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.spectrumClues{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.spectrumClue{padding:2px 3px;font-size:7px;line-height:1.05}.spectrumFilters{gap:3px}.spectrumFilter{min-height:47px;padding:2px 1px;font-size:8px;gap:2px}.spectrumSwatch{width:24px;height:27px}
+  .powerBalanceWrap{gap:3px}.powerMeters{gap:3px}.powerMeter{padding:2px 3px}.powerMeterCanvas{max-height:30px}.powerBreakers{gap:3px}.powerBreaker{min-height:46px;padding:2px}.powerBreakerCanvas{max-height:30px}
+
+  /* L8 / L12 logic: XOR/OR and mirror arrays are explicitly landscape-first. */
+  .deductionWrap{grid-template-columns:minmax(220px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.deductionClue{padding:2px 3px;font-size:7px;line-height:1.04}.deductionTokens,.dependencyTokens{grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:2px}.deductionToken,.dependencyTokens .deductionToken{min-height:44px;padding:3px 1px 2px}.deductionGlyph,.dependencyTokens .deductionGlyph{font-size:21px}.deductionLabel{font-size:6px;display:block}
+  .dualMirrorWrap{gap:2px}.dualMirrorLegend{font-size:7px;line-height:1.05}.dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),30px)!important;grid-template-rows:repeat(var(--mirror-rows),30px)!important;gap:1px}.dualMirrorCell{width:30px!important;height:30px!important}.dualMirrorMirror{font-size:20px!important}.dualMirrorEdgeLabel{font-size:13px}.dualMirrorEdgeLabel.out{font-size:11px}
+  .truthGateWrap{grid-template-columns:minmax(190px,.9fr) minmax(150px,1.1fr)!important;gap:5px;width:100%}.truthGateDiagram{gap:3px}.truthGateSelect{min-height:42px;padding:2px;gap:2px}.truthGateSelect small{font-size:7px}.truthGateSelect strong{font-size:12px}.truthTable{grid-template-columns:repeat(4,32px);gap:1px}.truthTable>strong{height:17px;font-size:8px}.truthBit{width:32px;height:18px;font-size:13px}.truthGateKey{display:none}
+  .exactPathWrap{grid-template-columns:minmax(150px,.75fr) auto;grid-template-rows:auto auto;gap:3px 6px}.exactPathMeters{grid-column:1}.exactPathGrid{grid-column:2;grid-row:1 / span 2;grid-template-columns:repeat(var(--path-cols),36px)!important;gap:2px}.exactPathCell{width:36px;height:36px;min-height:36px}.exactPathValue{font-size:19px}.exactPathControls{grid-column:1;grid-row:2;gap:3px}.exactPathControls button{min-height:27px}
+
+  /* L9-L11 dense mechanisms. */
+  .sphinxWrap{gap:3px}.sphinxCrest{font-size:32px}.sphinxRiddle{padding:3px 5px;font-size:8px}.sphinxChoices{gap:3px}.sphinxChoice{min-height:42px}.sphinxChoice .sitelenGlyph{font-size:25px}
+  .coupledSwitchWrap{gap:3px}.coupledLampRows{gap:2px}.coupledLampRow{gap:2px}.coupledLamp{height:22px;font-size:7px}.coupledLevers{gap:2px}.coupledLever{min-height:40px;padding:2px}.coupledLever .sitelenGlyph{font-size:20px}
+  .layerAlignWrap{gap:3px}.layerTargetSummary{display:none}.layerAlignStack{gap:3px}.layerAlignGrid{grid-template-columns:repeat(var(--layer-size),21px);grid-template-rows:repeat(var(--layer-size),21px);gap:1px}.layerAlignCell{width:21px;height:21px}.layerAlignHead{grid-template-columns:24px minmax(0,1fr) 24px}.layerAlignHead button{width:24px;height:24px;min-height:24px}.layerMarker{width:14px;height:14px;font-size:7px}
+  .callTriangWrap{gap:3px}.callTriangLegend{gap:2px}.callTriangSensor{padding:2px 3px}.callTriangGrid{grid-template-columns:repeat(var(--tri-cols),32px);grid-template-rows:repeat(var(--tri-rows),32px);gap:1px}.callTriangCell{width:32px;height:32px;min-height:32px}.callTriangCell .sitelenGlyph{font-size:17px}.callTriangNote{display:none}
+  .lineageWrap{gap:3px}.lineagePairs{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}.lineagePair{padding:2px}.lineageTraits .sitelenGlyph{font-size:16px}.lineageEvidence{padding:2px 3px}.lineageEvidence ul{font-size:6.5px}.lineageRows{gap:2px}.lineageRow{padding:2px 3px;gap:3px}.lineageChoice{min-height:25px;font-size:8px}
+  .habitatTriageWrap{gap:3px}.habitatRoleBrief{gap:2px}.habitatRoleRule{padding:2px 3px}.habitatRoleRule>span{font-size:7px}.habitatRecords{gap:2px}.habitatRecord{padding:2px}.habitatRecord ul{font-size:7px}.habitatSelectors{gap:2px}.habitatSelector{padding:2px}.habitatChoice{min-height:25px;font-size:8px}
+
+  /* L10 dense logistics panels. */
+  .marketTillWrap,.coldChainWrap,.textileMixerWrap{gap:3px}.marketTillCards{gap:3px}.marketTillCard{padding:3px;gap:3px}.marketTillHead{gap:4px}.marketTillHead .sitelenGlyph{font-size:27px}.marketTillCanvas{max-height:40px}.marketTillTarget .marketTillCanvas{max-height:44px}.marketTillTokens{gap:2px}.marketToken{min-height:30px}
+  .coldControls,.coldGauges{gap:3px}.coldControl{min-height:38px}.coldGauge{padding:2px}.coldGaugeCanvas{max-height:29px}
+  .textileFormula{padding:3px}.textileFormula .sitelenGlyph{font-size:25px}.textileRatio{min-height:34px}
+  .recordClassifyWrap{gap:3px}.recordClassifyLead{padding:2px;font-size:7px}.recordClassifyGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.recordClassifyCard{padding:3px;gap:2px}.recordClassifyGlyph{font-size:22px}.recordClassifyFact{padding:2px 3px;font-size:7px}.recordClassifyChoice{min-height:25px;font-size:8px}
+
+  /* Sudoku: board left, enlarged active cell + notes/keypad right. The 9x9 board
+     may stay compact because the selected square is promoted above the controls. */
+  .puzzleCard[data-puzzle-type="sudoku"]{padding:4px 6px!important}
+  .puzzleCard[data-puzzle-type="sudoku"]>#puzzleInstructions{max-height:1.15em!important;white-space:nowrap;text-overflow:ellipsis}
+  .sudokuWrap{grid-template-columns:auto minmax(150px,190px)!important;grid-template-rows:1fr!important;gap:6px!important;width:min(100%,520px);align-items:center}
+  .sudokuLead{display:none!important}
+  .sudokuGrid{grid-column:1!important;width:min(202px,62dvh)!important}
+  .sudokuGlyph{font-size:clamp(12px,3.8dvh,20px)}.sudokuLatin{font-size:5px}.sudokuNotes small{font-size:4.5px}
+  .sudokuControls{grid-column:2!important;display:grid;grid-template-columns:1fr 1fr;gap:3px;width:100%!important;align-self:center}
+  .sudokuFocus{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 58px;gap:5px;align-items:center;min-height:58px;padding:3px 4px;border:1px solid rgba(17,17,17,.18);border-radius:7px;background:rgba(255,255,255,.28)}
+  .sudokuFocusLabel{font:800 8px/1.15 system-ui,sans-serif;color:var(--muted);text-align:center}
+  .sudokuFocusCell{position:relative;width:58px;height:58px;display:grid;place-items:center;border:2px solid #171717;border-radius:5px;background:#fff4d7;overflow:hidden}
+  .sudokuFocusCell--empty{font:900 25px/1 system-ui,sans-serif;color:var(--muted)}
+  .sudokuFocusGlyph{font-size:39px;line-height:1}.sudokuFocusLatin{position:absolute;right:3px;bottom:2px;font:900 9px/1 system-ui,sans-serif}.sudokuFocusNotes{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:90%;height:90%;place-items:center}.sudokuFocusNotes small{font:800 8px/1 system-ui,sans-serif}
+
+  /* No modal is allowed to rely on scrolling in mobile landscape. Puzzle cards
+     have their own fit system above; these rules compact the remaining game
+     overlays into the same real content budget. */
+  .overlayScreen{padding:3px 5px!important;overflow:hidden!important}
+  .overlayCard{max-height:min(calc(100dvh - 8px),367px)!important;overflow:hidden!important;padding:6px 8px!important}
+  .overlayCard h2{margin:1px 0 3px;font-size:15px;line-height:1.05}
+  .overlayCard p{margin:2px 0 4px;font-size:9px;line-height:1.12}
+  .overlayProgress{margin:3px 0 5px;font-size:10px;line-height:1.05}
+  .overlayButtonRow{gap:4px}.overlayButtonRow button{min-height:28px;padding:3px 7px;font-size:9px}
+
+  .levelIntroCard{width:min(470px,calc(100vw - 10px));text-align:center}
+  .levelIntroCard .levelIntroNumberRow{margin:0 auto;max-height:92px}
+  .levelIntroCard #levelIntroCartouche{max-width:min(330px,60vw);max-height:86px}
+  .levelIntroCard #levelIntroHint{margin:2px 0 4px}
+  .levelIntroCard #levelIntroStartBtn{min-height:30px;padding:3px 12px}
+
+  #glyphPopup .glyphRewardCard{max-height:min(calc(100dvh - 8px),300px)!important;overflow:hidden!important}
+  .glyphRewardCard .rewardGlyph{font-size:clamp(38px,13dvh,54px);line-height:.9;margin:0}
+  .glyphRewardCard h2{font-size:14px}.glyphRewardCard p{font-size:9px}.glyphRewardCard button{min-height:28px!important;height:28px;padding:2px 9px;font-size:9px}
+
+  .collectionCard{
+    width:min(760px,calc(100vw - 10px));height:min(calc(100dvh - 8px),367px);
+    display:grid;grid-template-rows:30px 16px minmax(0,1fr);gap:2px;
+  }
+  .collectionCard .overlayHeaderRow{min-height:30px;align-items:center}
+  .collectionCard .overlayEyebrow,.collectionCard .collectionHelp{display:none!important}
+  .collectionCard h2{font-size:12px!important;margin:0!important}
+  .collectionCard #collectionClose{min-height:27px;height:27px;padding:2px 8px;font-size:9px}
+  .collectionLevelProgress{margin:0!important;padding:1px 3px!important;min-height:0;font-size:8px;line-height:1.05;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .collectionCard .glyphGrid{grid-template-columns:repeat(15,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));gap:2px;min-height:0;overflow:hidden}
+  .collectionCard .glyphCell{min-height:0!important;height:auto;padding:1px!important;border-radius:4px;overflow:hidden}
+  .collectionCard .glyphCellGlyph{font-size:clamp(14px,5.2dvh,20px);line-height:.9;min-height:0}
+  .collectionCard .glyphCell.missing .glyphCellGlyph{font-size:13px;padding:0}
+  .collectionCard .glyphCellWord{margin:0;font-size:5.5px;line-height:1;max-height:1em}
+
+  .sentenceCard{width:min(650px,calc(100vw - 10px));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:3px}
+  .sentenceCard>.overlayEyebrow{display:none}.sentenceCard .sentenceSlots{margin:1px 0;gap:3px;align-content:center;justify-content:center;overflow:hidden}
+  .sentenceCard .sentenceSlot{width:54px;min-height:58px;padding:2px}
+  .sentenceCard .sentenceSlotGlyph{font-size:30px;line-height:1;min-height:31px}.sentenceCard .sentenceSlotWord{margin-top:1px;font-size:7px}
+  .sentenceCard .sentenceStatus{min-height:1.2em;margin:0;font-size:8px;line-height:1.05}
+
+  .levelCompleteCard,.resetConfirmCard{width:min(520px,calc(100vw - 10px))}
+  .levelCompleteCard>.overlayEyebrow,.resetConfirmCard>.overlayEyebrow{font-size:8px}
+  .levelCompleteCard.isCampaignComplete h2{font-size:22px!important;margin:1px 0 3px}
+  .campaignCompleteBadge{margin:2px 0 4px;padding:4px 6px;font-size:9px;line-height:1.05}
+  .sudokuControls>button{min-height:26px!important;padding:2px 3px!important;font-size:9px!important}
+  .sudokuKeypad{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2px}.sudokuKey{min-height:27px!important;padding:1px!important}.sudokuKey .sitelenGlyph{font-size:14px}.sudokuKey small{font-size:5px}
 }
