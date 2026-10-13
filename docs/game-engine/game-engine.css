@@ -2259,7 +2259,9 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   box-shadow: 0 2px 8px rgba(0,0,0,.32);
   touch-action: manipulation;
+  pointer-events: auto;
 }
+.qaPanel button { pointer-events: auto; }
 .qaPanel--touchConcealed { display: none !important; }
 .qaStatusText {
   min-width: 0;

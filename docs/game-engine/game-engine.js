@@ -7285,6 +7285,15 @@
     controls.append(pause,run,step,back,stop,slower,faster,ignore,restart); panel.append(text,controls); viewportWrap?.appendChild(panel);
     const hotspot=document.createElement('div'); hotspot.className='qaHotspot'; hotspot.setAttribute('aria-label','QA controls: double tap'); hotspot.setAttribute('role','button'); hotspot.setAttribute('tabindex','-1'); viewportWrap?.appendChild(hotspot);
     qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.backBtn=back; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
+    // QA controls sit inside viewportWrap, whose normal pointerdown handler starts
+    // mouse/touch look and captures the pointer. Make the QA panel an input barrier
+    // so laptop clicks and touch presses stay with the QA controls instead of being
+    // captured by gameplay underneath.
+    const qaBlockGameplayPointer=e=>e.stopPropagation();
+    panel.addEventListener('pointerdown',qaBlockGameplayPointer);
+    panel.addEventListener('pointerup',qaBlockGameplayPointer);
+    panel.addEventListener('pointercancel',qaBlockGameplayPointer);
+    panel.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();});
     controls.addEventListener('click',qaHandleTouchControlCaptureClick,true);
     pause.addEventListener('click',()=>qaTogglePause());
     step.addEventListener('click',()=>qaStep().catch(err=>qaFail(err)));
@@ -8468,7 +8477,7 @@
   document.addEventListener('mousemove', e => { if (pointerLocked && !modalOpen) state.angle = normalizeAngle(state.angle + e.movementX * 0.0027); });
 
   viewportWrap.addEventListener('pointerdown', (e) => {
-    if (e.target.closest?.('.mobileMovePad, .mobileUseBtn, .mazeQuickExitBtn, .campaignContinueBtn, #miniMap')) return;
+    if (e.target.closest?.('.mobileMovePad, .mobileUseBtn, .mazeQuickExitBtn, .campaignContinueBtn, #miniMap, .qaPanel')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (modalOpen) return;
     cancelMapSteering(true);
