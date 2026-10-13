@@ -7381,10 +7381,35 @@
     }
   }
 
+  async function qaStopForwardRunnerForBacktrack() {
+    // Backtracking must never leave the old runCampaign async loop alive. A
+    // restored checkpoint is a new QA branch: B rewinds state, while the next R
+    // starts a fresh forward runner from that restored/manual state.
+    if(!qaState.running) return false;
+    if(!qaState.paused) qaPause();
+    while(qaState.inPlaybackAction) await new Promise(r=>window.setTimeout(r,50));
+    qaState.stopped=true;
+    qaState.paused=false;
+    qaState.stepBudget=0;
+    qaUpdateBadge();
+    try {
+      await qaState.runPromise;
+    } catch (err) {
+      if(!String(err?.message||err).includes('QA run stopped')) throw err;
+    }
+    qaState.running=false;
+    qaState.stopped=false;
+    qaState.paused=true;
+    qaState.stepBudget=0;
+    qaState.inPlaybackAction=false;
+    qaState.runPromise=null;
+    qaUpdateBadge();
+    return true;
+  }
+
   async function qaBackToPreviousPuzzleStart() {
     if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
-    if(qaState.running && !qaState.paused) qaPause();
-    while(qaState.inPlaybackAction) await new Promise(r=>window.setTimeout(r,50));
+    await qaStopForwardRunnerForBacktrack();
     if(!qaState.puzzleHistory.length){qaLog('no earlier puzzle checkpoint');return false;}
     const currentId=activeCampaignPuzzle?.id || qaState.focusPuzzleId || null;
     let target=Math.min(qaState.historyCursor,qaState.puzzleHistory.length-1);
