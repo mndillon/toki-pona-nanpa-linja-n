@@ -3762,6 +3762,49 @@
     return { riddleOrder:Array.from(chosen), choiceOrders:choiceOrders.map(choices => Array.from(choices)) };
   }
 
+  function dualMirrorRandomInitialOrientations(puzzle) {
+    const payload = puzzle?.ui?.payload || {};
+    const mirrors = payload.mirrors || [];
+    const authored = Array.from(payload.initialOrientations || mirrors.map(()=>0)).map(v=>Number(v)?1:0);
+    const target = Array.from(payload.targetOrientations || authored).map(v=>Number(v)?1:0);
+    if (!mirrors.length) return authored;
+
+    // Keep the first mirror encountered by each beam in its authored orientation so
+    // the entry geometry remains recognizable. Every later mirror on the authored
+    // solution paths is randomized once per campaign, preventing the old visual
+    // pattern where the player could simply flip every mirror.
+    state.puzzleVariants = state.puzzleVariants || {};
+    const saved = state.puzzleVariants[puzzle.id]?.mirrorInitialOrientations;
+    if (Array.isArray(saved) && saved.length === mirrors.length && saved.every(v=>Number(v)===0||Number(v)===1)) {
+      return saved.map(v=>Number(v)?1:0);
+    }
+
+    const firstMirrorIndexes = new Set();
+    const targetState = { orientations:target };
+    for (let sourceIndex=0; sourceIndex<(payload.sources||[]).length; sourceIndex++) {
+      const trace = dualMirrorTrace(puzzle,targetState,sourceIndex);
+      if (trace.hitMirrors?.length) firstMirrorIndexes.add(Number(trace.hitMirrors[0]));
+    }
+
+    const randomized = authored.map((value,index)=>firstMirrorIndexes.has(index)?value:(Math.random()<0.5?0:1));
+    const randomizableIndexes = mirrors.map((_,index)=>index).filter(index=>!firstMirrorIndexes.has(index));
+    // Do not allow the random draw to recreate the old "flip every mirror"
+    // starting pattern by chance. At least one later mirror must differ from the
+    // authored all-opposite start while the first mirror of each beam stays fixed.
+    if (randomizableIndexes.length && randomizableIndexes.every(index=>randomized[index]===authored[index])) {
+      const index = randomizableIndexes[Math.floor(Math.random()*randomizableIndexes.length)];
+      randomized[index] = authored[index] ? 0 : 1;
+    }
+    const previous = state.puzzleVariants[puzzle.id] || {};
+    state.puzzleVariants[puzzle.id] = {
+      ...previous,
+      mirrorInitialOrientations:Array.from(randomized),
+      mirrorFixedFirstIndexes:Array.from(firstMirrorIndexes).sort((a,b)=>a-b)
+    };
+    saveState();
+    return randomized;
+  }
+
   function freshMechanismState(puzzle) {
     const payload = puzzle?.ui?.payload || {};
     switch (puzzle?.type) {
@@ -3809,7 +3852,7 @@
       case 'spectrum-order': return { order:Array.from(payload.initialOrder || (payload.filters || []).map(x=>x.id)), selected:null, swaps:0 };
       case 'power-balance': return { selected:(payload.loads || []).map(()=>false) };
       case 'deduction-order': return { order:Array.from(payload.initialOrder || payload.tokens || []), selected:null, swaps:0 };
-      case 'dual-mirror': return { orientations:Array.from(payload.initialOrientations || (payload.mirrors || []).map(()=>0)).map(v=>Number(v)?1:0) };
+      case 'dual-mirror': return { orientations:dualMirrorRandomInitialOrientations(puzzle) };
       case 'truth-gates': return { gates:Array.from(payload.initialGates || ['AND','AND','AND']) };
       case 'dependency-order': return { order:Array.from(payload.initialOrder || payload.tasks || []), selected:null, swaps:0 };
       case 'exact-path': return { path:[Array.from(payload.start || [0,0])], message:'' };

@@ -2606,6 +2606,21 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .spectrumWrap{grid-template-columns:minmax(210px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.spectrumClues{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.spectrumClue{padding:2px 3px;font-size:7px;line-height:1.05}.spectrumFilters{gap:3px}.spectrumFilter{min-height:47px;padding:2px 1px;font-size:8px;gap:2px}.spectrumSwatch{width:24px;height:27px}
   .powerBalanceWrap{gap:3px}.powerMeters{gap:3px}.powerMeter{padding:2px 3px}.powerMeterCanvas{max-height:30px}.powerBreakers{gap:3px}.powerBreaker{min-height:46px;padding:2px}.powerBreakerCanvas{max-height:30px}
 
+  /* Dense square boards must start below the instruction row, never be vertically
+     centered into negative top overflow. This guarantees row 1 remains visible
+     for both mirror arrays and the final Sudoku before any auto-fit scaling. */
+  .puzzleCard[data-puzzle-type="dual-mirror"] .puzzleSlots,
+  .puzzleCard[data-puzzle-type="sudoku"] .puzzleSlots{
+    justify-content:flex-start!important;
+    align-content:flex-start!important;
+    padding-top:4px!important;
+  }
+  .puzzleCard[data-puzzle-type="dual-mirror"] .dualMirrorWrap,
+  .puzzleCard[data-puzzle-type="sudoku"] .sudokuWrap{
+    align-self:flex-start!important;
+    margin-top:0!important;
+  }
+
   /* L8 / L12 logic: XOR/OR and mirror arrays are explicitly landscape-first. */
   .deductionWrap{grid-template-columns:minmax(220px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.deductionClue{padding:2px 3px;font-size:7px;line-height:1.04}.deductionTokens,.dependencyTokens{grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:2px}.deductionToken,.dependencyTokens .deductionToken{min-height:44px;padding:3px 1px 2px}.deductionGlyph,.dependencyTokens .deductionGlyph{font-size:21px}.deductionLabel{font-size:6px;display:block}
   .dualMirrorWrap{gap:2px}.dualMirrorLegend{font-size:7px;line-height:1.05}.dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),30px)!important;grid-template-rows:repeat(var(--mirror-rows),30px)!important;gap:1px}.dualMirrorCell{width:30px!important;height:30px!important}.dualMirrorMirror{font-size:20px!important}.dualMirrorEdgeLabel{font-size:13px}.dualMirrorEdgeLabel.out{font-size:11px}
