@@ -6146,11 +6146,10 @@
     clueBox.append(clue); puzzleSlots.appendChild(clueBox);
     if (!Array.isArray(puzzleSlotValues) || puzzleSlotValues.length!==answer.length) puzzleSlotValues=Array(answer.length).fill(null);
     if (selectedPuzzleSlotIndex == null && answer.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
-    [...answer].forEach((letter,index)=>{
+    [...answer].forEach((_,index)=>{
       const slot=document.createElement('button'); slot.type='button'; slot.className=`puzzleSlot fillable ${puzzleSlotValues[index]?'':'empty'}${selectedPuzzleSlotIndex===index?' selectedTarget':''}${tutorialFeedbackMatches(puzzle,'slot',index)?' tutorialConfirmed':''}`; slot.dataset.slotIndex=String(index);
       const glyph=document.createElement('div'); glyph.className=puzzleSlotValues[index]?'puzzleSlotGlyph sitelenGlyph':'puzzleSlotGlyph'; glyph.textContent=puzzleSlotValues[index]?displayPuzzleToken(puzzleSlotValues[index]):'＋';
-      const label=document.createElement('div'); label.className='puzzleSlotLabel'; label.textContent=letter;
-      slot.append(glyph,label);
+      slot.append(glyph);
       slot.addEventListener('click',()=>activatePuzzleSlot(index));
       puzzleSlots.appendChild(slot);
     });

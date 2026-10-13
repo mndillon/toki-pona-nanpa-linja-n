@@ -2572,7 +2572,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheCanvas{max-height:31px!important}
 
   /* L4 / code-style and ordering controls. */
-  .jugVessels{gap:12px}.jugVessel{width:62px;height:76px}.jugControls{gap:3px}.jugAction{min-height:29px;padding:2px 4px;font-size:9px}
+  .jugVessels{gap:12px}.jugVessel{width:62px;height:76px}.jugControls{row-gap:5px;column-gap:9px;padding:0 4px;box-sizing:border-box}.jugAction{min-height:29px;padding:2px 4px;font-size:9px}
   .hanoiBoard{height:118px}.hanoiDisk{height:18px}.hanoiDisk .sitelenGlyph{font-size:13px}
   .codeLegend{gap:4px;font-size:8px}.codeLegendGlyph{width:31px;height:31px}.codeLegendGlyph .sitelenGlyph{font-size:20px}
   .codeGuess,.codeGuess[data-symbol-count="5"],.codeGuess[data-symbol-count="6"]{grid-template-columns:repeat(var(--code-cols,4),42px);gap:3px}.codeGuess[data-symbol-count="5"]{grid-template-columns:repeat(5,42px)}.codeGuess[data-symbol-count="6"]{grid-template-columns:repeat(6,42px)}
