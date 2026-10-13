@@ -1156,6 +1156,12 @@
   const VIEWPORT_MOVE_THRESHOLD = 0.36;
   const VIEWPORT_MOVE_EXPONENT = 1.7;
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
+  // Short mobile landscape has less thumb travel and makes the old response feel
+  // twitchy. Keep portrait behavior intact, but give landscape a slightly larger
+  // neutral centre and lower movement/turn authority for finer control.
+  const MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO = 0.37;
+  const MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE = 0.80;
+  const MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE = 0.75;
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.25;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
@@ -8302,6 +8308,15 @@
     }
   }
 
+  function mobileJoystickTuning() {
+    const landscape = shortMobileLandscapePuzzleMode();
+    return {
+      deadRatio: landscape ? MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO : MOBILE_JOYSTICK_DEAD_RATIO,
+      moveScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE : 1,
+      turnScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE : 1
+    };
+  }
+
   function updateMobileJoystickFromPointer(e) {
     if (!mobileMovePad) return;
     const rect = mobileMovePad.getBoundingClientRect();
@@ -8310,9 +8325,10 @@
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
     const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
-    const deadRadius = outerRadius * MOBILE_JOYSTICK_DEAD_RATIO;
+    const tuning = mobileJoystickTuning();
+    const deadRadius = outerRadius * tuning.deadRatio;
     const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius);
-    setMobileJoystickIntent(command.intent, command.moveStrength, command.turnStrength);
+    setMobileJoystickIntent(command.intent, command.moveStrength * tuning.moveScale, command.turnStrength * tuning.turnScale);
     mobileMovePad.dataset.sector = command.intent;
     mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, command.strength.move).toFixed(3));
     if (mobileJoystickThumb) {
