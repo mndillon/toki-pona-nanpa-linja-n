@@ -1465,7 +1465,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .calculatorPuzzle{gap:4px}.calculatorExpression{gap:2px;grid-template-columns:minmax(0,1fr) 22px minmax(0,1fr)}.calculatorOperator{font-size:22px}.calculatorCartouche{max-height:55px}.calculatorAnswerCanvas{max-height:47px}.calculatorKeypad{gap:3px}.calculatorKey{min-height:36px;padding:2px;font-size:13px}
   .baseMatchWrap{gap:4px}.baseMatchTarget{max-height:56px}.baseMatchChoices{gap:4px}.baseMatchCanvas{max-height:51px}
   .ringLockWrap{grid-template-columns:1fr;gap:5px}.ringLockClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.ringLockClue{padding:3px 4px;font-size:9px}.ringLockGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.ringDial{width:70px;height:70px}.ringDot{width:8px;height:8px;left:calc(50% - 4px);top:calc(50% - 4px)}.ringDot0{transform:translate(0,-28px)}.ringDot1{transform:translate(20px,-20px)}.ringDot2{transform:translate(28px,0)}.ringDot3{transform:translate(20px,20px)}.ringDot4{transform:translate(0,28px)}.ringDot5{transform:translate(-20px,20px)}.ringDot6{transform:translate(-28px,0)}.ringDot7{transform:translate(-20px,-20px)}.ringCenterGlyph{font-size:28px}.ringControls{grid-template-columns:repeat(2,34px);gap:2px}.ringControls button{width:34px;height:30px;min-height:30px}
-  .countryCrosswordWrap{grid-template-columns:1fr;grid-template-rows:auto auto;gap:4px;justify-items:center;align-content:center}.countryCrosswordClues{gap:3px;width:100%}.countryCrosswordClue{padding:3px 4px;font-size:8.5px}.countryCrosswordClue small{display:none}.countryCrosswordNumberHost--clue{width:42px;height:24px;min-width:42px}.countryCrosswordClueDirection{font-size:10px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),40px);grid-template-rows:repeat(var(--cross-rows),40px)}.countryCrosswordCell{width:40px;height:40px;min-width:40px;min-height:40px}.countryCrosswordGlyph{font-size:25px}
+  .countryCrosswordWrap{grid-template-columns:1fr;grid-template-rows:auto auto;gap:4px;justify-items:center;align-content:center}.countryCrosswordClues{gap:3px;width:100%}.countryCrosswordClue{padding:3px 4px;font-size:8.5px}.countryCrosswordClue small{display:block}.countryCrosswordClue .countryClueTp,.countryCrosswordClue .countryClueEn{margin-top:0;font-size:8px;line-height:1.08;min-width:0}.countryCrosswordNumberHost--clue{width:42px;height:24px;min-width:42px}.countryCrosswordClueDirection{font-size:10px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),40px);grid-template-rows:repeat(var(--cross-rows),40px)}.countryCrosswordCell{width:40px;height:40px;min-width:40px;min-height:40px}.countryCrosswordGlyph{font-size:25px}
 }
 @media (max-width:390px){
   .cardSortCanvas{width:50px;height:71px}
@@ -2297,7 +2297,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .qaMiniButton { min-width: 40px; min-height: 40px; }
 }
 /* On short landscape phones, the revealed QA controls form a single full-width
-   row inside the game display. All X/P/R/N/S and speed/dismiss buttons remain
+   row inside the game display. All P/R/N/B/S, speed/dismiss and X buttons remain
    visible at once without summoning a keyboard. */
 @media (pointer:coarse) and (max-height:520px) and (orientation:landscape) {
   .qaPanel.qaPanel--touchOpen {
@@ -2323,7 +2323,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   }
   .qaPanel.qaPanel--touchOpen .qaControls {
     display: grid;
-    grid-template-columns: repeat(8,minmax(0,1fr));
+    grid-template-columns: repeat(9,minmax(0,1fr));
     gap: 3px;
     width: 100%;
     max-width: none;
@@ -2410,6 +2410,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   html,body{width:100%;height:100%;min-height:0;overflow:hidden}
   body{margin:0}
   main.card{
+    position:fixed;inset:0;margin:0!important;
     width:100vw;height:100dvh;max-width:none;min-height:0;
     padding:3px 4px;border-radius:0;overflow:hidden;
     display:grid;grid-template-rows:28px minmax(0,1fr);gap:2px;
@@ -2487,11 +2488,11 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard>.puzzleStatus{display:none!important}
   .puzzleCard>.overlayButtonRow{
     gap:3px!important;flex-wrap:nowrap!important;position:relative;z-index:4;
-    background:var(--bg);border-top:1px solid rgba(17,17,17,.14);padding-top:2px;
+    background:var(--bg);border-top:1px solid rgba(17,17,17,.14);padding-top:1px;
   }
   .puzzleCard>.overlayButtonRow button{
-    flex:1 1 0;min-width:0!important;min-height:30px!important;
-    padding:2px 5px!important;font-size:9.5px!important;line-height:1.05!important;
+    flex:1 1 0;min-width:0!important;min-height:26px!important;height:26px!important;
+    padding:1px 5px!important;font-size:9px!important;line-height:1!important;
   }
 
   /* Glyph-key controls must fit too: no horizontal family scroller and no
@@ -2500,10 +2501,10 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard .puzzleTrayWrap{position:relative;z-index:3;background:var(--bg);padding-top:2px;border-top:1px solid rgba(17,17,17,.12)}
   .puzzleFamilyRow{
     display:grid!important;grid-template-columns:repeat(auto-fit,minmax(26px,1fr))!important;
-    grid-template-rows:30px!important;grid-auto-flow:row!important;grid-auto-columns:auto!important;
-    width:100%;height:30px!important;gap:2px!important;overflow:hidden!important;padding:0!important;
+    grid-template-rows:28px!important;grid-auto-flow:row!important;grid-auto-columns:auto!important;
+    width:100%;height:28px!important;gap:2px!important;overflow:hidden!important;padding:0!important;
   }
-  .puzzleFamilyKey{width:auto!important;min-width:0!important;height:30px!important;min-height:30px!important;padding:2px!important;font-size:10px!important}
+  .puzzleFamilyKey{width:auto!important;min-width:0!important;height:28px!important;min-height:28px!important;padding:1px 2px!important;font-size:10px!important}
   .puzzleGlyphDrawer{max-height:150px!important;padding:4px 5px!important;overflow:hidden!important}
   .puzzleGlyphDrawerHeader{min-height:24px!important;padding-bottom:2px!important}
   .puzzleGlyphDrawerClose{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important}
@@ -2523,6 +2524,50 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .lightsGrid{width:min(100%,188px)!important;gap:4px}
   .balanceWeights{gap:4px}.balanceWeight{width:48px;height:48px}.balanceWeight .sitelenGlyph{font-size:25px}.balanceTargetCanvas{max-height:38px}
   .contextTarget{padding:3px 7px;gap:6px}.contextChoices{gap:3px}.contextChoiceCanvas{max-height:38px}
+
+  /* Coordinate map: landscape is width-rich and height-poor. Keep the coordinate
+     cartouche beside the map instead of above it so the 10x10 grid remains legible. */
+  .puzzleCard.puzzleCard--map .puzzleSlots{
+    display:grid!important;
+    grid-template-columns:minmax(132px,.72fr) minmax(190px,1.28fr)!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    gap:7px!important;align-items:center!important;justify-items:center!important;
+    width:100%;height:100%;
+  }
+  .puzzleCard.puzzleCard--map .coordinatePuzzleClue{
+    min-width:0;width:100%;align-self:center;margin:0!important;
+  }
+  .puzzleCard.puzzleCard--map .coordinatePuzzleLabel{display:block!important;font-size:8px!important;margin-bottom:1px}
+  .puzzleCard.puzzleCard--map .coordinatePuzzleCanvas{
+    width:min(100%,230px)!important;max-height:66px!important;margin:0 auto!important;
+  }
+  .puzzleCard.puzzleCard--map .coordinateMapGrid{
+    width:min(100%,62dvh,226px)!important;max-width:226px;max-height:226px!important;
+    align-self:center!important;margin:0!important;
+  }
+  .puzzleCard.puzzleCard--map .coordinateAxis{font-size:8px!important}
+
+  /* Multi-value numeric/cartouche entry: three derived answers must consume the
+     puzzle surface horizontally, never by stacking clue text above every row. */
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroups{
+    height:100%;align-content:center;gap:2px!important;
+  }
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroup{
+    grid-template-columns:minmax(104px,.62fr) minmax(0,2.38fr)!important;
+    gap:3px!important;padding:2px 3px!important;align-items:center!important;
+  }
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupText{
+    display:grid!important;gap:1px!important;align-content:center;min-width:0;
+  }
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupTitle{font-size:8px!important;line-height:1!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupClue{font-size:7px!important;line-height:1!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots{gap:2px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot{height:28px!important;min-height:28px!important;padding:0 1px!important;border-width:1px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlotGlyph{min-height:16px!important;font-size:16px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph{min-height:15px!important;font-size:13px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlotLabel{font-size:5px!important;line-height:1!important}
+  .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheWrap{padding:2px 4px 1px!important}
+  .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheCanvas{max-height:31px!important}
 
   /* L4 / code-style and ordering controls. */
   .jugVessels{gap:12px}.jugVessel{width:62px;height:76px}.jugControls{gap:3px}.jugAction{min-height:29px;padding:2px 4px;font-size:9px}
@@ -2550,7 +2595,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .calculatorPuzzle{grid-template-columns:minmax(0,1fr) minmax(180px,.9fr);grid-template-rows:auto auto;gap:3px 7px;width:100%}.calculatorProgress{grid-column:1/-1}.calculatorExpression{grid-column:1;grid-row:2}.calculatorAnswer{grid-column:1;grid-row:3}.calculatorKeypad{grid-column:2;grid-row:2 / span 2;align-self:center;gap:2px}.calculatorCartouche{max-height:34px}.calculatorAnswerCanvas{max-height:31px}.calculatorKey{min-height:27px;padding:1px;font-size:10px}
   .baseMatchWrap{grid-template-columns:minmax(150px,.7fr) minmax(0,1.3fr);grid-template-rows:auto 1fr;gap:3px 6px;width:100%}.baseMatchProgress{grid-column:1/-1}.baseMatchTarget{max-height:40px}.baseMatchChoices{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}.baseMatchCanvas{max-height:34px}
   .ringLockWrap{grid-template-columns:minmax(150px,.8fr) minmax(0,1.2fr);gap:5px}.ringLockClues{display:grid!important;grid-template-columns:1fr;gap:2px}.ringLockClue{padding:2px 3px;font-size:7px}.ringLockGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}.ringDial{width:58px;height:58px}.ringCenterGlyph{font-size:23px}.ringControls{grid-template-columns:repeat(2,29px);gap:2px}.ringControls button{width:29px;height:25px;min-height:25px;font-size:14px}
-  .countryCrosswordWrap{grid-template-columns:minmax(200px,1fr) auto;grid-template-rows:1fr;gap:5px}.countryCrosswordClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.countryCrosswordClue{padding:2px 3px;font-size:7px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),27px);grid-template-rows:repeat(var(--cross-rows),27px);gap:1px}.countryCrosswordCell{width:27px;height:27px;min-width:27px;min-height:27px}.countryCrosswordGlyph{font-size:18px}
+  .countryCrosswordWrap{grid-template-columns:minmax(200px,1fr) auto;grid-template-rows:1fr;gap:5px}.countryCrosswordClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;align-content:center}.countryCrosswordClue{grid-template-columns:auto minmax(0,1fr);column-gap:3px;row-gap:0;padding:2px 3px;font-size:7px;min-width:0}.countryCrosswordClue small{display:block!important}.countryCrosswordClue .countryClueTp,.countryCrosswordClue .countryClueEn{display:block!important;margin:0;font-size:6.5px;line-height:1.05;min-width:0;overflow-wrap:anywhere}.countryCrosswordNumberHost--clue{width:29px;height:17px;min-width:29px}.countryCrosswordClueDirection{font-size:8px}.countryCrosswordGrid{grid-template-columns:repeat(var(--cross-cols),27px);grid-template-rows:repeat(var(--cross-rows),27px);gap:1px}.countryCrosswordCell{width:27px;height:27px;min-width:27px;min-height:27px}.countryCrosswordGlyph{font-size:18px}
 
   /* L7 — colour-order remains two-column in landscape; clues must NOT disappear. */
   .toneSequenceWrap{gap:3px}.toneProgress{font-size:10px;min-height:12px}.tonePads{gap:3px}.tonePad{min-height:45px}.tonePad .sitelenGlyph{font-size:25px}

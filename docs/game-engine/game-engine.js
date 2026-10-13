@@ -6329,6 +6329,21 @@
     }
   }
 
+  function centerMobileLandscapeGameArea() {
+    if (!shortMobileLandscapePuzzleMode()) return false;
+    const scroller = document.scrollingElement || document.documentElement || document.body;
+    if (scroller) { scroller.scrollTop = 0; scroller.scrollLeft = 0; }
+    try { window.scrollTo(0, 0); } catch (_) {}
+    return true;
+  }
+
+  function scheduleMobileLandscapeGameCenter() {
+    centerMobileLandscapeGameArea();
+    requestAnimationFrame(() => centerMobileLandscapeGameArea());
+    window.setTimeout(centerMobileLandscapeGameArea, 90);
+    window.setTimeout(centerMobileLandscapeGameArea, 280);
+  }
+
   function clearMobileLandscapePuzzleFit() {
     if (!puzzleSlots) return;
     puzzleSlots.classList.remove('mobileLandscapeAutoFit');
@@ -6350,6 +6365,24 @@
     return Number.isFinite(top) ? top : null;
   }
 
+  function visiblePuzzleSurfaceRequiredSize(slotRect) {
+    let minLeft = slotRect.left, maxRight = slotRect.right;
+    let minTop = slotRect.top, maxBottom = slotRect.bottom;
+    for (const el of puzzleSlots?.querySelectorAll?.('*') || []) {
+      const style = window.getComputedStyle?.(el);
+      if (style && (style.display === 'none' || style.visibility === 'hidden')) continue;
+      const rect = el.getBoundingClientRect?.();
+      if (!rect || (!rect.width && !rect.height)) continue;
+      if (![rect.left,rect.right,rect.top,rect.bottom].every(Number.isFinite)) continue;
+      minLeft = Math.min(minLeft, rect.left); maxRight = Math.max(maxRight, rect.right);
+      minTop = Math.min(minTop, rect.top); maxBottom = Math.max(maxBottom, rect.bottom);
+    }
+    return {
+      width:Math.max(puzzleSlots.scrollWidth || 0, maxRight - minLeft),
+      height:Math.max(puzzleSlots.scrollHeight || 0, maxBottom - minTop)
+    };
+  }
+
   function applyMobileLandscapePuzzleFit() {
     mobileLandscapePuzzleFitRaf = 0;
     if (!puzzleSlots || !puzzleOverlay || puzzleOverlay.hidden || !shortMobileLandscapePuzzleMode()) {
@@ -6368,8 +6401,9 @@
       : Math.max(1, Math.floor(boundaryTop - slotRect.top - 4));
     const availableWidth = Math.max(1, puzzleSlots.clientWidth);
     const availableHeight = Math.max(1, Math.min(puzzleSlots.clientHeight || geometricHeight, geometricHeight));
-    const requiredWidth = Math.max(availableWidth, puzzleSlots.scrollWidth);
-    const requiredHeight = Math.max(availableHeight, puzzleSlots.scrollHeight);
+    const visibleRequired = visiblePuzzleSurfaceRequiredSize(slotRect);
+    const requiredWidth = Math.max(availableWidth, visibleRequired.width);
+    const requiredHeight = Math.max(availableHeight, visibleRequired.height);
     let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
 
@@ -6776,7 +6810,8 @@
     state.levelIntroPending = false;
     closeModal(levelIntroOverlay);
     saveState();
-    canvas.focus();
+    canvas.focus({preventScroll:true});
+    scheduleMobileLandscapeGameCenter();
     return true;
   }
 
@@ -7094,8 +7129,9 @@
     installed:false, running:false, paused:false, stopped:false, stepBudget:0,
     speed:1, includeOptional:true, focusPuzzleId:null, lastAction:'idle',
     actionNo:0, runPromise:null, inPlaybackAction:false, badge:null, statusText:null, pauseBtn:null,
-    stepBtn:null, runBtn:null, restartBtn:null, stopBtn:null, slowerBtn:null, fasterBtn:null, ignoreBtn:null,
+    stepBtn:null, runBtn:null, backBtn:null, restartBtn:null, stopBtn:null, slowerBtn:null, fasterBtn:null, ignoreBtn:null,
     hotspot:null, lastHotspotTapAt:0, touchPanelOpen:false,
+    puzzleHistory:[], historyCursor:-1, restoringCheckpoint:false,
     suppressTouchControlClickPointerId:null, suppressTouchControlClickUntil:0
   };
 
@@ -7241,16 +7277,18 @@
     const pause=document.createElement('button'); pause.type='button'; pause.className='qaMiniButton'; pause.title='Pause / resume QA playback (P)'; pause.setAttribute('aria-label','Pause or resume QA playback'); pause.textContent='P';
     const run=document.createElement('button'); run.type='button'; run.className='qaMiniButton'; run.title='Run / continue campaign QA (R)'; run.setAttribute('aria-label','Run or continue QA campaign'); run.textContent='R';
     const step=document.createElement('button'); step.type='button'; step.className='qaMiniButton'; step.title='One QA step (N)'; step.setAttribute('aria-label','Run one QA step'); step.textContent='N';
+    const back=document.createElement('button'); back.type='button'; back.className='qaMiniButton'; back.title='Previous puzzle start (B)'; back.setAttribute('aria-label','Return to the start of the previous QA puzzle'); back.textContent='B';
     const stop=document.createElement('button'); stop.type='button'; stop.className='qaMiniButton'; stop.title='Stop QA playback (S)'; stop.setAttribute('aria-label','Stop QA playback'); stop.textContent='S';
     const slower=document.createElement('button'); slower.type='button'; slower.className='qaMiniButton'; slower.title='Slow QA playback ([)'; slower.setAttribute('aria-label','Slow QA playback'); slower.textContent='−';
     const faster=document.createElement('button'); faster.type='button'; faster.className='qaMiniButton'; faster.title='Speed up QA playback (])'; faster.setAttribute('aria-label','Speed up QA playback'); faster.textContent='+';
     const ignore=document.createElement('button'); ignore.type='button'; ignore.className='qaMiniButton qaIgnoreButton'; ignore.title='Hide QA touch controls'; ignore.setAttribute('aria-label','Hide QA touch controls'); ignore.textContent='Ignore';
-    controls.append(pause,run,step,stop,slower,faster,ignore,restart); panel.append(text,controls); viewportWrap?.appendChild(panel);
+    controls.append(pause,run,step,back,stop,slower,faster,ignore,restart); panel.append(text,controls); viewportWrap?.appendChild(panel);
     const hotspot=document.createElement('div'); hotspot.className='qaHotspot'; hotspot.setAttribute('aria-label','QA controls: double tap'); hotspot.setAttribute('role','button'); hotspot.setAttribute('tabindex','-1'); viewportWrap?.appendChild(hotspot);
-    qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
+    qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.backBtn=back; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
     controls.addEventListener('click',qaHandleTouchControlCaptureClick,true);
     pause.addEventListener('click',()=>qaTogglePause());
     step.addEventListener('click',()=>qaStep().catch(err=>qaFail(err)));
+    back.addEventListener('click',()=>qaBackToPreviousPuzzleStart().catch(err=>qaFail(err)));
     run.addEventListener('click',()=>qaRunCampaign().catch(err=>qaFail(err)));
     restart.addEventListener('click',()=>qaRestartCampaign().catch(err=>qaFail(err)));
     stop.addEventListener('click',()=>qaStop());
@@ -7261,6 +7299,91 @@
     hotspot.addEventListener('pointerup',qaHandleHotspotPointerUp,{passive:false});
     qaSetTouchPanelOpen(!qaTouchControlsPreferred());
     qaUpdateBadge();
+  }
+
+  function qaCheckpointSnapshot() {
+    if(campaignAdapter) state.campaign=campaignAdapter.snapshot();
+    return JSON.parse(JSON.stringify(state));
+  }
+
+  function qaRecordPuzzleCheckpoint(puzzle) {
+    if(!QA_MODE || qaState.restoringCheckpoint || !puzzle || campaignSolved(puzzle.id)) return null;
+    const current=qaState.puzzleHistory[qaState.historyCursor] || null;
+    if(current?.puzzleId===puzzle.id) return current;
+    if(qaState.historyCursor<qaState.puzzleHistory.length-1) qaState.puzzleHistory=qaState.puzzleHistory.slice(0,qaState.historyCursor+1);
+    const entry={
+      puzzleId:puzzle.id,
+      level:Number(campaignAdapter?.currentLevel?.()?.ordinal || state.chapter || 0),
+      levelId:state.levelId,
+      snapshot:qaCheckpointSnapshot()
+    };
+    qaState.puzzleHistory.push(entry);
+    qaState.historyCursor=qaState.puzzleHistory.length-1;
+    qaLog(`checkpoint: ${puzzle.id}`);
+    return entry;
+  }
+
+  function qaCloseTransientOverlaysForRestore() {
+    for(const el of [levelIntroOverlay,glyphPopup,collectionOverlay,sentenceOverlay,puzzleOverlay,levelCompleteOverlay,resetConfirmOverlay]){
+      if(el && !el.hidden) closeModal(el);
+    }
+    activeCampaignPuzzle=null;
+    activePanelId=null;
+    puzzleSlotValues=[];
+    selectedPuzzleGlyph=null;
+    selectedPuzzleFamily=null;
+    selectedPuzzleSlotIndex=null;
+    puzzleMechanismState=null;
+    pendingGlyphRewards=[];
+    clearTutorialSubmissionFeedback();
+  }
+
+  async function qaRestorePuzzleCheckpoint(index) {
+    const entry=qaState.puzzleHistory[index];
+    if(!entry) return false;
+    qaState.restoringCheckpoint=true;
+    try{
+      qaCloseTransientOverlaysForRestore();
+      state=normalizeSavedState(JSON.parse(JSON.stringify(entry.snapshot)));
+      campaignAdapter=window.TokiPonaCampaignEngineAdapter.createAdapter({campaign:window.TOKI_PONA_CAMPAIGN,persisted:state.campaign||null});
+      syncWorldFromCampaign();
+      restoreDoorState();
+      spriteCache.clear();
+      renderLog(); renderCollection(); updateHUD();
+      qaState.focusPuzzleId=null;
+      qaState.historyCursor=index;
+      const puzzle=campaignPuzzle(entry.puzzleId);
+      if(!puzzle || campaignSolved(entry.puzzleId)) throw new Error(`QA checkpoint cannot restore ${entry.puzzleId}`);
+      if(qaIsPhysicalPuzzle(puzzle)){
+        const ref=qaPrimaryPhysicalObject(puzzle);
+        if(ref) await qaTravelToObjectRef(ref);
+        qaState.focusPuzzleId=puzzle.id;
+      }else{
+        openCampaignPuzzleById(puzzle.id);
+        if(activeCampaignPuzzle?.id!==puzzle.id) throw new Error(`QA checkpoint could not reopen ${puzzle.id}`);
+      }
+      state.campaign=campaignAdapter.snapshot();
+      saveState();
+      qaLog(`restored puzzle start: ${puzzle.id}`);
+      qaUpdateBadge();
+      return true;
+    } finally {
+      qaState.restoringCheckpoint=false;
+    }
+  }
+
+  async function qaBackToPreviousPuzzleStart() {
+    if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
+    if(qaState.running && !qaState.paused) qaPause();
+    while(qaState.inPlaybackAction) await new Promise(r=>window.setTimeout(r,50));
+    if(!qaState.puzzleHistory.length){qaLog('no earlier puzzle checkpoint');return false;}
+    const currentId=activeCampaignPuzzle?.id || qaState.focusPuzzleId || null;
+    let target=Math.min(qaState.historyCursor,qaState.puzzleHistory.length-1);
+    if(target<0) target=qaState.puzzleHistory.length-1;
+    if(currentId && qaState.puzzleHistory[target]?.puzzleId===currentId) target-=1;
+    if(target<0){qaLog('already at first puzzle checkpoint');return false;}
+    qaState.paused=true; qaState.stepBudget=0; qaUpdateBadge();
+    return qaRestorePuzzleCheckpoint(target);
   }
 
   async function qaBoundary() {
@@ -7781,6 +7904,7 @@
       performInteraction({kind:'object',obj:ref.obj,dist:0}); await qaSleep(650);
       if(activeCampaignPuzzle?.id!==puzzle.id && !campaignSolved(puzzle.id)) throw new Error(`Could not open ${puzzle.id}`);
     }
+    qaRecordPuzzleCheckpoint(puzzle);
     qaUpdateBadge(); return puzzle;
   }
 
@@ -7794,8 +7918,8 @@
 
   async function qaSolveCurrent() {
     await qaEnsureIntroDismissed();
-    if(activeCampaignPuzzle) return qaSolveOpenPuzzle();
-    if(qaState.focusPuzzleId){const p=campaignPuzzle(qaState.focusPuzzleId);if(p&&!campaignSolved(p.id)){const ok=await qaSolvePhysicalPuzzle(p);if(!ok)throw new Error(`Physical QA solver did not complete ${p.id}`);qaState.focusPuzzleId=null;return true;}qaState.focusPuzzleId=null;}
+    if(activeCampaignPuzzle){qaRecordPuzzleCheckpoint(activeCampaignPuzzle);return qaSolveOpenPuzzle();}
+    if(qaState.focusPuzzleId){const p=campaignPuzzle(qaState.focusPuzzleId);if(p&&!campaignSolved(p.id)){qaRecordPuzzleCheckpoint(p);const ok=await qaSolvePhysicalPuzzle(p);if(!ok)throw new Error(`Physical QA solver did not complete ${p.id}`);qaState.focusPuzzleId=null;return true;}qaState.focusPuzzleId=null;}
     return false;
   }
 
@@ -7835,7 +7959,7 @@
 
   function qaStatus() {
     const levelDef=campaignAdapter?.currentLevel?.();
-    const status={enabled:QA_MODE,running:qaState.running,paused:qaState.paused,speed:qaState.speed,level:levelDef?.ordinal||state.chapter,levelId:state.levelId,activePuzzle:activeCampaignPuzzle?.id||null,focusPuzzle:qaState.focusPuzzleId,nextPuzzle:qaNextPuzzle()?.id||null,collection:`${collectionCount()}/120`,levelComplete:Boolean(campaignAdapter?.isLevelComplete?.()),lastAction:qaState.lastAction};
+    const status={enabled:QA_MODE,running:qaState.running,paused:qaState.paused,speed:qaState.speed,level:levelDef?.ordinal||state.chapter,levelId:state.levelId,activePuzzle:activeCampaignPuzzle?.id||null,focusPuzzle:qaState.focusPuzzleId,nextPuzzle:qaNextPuzzle()?.id||null,checkpoint:qaState.puzzleHistory[qaState.historyCursor]?.puzzleId||null,checkpointIndex:qaState.historyCursor,checkpointCount:qaState.puzzleHistory.length,collection:`${collectionCount()}/120`,levelComplete:Boolean(campaignAdapter?.isLevelComplete?.()),lastAction:qaState.lastAction};
     console.table?.([status]); return status;
   }
 
@@ -7858,7 +7982,7 @@
     for(let i=0;!campaignAdapter&&i<100;i++) await new Promise(r=>window.setTimeout(r,50));
     if(!campaignAdapter) throw new Error('Campaign engine is not ready yet');
     if(qaState.running){if(qaState.paused)qaResume();return qaState.runPromise;}
-    if(options.reset){await resetGame();await qaSleep(400);}
+    if(options.reset){qaState.puzzleHistory=[];qaState.historyCursor=-1;await resetGame();await qaSleep(400);}
     if(options.speed!=null)qaSetSpeed(options.speed);
     qaState.includeOptional=options.includeOptional!==false;qaState.stopped=false;qaState.paused=false;qaState.stepBudget=0;qaState.running=true;qaUpdateBadge();qaLog('campaign playback started');
     qaState.runPromise=(async()=>{
@@ -7888,6 +8012,7 @@
       try { await qaState.runPromise; } catch (_) {}
     }
     qaState.running=false; qaState.stopped=false; qaState.paused=false; qaState.stepBudget=0; qaState.inPlaybackAction=false;
+    qaState.puzzleHistory=[]; qaState.historyCursor=-1;
     qaLog('restarting campaign from Level 1');
     await resetGame();
     await qaSleep(450);
@@ -7903,6 +8028,7 @@
     if(!QA_MODE || e.repeat || qaEditableTarget(e.target)) return false;
     if(e.code==='KeyP'){qaTogglePause();e.preventDefault();return true;}
     if(e.code==='KeyN'){qaStep().catch(err=>qaFail(err));e.preventDefault();return true;}
+    if(e.code==='KeyB'){qaBackToPreviousPuzzleStart().catch(err=>qaFail(err));e.preventDefault();return true;}
     if(e.code==='KeyR'){qaRunCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
     if(e.code==='KeyX'){qaRestartCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
     if(e.code==='KeyS'){qaStop();e.preventDefault();return true;}
@@ -7920,14 +8046,14 @@
     qaState.installed=true;qaInstallBadge();
     const api={
       get enabled(){return true;}, answer:qaAnswer, solve:qaSolveCurrent, next:async()=>{const p=qaNextPuzzle();if(!p)throw new Error('No reachable next puzzle');return qaMoveToPuzzle(p);},
-      solveAndNext:qaSolveAndNext, runCampaign:qaRunCampaign, restartCampaign:qaRestartCampaign,
+      solveAndNext:qaSolveAndNext, runCampaign:qaRunCampaign, restartCampaign:qaRestartCampaign, back:qaBackToPreviousPuzzleStart,
       pause:qaPause, resume:qaResume, stop:qaStop, step:qaStep, status:qaStatus,
       setSpeed:qaSetSpeed, seed:qaSeed, variant:qaVariant
     };
     window.TPQA=api;
     // Forgiving aliases for the two shorthand spellings used during design discussion.
     window.TPQR=api; window.TRQA=api;
-    qaLog('test mode ready · R run · P pause/resume · N step · X restart · S stop · [ ] speed');
+    qaLog('test mode ready · R run · P pause/resume · N step · B previous puzzle · X restart · S stop · [ ] speed');
   }
 
   function viewportGestureIntent(clientY, rectTop, rectHeight) {
@@ -8427,8 +8553,13 @@
       const observer = new MutationObserver(() => scheduleMobileLandscapePuzzleFit());
       observer.observe(puzzleBody, {childList:true, subtree:true});
       puzzleBody.__mobileLandscapeFitObserver = observer;
-      window.addEventListener('resize', scheduleMobileLandscapePuzzleFit, {passive:true});
-      window.addEventListener('orientationchange', scheduleMobileLandscapePuzzleFit, {passive:true});
+      const handleMobileLandscapeViewportChange = () => {
+        scheduleMobileLandscapePuzzleFit();
+        scheduleMobileLandscapeGameCenter();
+      };
+      window.addEventListener('resize', handleMobileLandscapeViewportChange, {passive:true});
+      window.addEventListener('orientationchange', handleMobileLandscapeViewportChange, {passive:true});
+      window.visualViewport?.addEventListener?.('resize', handleMobileLandscapeViewportChange, {passive:true});
     }
     installTPQA();
     try { db = await openDb(); } catch (err) { console.warn('[game] IndexedDB unavailable', err); db = null; }
@@ -8470,6 +8601,7 @@
     }
 
     renderLog(); renderCollection(); updateHUD(); bindMobileControls(); bindMiniMapSteering();
+    scheduleMobileLandscapeGameCenter();
     const restored = saved && saved.version === SAVE_VERSION;
     const restoredLevelNo = campaignAdapter.currentLevel()?.ordinal || state.chapter;
     if (campaignAdapter.isLevelComplete() && campaignAdapter.nextLevel?.()) {
