@@ -2405,8 +2405,8 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .sudokuFocus{display:none}
 .puzzleSlots.mobileLandscapeAutoFit{
   overflow:visible!important;
-  transform:translateY(var(--mobile-puzzle-fit-shift-y,0px)) scale(var(--mobile-puzzle-fit-scale,1));
-  transform-origin:top center;
+  transform:translate(var(--mobile-puzzle-fit-shift-x,0px),var(--mobile-puzzle-fit-shift-y,0px)) scale(var(--mobile-puzzle-fit-scale,1));
+  transform-origin:top left;
   will-change:transform;
 }
 
@@ -2492,9 +2492,12 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
     display:grid;grid-template-rows:minmax(0,1fr) auto auto;
   }
   .puzzleCard .puzzleSlots{
+    min-width:0;max-width:100%;box-sizing:border-box;
     min-height:0;height:100%;gap:3px;padding:4px 0 1px;overflow:hidden;
     align-content:flex-start!important;
   }
+  .puzzleCard .puzzleSlots>*{min-width:0;max-width:100%;box-sizing:border-box}
+  .puzzleCard--mechanism .puzzleSlots button{min-width:0;box-sizing:border-box}
   .puzzleCard .puzzleLiveCartoucheWrap[hidden],
   .puzzleCard .puzzleTrayWrap[hidden]{display:none!important}
   .puzzleCard>.puzzleStatus{display:none!important}
@@ -2584,7 +2587,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheCanvas{max-height:31px!important}
 
   /* L4 / code-style and ordering controls. */
-  .jugVessels{gap:12px}.jugVessel{width:62px;height:76px}.jugControls{row-gap:5px;column-gap:9px;padding:0 4px;box-sizing:border-box}.jugAction{min-height:29px;padding:2px 4px;font-size:9px}
+  .jugVessels{gap:12px}.jugVessel{width:62px;height:70px}.jugControls{grid-template-columns:repeat(2,minmax(0,1fr))!important;row-gap:4px;column-gap:10px;width:100%!important;max-width:420px!important;min-width:0;padding:0 3px;box-sizing:border-box}.jugAction{min-width:0!important;max-width:100%;min-height:30px;padding:2px 5px;font-size:9px;line-height:1.05;white-space:normal;overflow-wrap:anywhere}
   .hanoiBoard{height:118px}.hanoiDisk{height:18px}.hanoiDisk .sitelenGlyph{font-size:13px}
   .codeLegend{gap:4px;font-size:8px}.codeLegendGlyph{width:31px;height:31px}.codeLegendGlyph .sitelenGlyph{font-size:20px}
   .codebreakerWrap{grid-template-columns:minmax(0,1fr) 148px!important;gap:6px!important;align-items:start!important;justify-items:stretch!important;width:min(100%,552px)!important}

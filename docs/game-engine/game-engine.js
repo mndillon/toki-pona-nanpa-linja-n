@@ -6413,8 +6413,10 @@
     if (!puzzleSlots) return;
     puzzleSlots.classList.remove('mobileLandscapeAutoFit');
     puzzleSlots.style.removeProperty('--mobile-puzzle-fit-scale');
+    puzzleSlots.style.removeProperty('--mobile-puzzle-fit-shift-x');
     puzzleSlots.style.removeProperty('--mobile-puzzle-fit-shift-y');
     puzzleSlots.removeAttribute('data-mobile-fit-scale');
+    puzzleSlots.removeAttribute('data-mobile-fit-shift-x');
     puzzleSlots.removeAttribute('data-mobile-fit-shift-y');
   }
 
@@ -6480,33 +6482,47 @@
       : Math.min(slotRect.bottom, boundaryTop - 4);
     const safeTopRelative = Math.max(0, safeTop - slotRect.top);
     const safeBottomRelative = Math.max(safeTopRelative + 1, safeBottom - slotRect.top);
-    const availableWidth = Math.max(1, puzzleSlots.clientWidth);
+    const slotWidth = Math.max(1, puzzleSlots.clientWidth);
+    const availableWidth = slotWidth;
     const availableHeight = Math.max(1, safeBottomRelative - safeTopRelative);
     const visibleRequired = visiblePuzzleSurfaceRequiredSize(slotRect);
+    const rawMinX = visibleRequired.minLeft - slotRect.left;
+    const rawMaxX = visibleRequired.maxRight - slotRect.left;
+    // scrollWidth is measured from the slot's own left edge while descendant
+    // rects can protrude on either side. Merge both coordinate systems so an
+    // asymmetric overflow (the old jug-button failure) cannot survive scaling.
+    const minX = Math.min(0, rawMinX);
+    const maxX = Math.max(rawMaxX, puzzleSlots.scrollWidth || 0);
+    const visibleSpanWidth = Math.max(1, maxX - minX);
     const minY = visibleRequired.minTop - slotRect.top;
     const maxY = visibleRequired.maxBottom - slotRect.top;
     const visibleSpanHeight = Math.max(1, maxY - minY);
-    const requiredWidth = Math.max(availableWidth, visibleRequired.width);
+    const requiredWidth = Math.max(visibleSpanWidth, visibleRequired.width);
     const requiredHeight = Math.max(visibleSpanHeight, visibleRequired.height);
     let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
     if (scale < 0.997) scale = Math.max(0.20, scale * 0.97);
 
-    // Always align the first visible puzzle content to the real safe top. This is
-    // what prevents flex/grid centering from putting row 1 underneath a longer
-    // localized description. The whole puzzle surface is transformed together so
-    // pointer hit testing for mirrors, arrows, dials and grids remains correct.
+    // Align vertically below the real localized description and horizontally
+    // inside the real puzzle slot. transform-origin is top-left so the shift is
+    // deterministic even when content overflows only one side of the slot.
+    const scaledWidth = requiredWidth * scale;
+    const shiftX = Math.max(0, (availableWidth - scaledWidth) / 2) - (minX * scale);
     const shiftY = safeTopRelative - (minY * scale);
     const scaleValue = scale.toFixed(4);
-    const shiftValue = `${shiftY.toFixed(2)}px`;
-    if (scale < 0.997 || Math.abs(shiftY) > 0.5) {
+    const shiftXValue = `${shiftX.toFixed(2)}px`;
+    const shiftYValue = `${shiftY.toFixed(2)}px`;
+    if (scale < 0.997 || Math.abs(shiftX) > 0.5 || Math.abs(shiftY) > 0.5) {
       puzzleSlots.style.setProperty('--mobile-puzzle-fit-scale', scaleValue);
-      puzzleSlots.style.setProperty('--mobile-puzzle-fit-shift-y', shiftValue);
+      puzzleSlots.style.setProperty('--mobile-puzzle-fit-shift-x', shiftXValue);
+      puzzleSlots.style.setProperty('--mobile-puzzle-fit-shift-y', shiftYValue);
       puzzleSlots.classList.add('mobileLandscapeAutoFit');
       puzzleSlots.dataset.mobileFitScale = scaleValue;
-      puzzleSlots.dataset.mobileFitShiftY = shiftValue;
+      puzzleSlots.dataset.mobileFitShiftX = shiftXValue;
+      puzzleSlots.dataset.mobileFitShiftY = shiftYValue;
     } else {
       puzzleSlots.dataset.mobileFitScale = '1';
+      puzzleSlots.dataset.mobileFitShiftX = '0px';
       puzzleSlots.dataset.mobileFitShiftY = '0px';
     }
     return scale;
