@@ -1161,7 +1161,8 @@
   // neutral centre and lower movement/turn authority for finer control.
   const MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO = 0.37;
   const MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE = 0.80;
-  const MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE = 0.75;
+  const MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE = 0.50;
+  const MOBILE_LANDSCAPE_JOYSTICK_TURN_MAX = 0.62;
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.25;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
@@ -2955,6 +2956,10 @@
 
     const obj = target.obj;
     if (obj.areaId) syncCampaignArea(obj.areaId);
+    if(QA_MODE && obj.puzzleId && !campaignSolved(obj.puzzleId)){
+      const qaPuzzle=campaignPuzzle(obj.puzzleId);
+      if(qaPuzzle) qaRecordPuzzleCheckpoint(qaPuzzle);
+    }
     switch (obj.interact) {
       case 'campaignPickup': {
         const result = completeCampaignPuzzle(obj.puzzleId, obj.rewardSource || `Recovered at ${currentRoom().name}.`);
@@ -4536,6 +4541,8 @@
 
   function renderCodebreakerPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const variant=getCodebreakerVariant(puzzle); const words=variant.words; const secret=variant.secret;
+    const wrap=document.createElement('div');wrap.className='codebreakerWrap';
+    const stage=document.createElement('div');stage.className='codebreakerStage';
     const legend=document.createElement('div');legend.className='codeLegend';
     const legendTitle=document.createElement('strong');renderExact(legendTitle,'available glyphs');legend.appendChild(legendTitle);
     words.forEach((word)=>{const item=document.createElement('span');item.className='codeLegendGlyph';item.title=word;item.setAttribute('aria-label',word);const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);item.appendChild(glyph);legend.appendChild(item);});
@@ -4546,9 +4553,13 @@
       const max=Math.max(1,Number(payload.maxHistory)||5); if(st.history.length>max) st.history.splice(0,st.history.length-max);
       if(fb.exact===secret.length){st.solved=true;successTone();} else softTone(); renderCampaignPuzzle();
     });
+    const feedbackPanel=document.createElement('div');feedbackPanel.className='codeFeedbackPanel';
     const history=document.createElement('div');history.className='codeHistory';
-    for(const item of st.history){const row=document.createElement('div');row.className='codeHistoryRow';const code=document.createElement('span');code.className='codeHistorySymbols';for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}const fb=document.createElement('span');renderExact(fb,`exact ${item.exact} · misplaced ${item.misplaced}`);row.append(code,fb);history.appendChild(row);}
-    puzzleSlots.append(legend,guess,submit,history);
+    for(const item of st.history){const row=document.createElement('div');row.className='codeHistoryRow';const code=document.createElement('span');code.className='codeHistorySymbols';for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}const fb=document.createElement('span');renderExact(fb,`exact ${item.exact} · misplaced ${item.misplaced}`);row.append(code,fb);history.appendChild(row);}    
+    stage.append(legend,guess,submit);
+    feedbackPanel.append(history);
+    wrap.append(stage,feedbackPanel);
+    puzzleSlots.append(wrap);
     setMechanismStatus(puzzle,st.solved?`The ${secret.length}-glyph code is confirmed. Press Try answer to confirm the vault.`:st.history.length?'Use exact/misplaced feedback to refine the permutation.':`Tap each of the ${secret.length} positions to choose a glyph, then test the code.`);
   }
 
@@ -7363,6 +7374,40 @@
     return JSON.parse(JSON.stringify(state));
   }
 
+  function qaReplayableCheckpointSnapshot(entry, campaign=window.TOKI_PONA_CAMPAIGN) {
+    const snapshot=JSON.parse(JSON.stringify(entry?.snapshot||{}));
+    if(!snapshot?.campaign || !entry?.puzzleId || !campaign) return snapshot;
+    const level=(campaign.levels||[]).find(item=>(item.puzzles||[]).some(p=>p.id===entry.puzzleId));
+    const puzzle=level?.puzzles?.find(p=>p.id===entry.puzzleId)||null;
+    if(!level || !puzzle) return snapshot;
+    const levelState=snapshot.campaign.levelStates?.[level.id];
+    if(levelState){
+      levelState.solvedPuzzles=(levelState.solvedPuzzles||[]).filter(id=>id!==entry.puzzleId);
+      levelState.completed=false;
+    }
+    // CampaignRuntime.applyAlreadyOwned() is correct for normal saves, but QA B is
+    // explicitly asking to replay this puzzle. If its reward glyphs are still owned,
+    // the runtime can immediately auto-solve the checkpoint again. Remove only this
+    // puzzle's reward glyphs from the replay branch; completing it manually/through QA
+    // awards them again through the normal completion path.
+    const replayRewards=new Set(puzzle.rewards?.glyphs||[]);
+    if(replayRewards.size){
+      const earnedElsewhere=new Set(campaign.baselineGlyphs||[]);
+      for(const otherLevel of campaign.levels||[]){
+        const solved=new Set(snapshot.campaign.levelStates?.[otherLevel.id]?.solvedPuzzles||[]);
+        for(const otherPuzzle of otherLevel.puzzles||[]){
+          if(otherPuzzle.id===entry.puzzleId || !solved.has(otherPuzzle.id)) continue;
+          for(const g of otherPuzzle.rewards?.glyphs||[]) earnedElsewhere.add(g);
+        }
+      }
+      const replayOnlyRewards=new Set([...replayRewards].filter(g=>!earnedElsewhere.has(g)));
+      snapshot.campaign.globalGlyphs=(snapshot.campaign.globalGlyphs||[]).filter(g=>!replayOnlyRewards.has(g));
+      if(snapshot.collected) for(const g of replayOnlyRewards) delete snapshot.collected[g];
+    }
+    snapshot.levelCompleted=false;
+    return snapshot;
+  }
+
   function qaRecordPuzzleCheckpoint(puzzle) {
     if(!QA_MODE || qaState.restoringCheckpoint || !puzzle || campaignSolved(puzzle.id)) return null;
     const current=qaState.puzzleHistory[qaState.historyCursor] || null;
@@ -7401,7 +7446,7 @@
     qaState.restoringCheckpoint=true;
     try{
       qaCloseTransientOverlaysForRestore();
-      state=normalizeSavedState(JSON.parse(JSON.stringify(entry.snapshot)));
+      state=normalizeSavedState(qaReplayableCheckpointSnapshot(entry));
       campaignAdapter=window.TokiPonaCampaignEngineAdapter.createAdapter({campaign:window.TOKI_PONA_CAMPAIGN,persisted:state.campaign||null});
       syncWorldFromCampaign();
       restoreDoorState();
@@ -7455,6 +7500,12 @@
     return true;
   }
 
+  function qaArmPausedForwardRunner() {
+    if(!QA_MODE || qaState.running || !campaignAdapter) return false;
+    qaRunCampaign({speed:qaState.speed,includeOptional:qaState.includeOptional,startPaused:true}).catch(err=>qaFail(err));
+    return true;
+  }
+
   async function qaBackToPreviousPuzzleStart() {
     if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
     await qaStopForwardRunnerForBacktrack();
@@ -7465,7 +7516,9 @@
     if(currentId && qaState.puzzleHistory[target]?.puzzleId===currentId) target-=1;
     if(target<0){qaLog('already at first puzzle checkpoint');return false;}
     qaState.paused=true; qaState.stepBudget=0; qaUpdateBadge();
-    return qaRestorePuzzleCheckpoint(target);
+    const restored=await qaRestorePuzzleCheckpoint(target);
+    if(restored) qaArmPausedForwardRunner();
+    return restored;
   }
 
   async function qaBoundary() {
@@ -8066,7 +8119,8 @@
     if(qaState.running){if(qaState.paused)qaResume();return qaState.runPromise;}
     if(options.reset){qaState.puzzleHistory=[];qaState.historyCursor=-1;await resetGame();await qaSleep(400);}
     if(options.speed!=null)qaSetSpeed(options.speed);
-    qaState.includeOptional=options.includeOptional!==false;qaState.stopped=false;qaState.paused=false;qaState.stepBudget=0;qaState.running=true;qaUpdateBadge();qaLog('campaign playback started');
+    const startPaused=Boolean(options.startPaused);
+    qaState.includeOptional=options.includeOptional!==false;qaState.stopped=false;qaState.paused=startPaused;qaState.stepBudget=0;qaState.running=true;qaUpdateBadge();qaLog(startPaused?'campaign playback armed and paused':'campaign playback started');
     qaState.runPromise=(async()=>{
       try{
         let guard=0;
@@ -8313,7 +8367,8 @@
     return {
       deadRatio: landscape ? MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO : MOBILE_JOYSTICK_DEAD_RATIO,
       moveScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE : 1,
-      turnScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE : 1
+      turnScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE : 1,
+      turnMax: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_MAX : MOBILE_JOYSTICK_TURN_MAX
     };
   }
 
@@ -8328,7 +8383,8 @@
     const tuning = mobileJoystickTuning();
     const deadRadius = outerRadius * tuning.deadRatio;
     const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius);
-    setMobileJoystickIntent(command.intent, command.moveStrength * tuning.moveScale, command.turnStrength * tuning.turnScale);
+    const tunedTurnStrength = Math.min(tuning.turnMax, command.turnStrength * tuning.turnScale);
+    setMobileJoystickIntent(command.intent, command.moveStrength * tuning.moveScale, tunedTurnStrength);
     mobileMovePad.dataset.sector = command.intent;
     mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, command.strength.move).toFixed(3));
     if (mobileJoystickThumb) {
@@ -8613,7 +8669,10 @@
   puzzleCloseBtn.addEventListener('click', closeCampaignPuzzleHost);
   window.addEventListener('toki-campaign-open-puzzle', (event) => {
     const puzzle = event.detail && event.detail.puzzle;
-    if (puzzle) openCampaignPuzzleHost(puzzle);
+    if (puzzle) {
+      if(QA_MODE) qaRecordPuzzleCheckpoint(puzzle);
+      openCampaignPuzzleHost(puzzle);
+    }
   });
   levelIntroStartBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); startLevelFromIntro(); });
   levelIntroOverlay?.addEventListener('pointerup', (e) => { if (e.target === levelIntroStartBtn) return; e.preventDefault(); startLevelFromIntro(); }, {passive:false});
