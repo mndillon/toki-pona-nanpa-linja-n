@@ -4661,6 +4661,7 @@
     function renderBankToken(i){
       const tr=travellers[i];
       const token=document.createElement('div'); token.className='riverToken';
+      if(['pan','waso','soweli'].includes(String(tr.glyph||''))) token.classList.add('riverToken--compactPassenger');
       token.innerHTML=`<span class="sitelenGlyph">${glyphChar(tr.glyph||'ijo')}</span><small>${tr.label||`passenger ${i+1}`}</small>`;
       return token;
     }

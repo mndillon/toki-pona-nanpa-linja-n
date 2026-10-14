@@ -1319,6 +1319,7 @@ kbd {
   .puzzleCard[data-puzzle-type="river-crossing"] .riverWave{font-size:18px}
   .puzzleCard[data-puzzle-type="river-crossing"] .riverToken{gap:1px;padding:1px}
   .puzzleCard[data-puzzle-type="river-crossing"] .riverToken .sitelenGlyph{font-size:21px}
+  .puzzleCard[data-puzzle-type="river-crossing"] .riverToken--compactPassenger .sitelenGlyph{font-size:16px}
   .puzzleCard[data-puzzle-type="river-crossing"] .riverToken small{font-size:7px}
   .puzzleCard[data-puzzle-type="river-crossing"] .riverRaft{gap:0;padding:1px 2px;border-width:1px;border-radius:6px 6px 14px 14px}
   .puzzleCard[data-puzzle-type="river-crossing"] .riverRaftGlyph{font-size:19px}
