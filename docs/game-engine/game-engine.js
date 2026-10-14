@@ -2461,6 +2461,7 @@
   }
 
   function interactionPrefix() { return isCoarsePointer() ? 'USE' : 'E'; }
+  function interactionPrefixLocalized() { return isCoarsePointer() ? 'o luka e [[kepeken]]' : 'o luka e [[E]]'; }
 
   function doorRequirementStatus(door) {
     const world = campaignWorld();
@@ -2680,7 +2681,7 @@
   function interactionTextLocalized(target) {
     if (!isTpLanguage()) return interactionText(target);
     if (!target) return '';
-    const p = `[[${interactionPrefix()}]]`;
+    const p = interactionPrefixLocalized();
     if (target.kind === 'door') {
       const status = doorRequirementStatus(target.door);
       return status.ok ? `${p} · o open e lupa` : `${p} · lupa li pini · o pini e musi open`;
@@ -4441,7 +4442,11 @@
   function renderBalancePuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const weights=payload.weights||[]; const sum=balanceSum(puzzle);
     const target=document.createElement('div'); target.className='balanceTarget';
-    const label=document.createElement('strong'); renderExact(label,'target mass');
+    const label=document.createElement('strong');
+    if(isTpLanguage()){
+      label.className='tpSplitWords';
+      for(const word of ['suli','wile']){const part=document.createElement('span');renderLocalized(part,word);label.appendChild(part);}
+    }else renderExact(label,'target mass');
     const canvas=document.createElement('canvas'); canvas.width=220; canvas.height=68; canvas.className='balanceTargetCanvas';
     target.append(label,canvas); puzzleSlots.appendChild(target); renderNanpaSourceToCanvas(String(payload.target),canvas,36);
     const tray=document.createElement('div'); tray.className='balanceWeights';
@@ -8093,10 +8098,31 @@
     if(levelIntroOverlay&&!levelIntroOverlay.hidden){await qaSleep(300);levelIntroShownAt=0;startLevelFromIntro();await qaSleep(550);}
   }
 
+  async function qaSolveFocusedPuzzle(puzzle) {
+    if(!puzzle || campaignSolved(puzzle.id)){qaState.focusPuzzleId=null;return false;}
+    qaRecordPuzzleCheckpoint(puzzle);
+    if(qaIsPhysicalPuzzle(puzzle)){
+      const ok=await qaSolvePhysicalPuzzle(puzzle);
+      if(!ok) throw new Error(`Physical QA solver did not complete ${puzzle.id}`);
+      qaState.focusPuzzleId=null;
+      return true;
+    }
+    // A tester can pause QA, Leave a normal popup puzzle, then press R. In that
+    // state activeCampaignPuzzle is null but focusPuzzleId still names the popup.
+    // Reacquire/reopen it through its real world object before using the normal
+    // popup solver; never send a non-physical puzzle to qaSolvePhysicalPuzzle().
+    await qaMoveToPuzzle(puzzle);
+    if(activeCampaignPuzzle?.id!==puzzle.id) throw new Error(`Could not reopen focused puzzle ${puzzle.id}`);
+    return qaSolveOpenPuzzle();
+  }
+
   async function qaSolveCurrent() {
     await qaEnsureIntroDismissed();
     if(activeCampaignPuzzle){qaRecordPuzzleCheckpoint(activeCampaignPuzzle);return qaSolveOpenPuzzle();}
-    if(qaState.focusPuzzleId){const p=campaignPuzzle(qaState.focusPuzzleId);if(p&&!campaignSolved(p.id)){qaRecordPuzzleCheckpoint(p);const ok=await qaSolvePhysicalPuzzle(p);if(!ok)throw new Error(`Physical QA solver did not complete ${p.id}`);qaState.focusPuzzleId=null;return true;}qaState.focusPuzzleId=null;}
+    if(qaState.focusPuzzleId){
+      const p=campaignPuzzle(qaState.focusPuzzleId);
+      return qaSolveFocusedPuzzle(p);
+    }
     return false;
   }
 
