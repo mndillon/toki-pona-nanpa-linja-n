@@ -7506,14 +7506,30 @@
     return true;
   }
 
+  function qaPreviousDistinctPuzzleIndex(history,cursor,currentPuzzleId=null) {
+    const entries=Array.isArray(history)?history:[];
+    if(!entries.length) return -1;
+    let at=Math.min(Number.isInteger(cursor)?cursor:entries.length-1,entries.length-1);
+    if(at<0) at=entries.length-1;
+    const currentId=currentPuzzleId || entries[at]?.puzzleId || null;
+    let target=at;
+    // If the cursor itself represents the puzzle currently being tested (including
+    // the common case after Leave, where activeCampaignPuzzle is already null),
+    // step off that puzzle before looking for the previous one.
+    if(currentId && entries[target]?.puzzleId===currentId) target-=1;
+    // Manual open/leave/re-open activity can create more than one checkpoint for
+    // the same puzzle. B means previous PUZZLE, so skip the whole same-ID run.
+    while(target>=0 && currentId && entries[target]?.puzzleId===currentId) target-=1;
+    return target;
+  }
+
   async function qaBackToPreviousPuzzleStart() {
     if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
     await qaStopForwardRunnerForBacktrack();
     if(!qaState.puzzleHistory.length){qaLog('no earlier puzzle checkpoint');return false;}
-    const currentId=activeCampaignPuzzle?.id || qaState.focusPuzzleId || null;
-    let target=Math.min(qaState.historyCursor,qaState.puzzleHistory.length-1);
-    if(target<0) target=qaState.puzzleHistory.length-1;
-    if(currentId && qaState.puzzleHistory[target]?.puzzleId===currentId) target-=1;
+    const cursor=Math.min(qaState.historyCursor,qaState.puzzleHistory.length-1);
+    const currentId=activeCampaignPuzzle?.id || qaState.focusPuzzleId || qaState.puzzleHistory[cursor]?.puzzleId || null;
+    const target=qaPreviousDistinctPuzzleIndex(qaState.puzzleHistory,cursor,currentId);
     if(target<0){qaLog('already at first puzzle checkpoint');return false;}
     qaState.paused=true; qaState.stepBudget=0; qaUpdateBadge();
     const restored=await qaRestorePuzzleCheckpoint(target);

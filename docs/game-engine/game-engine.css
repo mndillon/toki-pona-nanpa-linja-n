@@ -2582,7 +2582,13 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .codeSymbol{width:42px;height:42px;min-height:42px}.codeSymbol .sitelenGlyph{font-size:25px}.codeSubmit{min-height:29px;padding:3px 10px;font-size:9px}
   .codeHistory{width:100%;grid-template-columns:1fr!important;gap:3px!important}.codeHistoryRow{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:1px!important;padding:3px 4px!important;font-size:8px!important}.codeHistorySymbols{gap:2px!important;flex-wrap:wrap}.codeHistorySymbols .sitelenGlyph{font-size:13px}
   .equivalenceGrid{gap:2px}.equivalenceCanvas{max-height:29px}
-  .scheduleList{gap:2px}.scheduleItem{grid-template-columns:18px minmax(0,1fr) 38px;gap:2px;padding:1px 2px}.scheduleRank{font-size:12px}.scheduleControls{gap:2px}.scheduleControls button{width:18px;height:23px;min-width:18px;min-height:23px;font-size:14px}
+  .scheduleList{gap:4px!important;width:min(100%,650px)!important;align-content:center!important}
+  .scheduleItem{grid-template-columns:24px minmax(0,1fr) 87px!important;gap:5px!important;padding:3px 5px!important;min-height:45px!important}
+  .scheduleRank{font-size:16px!important}
+  .scheduleCartouches{grid-template-columns:minmax(0,1.45fr) minmax(0,.82fr)!important;gap:8px!important}
+  .scheduleCanvas{width:100%!important;max-width:100%!important;min-height:30px!important;max-height:40px!important;object-fit:contain}
+  .scheduleControls{grid-template-columns:repeat(2,40px)!important;gap:7px!important;justify-content:end!important}
+  .scheduleControls button{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;padding:0!important;font-size:21px!important;line-height:1!important}
 
   /* L5 spatial/pattern family, including the shape/pattern puzzle. */
   .puzzleCard[data-puzzle-type="river-crossing"] .riverBoard{grid-template-rows:repeat(4,28px)!important}
