@@ -6408,7 +6408,9 @@
     if (!puzzleSlots) return;
     puzzleSlots.classList.remove('mobileLandscapeAutoFit');
     puzzleSlots.style.removeProperty('--mobile-puzzle-fit-scale');
+    puzzleSlots.style.removeProperty('--mobile-puzzle-fit-shift-y');
     puzzleSlots.removeAttribute('data-mobile-fit-scale');
+    puzzleSlots.removeAttribute('data-mobile-fit-shift-y');
   }
 
   function visibleReservedPuzzleBoundaryTop() {
@@ -6426,8 +6428,8 @@
   }
 
   function visiblePuzzleSurfaceRequiredSize(slotRect) {
-    let minLeft = slotRect.left, maxRight = slotRect.right;
-    let minTop = slotRect.top, maxBottom = slotRect.bottom;
+    let minLeft = Infinity, maxRight = -Infinity;
+    let minTop = Infinity, maxBottom = -Infinity;
     for (const el of puzzleSlots?.querySelectorAll?.('*') || []) {
       const style = window.getComputedStyle?.(el);
       if (style && (style.display === 'none' || style.visibility === 'hidden')) continue;
@@ -6437,10 +6439,21 @@
       minLeft = Math.min(minLeft, rect.left); maxRight = Math.max(maxRight, rect.right);
       minTop = Math.min(minTop, rect.top); maxBottom = Math.max(maxBottom, rect.bottom);
     }
+    if (!Number.isFinite(minLeft)) { minLeft=slotRect.left; maxRight=slotRect.right; minTop=slotRect.top; maxBottom=slotRect.bottom; }
     return {
+      minLeft,maxRight,minTop,maxBottom,
       width:Math.max(puzzleSlots.scrollWidth || 0, maxRight - minLeft),
       height:Math.max(puzzleSlots.scrollHeight || 0, maxBottom - minTop)
     };
+  }
+
+  function mobileLandscapePuzzleSafeTop(slotRect) {
+    const rect = puzzleInstructions?.getBoundingClientRect?.();
+    const style = puzzleInstructions ? window.getComputedStyle?.(puzzleInstructions) : null;
+    if (!rect || (style && (style.display === 'none' || style.visibility === 'hidden'))) return slotRect.top;
+    // The localized description owns its real rendered height. Toki Pona can wrap
+    // onto more lines than English, so never use a fixed text-height allowance.
+    return Math.max(slotRect.top, rect.bottom + 4);
   }
 
   function applyMobileLandscapePuzzleFit() {
@@ -6456,28 +6469,40 @@
     clearMobileLandscapePuzzleFit();
     const slotRect = puzzleSlots.getBoundingClientRect();
     const boundaryTop = visibleReservedPuzzleBoundaryTop();
-    const geometricHeight = boundaryTop == null
-      ? puzzleSlots.clientHeight
-      : Math.max(1, Math.floor(boundaryTop - slotRect.top - 4));
+    const safeTop = mobileLandscapePuzzleSafeTop(slotRect);
+    const safeBottom = boundaryTop == null
+      ? slotRect.bottom
+      : Math.min(slotRect.bottom, boundaryTop - 4);
+    const safeTopRelative = Math.max(0, safeTop - slotRect.top);
+    const safeBottomRelative = Math.max(safeTopRelative + 1, safeBottom - slotRect.top);
     const availableWidth = Math.max(1, puzzleSlots.clientWidth);
-    const availableHeight = Math.max(1, Math.min(puzzleSlots.clientHeight || geometricHeight, geometricHeight));
+    const availableHeight = Math.max(1, safeBottomRelative - safeTopRelative);
     const visibleRequired = visiblePuzzleSurfaceRequiredSize(slotRect);
+    const minY = visibleRequired.minTop - slotRect.top;
+    const maxY = visibleRequired.maxBottom - slotRect.top;
+    const visibleSpanHeight = Math.max(1, maxY - minY);
     const requiredWidth = Math.max(availableWidth, visibleRequired.width);
-    const requiredHeight = Math.max(availableHeight, visibleRequired.height);
+    const requiredHeight = Math.max(visibleSpanHeight, visibleRequired.height);
     let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
+    if (scale < 0.997) scale = Math.max(0.20, scale * 0.97);
 
-    // Leave a little extra clearance above the fixed input/action docks. Scaling
-    // puzzleSlots preserves pointer hit testing for mirrors, arrows, dials and grids
-    // while preventing any transformed puzzle UI from sitting behind those docks.
-    if (scale < 0.997) {
-      scale = Math.max(0.20, scale * 0.97);
-      const value = scale.toFixed(4);
-      puzzleSlots.style.setProperty('--mobile-puzzle-fit-scale', value);
+    // Always align the first visible puzzle content to the real safe top. This is
+    // what prevents flex/grid centering from putting row 1 underneath a longer
+    // localized description. The whole puzzle surface is transformed together so
+    // pointer hit testing for mirrors, arrows, dials and grids remains correct.
+    const shiftY = safeTopRelative - (minY * scale);
+    const scaleValue = scale.toFixed(4);
+    const shiftValue = `${shiftY.toFixed(2)}px`;
+    if (scale < 0.997 || Math.abs(shiftY) > 0.5) {
+      puzzleSlots.style.setProperty('--mobile-puzzle-fit-scale', scaleValue);
+      puzzleSlots.style.setProperty('--mobile-puzzle-fit-shift-y', shiftValue);
       puzzleSlots.classList.add('mobileLandscapeAutoFit');
-      puzzleSlots.dataset.mobileFitScale = value;
+      puzzleSlots.dataset.mobileFitScale = scaleValue;
+      puzzleSlots.dataset.mobileFitShiftY = shiftValue;
     } else {
       puzzleSlots.dataset.mobileFitScale = '1';
+      puzzleSlots.dataset.mobileFitShiftY = '0px';
     }
     return scale;
   }
@@ -8721,6 +8746,16 @@
       const observer = new MutationObserver(() => scheduleMobileLandscapePuzzleFit());
       observer.observe(puzzleBody, {childList:true, subtree:true});
       puzzleBody.__mobileLandscapeFitObserver = observer;
+      if (puzzleInstructions && !puzzleInstructions.__mobileLandscapeFitObserver) {
+        const instructionObserver = new MutationObserver(() => scheduleMobileLandscapePuzzleFit());
+        instructionObserver.observe(puzzleInstructions, {childList:true, subtree:true, characterData:true});
+        puzzleInstructions.__mobileLandscapeFitObserver = instructionObserver;
+      }
+      if (window.ResizeObserver && puzzleInstructions && !puzzleInstructions.__mobileLandscapeResizeObserver) {
+        const instructionResizeObserver = new ResizeObserver(() => scheduleMobileLandscapePuzzleFit());
+        instructionResizeObserver.observe(puzzleInstructions);
+        puzzleInstructions.__mobileLandscapeResizeObserver = instructionResizeObserver;
+      }
       const handleMobileLandscapeViewportChange = () => {
         scheduleMobileLandscapePuzzleFit();
         scheduleMobileLandscapeGameCenter();

@@ -2402,7 +2402,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .sudokuFocus{display:none}
 .puzzleSlots.mobileLandscapeAutoFit{
   overflow:visible!important;
-  transform:scale(var(--mobile-puzzle-fit-scale,1));
+  transform:translateY(var(--mobile-puzzle-fit-shift-y,0px)) scale(var(--mobile-puzzle-fit-scale,1));
   transform-origin:top center;
   will-change:transform;
 }
@@ -2477,8 +2477,10 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .puzzleCard>.overlayEyebrow{display:none!important}
   .puzzleCard>h2{margin:0!important;font-size:14px!important;line-height:1.03!important}
   .puzzleCard>#puzzleInstructions{
-    margin:0!important;max-height:2.18em;overflow:hidden;
-    font-size:9.5px!important;line-height:1.09!important;
+    margin:0!important;
+    max-height:none!important;overflow:visible!important;
+    white-space:normal!important;text-overflow:clip!important;
+    font-size:9px!important;line-height:1.06!important;
   }
   /* The puzzle display, optional live cartouche and glyph picker are separate rows.
      Only the first row is flexible. The picker and action buttons are reserved UI. */
@@ -2486,7 +2488,10 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
     min-height:0;overflow:hidden;align-content:stretch;gap:2px;
     display:grid;grid-template-rows:minmax(0,1fr) auto auto;
   }
-  .puzzleCard .puzzleSlots{min-height:0;height:100%;gap:3px;padding:1px 0;overflow:hidden}
+  .puzzleCard .puzzleSlots{
+    min-height:0;height:100%;gap:3px;padding:4px 0 1px;overflow:hidden;
+    align-content:flex-start!important;
+  }
   .puzzleCard .puzzleLiveCartoucheWrap[hidden],
   .puzzleCard .puzzleTrayWrap[hidden]{display:none!important}
   .puzzleCard>.puzzleStatus{display:none!important}
@@ -2519,7 +2524,9 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 
   /* Generic mechanism controls: arrows/toggles remain visible, then the runtime
      fit guard handles any residual size created by localized text or save state. */
-  .puzzleCard--mechanism .puzzleSlots{height:100%;justify-content:center;align-content:center;gap:3px}
+  .puzzleCard--mechanism .puzzleSlots{
+    height:100%;justify-content:flex-start!important;align-content:flex-start!important;gap:3px;
+  }
   .puzzleCard--mechanism button{touch-action:manipulation}
   .mechanismClues{gap:2px}.mechanismClue{padding:2px 3px;font-size:8px;line-height:1.05}
   .dialBank{gap:8px}.dialUnit{grid-template-rows:auto 28px 48px 28px;gap:2px}.dialAdjust{width:42px;min-width:42px;height:28px;min-height:28px}.dialValue{width:48px;height:48px}.dialValue .sitelenGlyph{font-size:27px}
@@ -2535,7 +2542,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
     display:grid!important;
     grid-template-columns:minmax(132px,.72fr) minmax(190px,1.28fr)!important;
     grid-template-rows:minmax(0,1fr)!important;
-    gap:7px!important;align-items:center!important;justify-items:center!important;
+    gap:7px!important;align-items:start!important;justify-items:center!important;
     width:100%;height:100%;
   }
   .puzzleCard.puzzleCard--map .coordinatePuzzleClue{
@@ -2554,7 +2561,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   /* Multi-value numeric/cartouche entry: three derived answers must consume the
      puzzle surface horizontally, never by stacking clue text above every row. */
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroups{
-    height:100%;align-content:center;gap:2px!important;
+    height:100%;align-content:start!important;gap:2px!important;
   }
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroup{
     grid-template-columns:minmax(104px,.62fr) minmax(0,2.38fr)!important;
@@ -2583,7 +2590,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .codeSymbol{width:42px;height:42px;min-height:42px}.codeSymbol .sitelenGlyph{font-size:25px}.codeSubmit{min-height:29px;padding:3px 10px;font-size:9px}
   .codeHistory{width:100%;grid-template-columns:1fr!important;gap:3px!important}.codeHistoryRow{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:1px!important;padding:3px 4px!important;font-size:8px!important}.codeHistorySymbols{gap:2px!important;flex-wrap:wrap}.codeHistorySymbols .sitelenGlyph{font-size:13px}
   .equivalenceGrid{gap:2px}.equivalenceCanvas{max-height:29px}
-  .scheduleList{gap:4px!important;width:min(100%,650px)!important;align-content:center!important}
+  .scheduleList{gap:4px!important;width:min(100%,650px)!important;align-content:start!important}
   .scheduleItem{grid-template-columns:24px minmax(0,1fr) 87px!important;gap:5px!important;padding:3px 5px!important;min-height:45px!important}
   .scheduleRank{font-size:16px!important}
   .scheduleCartouches{grid-template-columns:minmax(0,1.45fr) minmax(0,.82fr)!important;gap:8px!important}
@@ -2616,15 +2623,10 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .spectrumWrap{grid-template-columns:minmax(210px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.spectrumClues{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.spectrumClue{padding:2px 3px;font-size:7px;line-height:1.05}.spectrumFilters{gap:3px}.spectrumFilter{min-height:47px;padding:2px 1px;font-size:8px;gap:2px}.spectrumSwatch{width:24px;height:27px}
   .powerBalanceWrap{gap:3px}.powerMeters{gap:3px}.powerMeter{padding:2px 3px}.powerMeterCanvas{max-height:30px}.powerBreakers{gap:3px}.powerBreaker{min-height:46px;padding:2px}.powerBreakerCanvas{max-height:30px}
 
-  /* Dense square boards must start below the instruction row, never be vertically
-     centered into negative top overflow. This guarantees row 1 remains visible
-     for both mirror arrays and the final Sudoku before any auto-fit scaling. */
-  .puzzleCard[data-puzzle-type="dual-mirror"] .puzzleSlots,
-  .puzzleCard[data-puzzle-type="sudoku"] .puzzleSlots{
-    justify-content:flex-start!important;
-    align-content:flex-start!important;
-    padding-top:4px!important;
-  }
+  /* Global first-row contract: every puzzle surface starts below the localized
+     instructions. No mechanism is allowed to center oversized content upward into
+     the description. The runtime guard below also measures the real instruction
+     bottom, so longer Toki Pona copy receives the same clearance as English. */
   .puzzleCard[data-puzzle-type="dual-mirror"] .dualMirrorWrap,
   .puzzleCard[data-puzzle-type="sudoku"] .sudokuWrap{
     align-self:flex-start!important;
@@ -2654,8 +2656,8 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   /* Sudoku: board left, enlarged active cell + notes/keypad right. The 9x9 board
      may stay compact because the selected square is promoted above the controls. */
   .puzzleCard[data-puzzle-type="sudoku"]{padding:4px 6px!important}
-  .puzzleCard[data-puzzle-type="sudoku"]>#puzzleInstructions{max-height:1.15em!important;white-space:nowrap;text-overflow:ellipsis}
-  .sudokuWrap{grid-template-columns:auto minmax(150px,190px)!important;grid-template-rows:1fr!important;gap:6px!important;width:min(100%,520px);align-items:center}
+  .puzzleCard[data-puzzle-type="sudoku"]>#puzzleInstructions{max-height:none!important;white-space:normal!important;text-overflow:clip!important}
+  .sudokuWrap{grid-template-columns:auto minmax(150px,190px)!important;grid-template-rows:1fr!important;gap:6px!important;width:min(100%,520px);align-items:start}
   .sudokuLead{display:none!important}
   .sudokuGrid{grid-column:1!important;width:min(202px,62dvh)!important}
   .sudokuGlyph{font-size:clamp(12px,3.8dvh,20px)}.sudokuLatin{font-size:5px}.sudokuNotes small{font-size:4.5px}
