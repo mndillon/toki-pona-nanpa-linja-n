@@ -641,6 +641,24 @@ kbd {
 .puzzleAnswerGroupText { min-width: 0; display: grid; gap: 2px; }
 .puzzleAnswerGroupTitle { font-size: 12px; line-height: 1.15; }
 .puzzleAnswerGroupClue { color: var(--muted); font-size: 10.5px; line-height: 1.2; }
+.puzzleAnswerGroupEntry { min-width:0; display:grid; grid-template-rows:auto 13px; gap:2px; align-items:start; }
+.puzzleNumericProperName,
+.puzzleAnswerGroupProperName {
+  min-width:0;
+  color:rgba(69,59,49,.66);
+  font:600 10px/1.05 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  letter-spacing:.015em;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  visibility:hidden;
+  opacity:0;
+}
+.puzzleNumericProperName.isVisible,
+.puzzleAnswerGroupProperName.isVisible { visibility:visible; opacity:1; }
+.puzzleNumericProperName { flex:1 0 100%; width:100%; min-height:11px; margin-top:1px; }
+.puzzleAnswerGroupProperName { min-height:11px; }
 .puzzleAnswerGroupSlots {
   min-width: 0;
   display: grid;
@@ -682,6 +700,10 @@ kbd {
   font-size: 12px;
   line-height: 1.25;
 }
+/* Sitelen-pona prose at status-caption sizes needs explicit inter-word air.
+   The font's native space is visually too narrow here, making whole sentences
+   appear fused even though the source contains ordinary spaces. */
+.puzzleStatus.tpProse { word-spacing: .24em; }
 .puzzleCard.puzzleCard--keys > .overlayButtonRow {
   flex-wrap: nowrap;
   justify-content: stretch;
@@ -906,6 +928,8 @@ kbd {
   .puzzleAnswerGroupText { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
   .puzzleAnswerGroupTitle { font-size: 10.5px; }
   .puzzleAnswerGroupClue { font-size: 9.5px; }
+  .puzzleAnswerGroupEntry { grid-template-rows:auto 11px; gap:1px; }
+  .puzzleAnswerGroupProperName,.puzzleNumericProperName{font-size:8.5px;line-height:1;min-height:9px}
   .puzzleAnswerGroupSlots { gap: 3px; }
   .puzzleAnswerGroupSlots .puzzleSlot { height: 44px; min-height: 44px; padding: 1px; }
   .puzzleAnswerGroupSlots .puzzleSlotGlyph { min-height: 25px; font-size: 25px; }
@@ -981,6 +1005,8 @@ kbd {
   .puzzleAnswerGroup { gap: 1px; padding: 2px 4px; }
   .puzzleAnswerGroupTitle { font-size: 9px; }
   .puzzleAnswerGroupClue { font-size: 8px; line-height: 1.05; }
+  .puzzleAnswerGroupEntry { grid-template-rows:auto 9px; gap:1px; }
+  .puzzleAnswerGroupProperName,.puzzleNumericProperName{font-size:7.5px;line-height:1;min-height:8px}
   .puzzleAnswerGroupSlots { gap: 2px; }
   .puzzleAnswerGroupSlots .puzzleSlot { height: 34px; min-height: 34px; border-width: 1px; }
   .puzzleAnswerGroupSlots .puzzleSlotGlyph { min-height: 20px; font-size: 21px; }
@@ -2267,7 +2293,13 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   pointer-events: auto;
 }
 .qaPanel button { pointer-events: auto; }
+/* Ignore hides QA controls on every input class. Touch keeps its legacy class too,
+   but laptop/fine-pointer concealment must not depend on (pointer: coarse). */
+.qaPanel--concealed,
 .qaPanel--touchConcealed { display: none !important; }
+/* Normal HUD is intentionally click-through. In ?qa=1 only the level badge becomes
+   a desktop reveal target; the JS installer adds this class only in QA mode. */
+#hudLevel.qaLevelRevealTarget { pointer-events: auto; cursor: pointer; user-select: none; }
 .qaStatusText {
   min-width: 0;
   overflow: hidden;
@@ -2299,9 +2331,11 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   background: transparent;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
 }
 @media (pointer:coarse) {
   .qaMiniButton { min-width: 40px; min-height: 40px; }
+  .qaHotspot { pointer-events: auto; }
 }
 /* On short landscape phones, the revealed QA controls form a single full-width
    row inside the game display. All P/R/N/B/S, speed/dismiss and X buttons remain
@@ -2578,10 +2612,13 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   }
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroupTitle{font-size:8px!important;line-height:1!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroupClue{font-size:7px!important;line-height:1!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupEntry{grid-template-rows:auto 8px!important;gap:1px!important;min-width:0}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupProperName{font-size:7px!important;line-height:1!important;min-height:7px!important}
+  .puzzleCard.puzzleCard--keys .puzzleNumericProperName{font-size:7px!important;line-height:1!important;min-height:7px!important;margin-top:0!important}
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots{gap:2px!important}
-  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot{height:28px!important;min-height:28px!important;padding:0 1px!important;border-width:1px!important}
-  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlotGlyph{min-height:16px!important;font-size:16px!important}
-  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph{min-height:15px!important;font-size:13px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot{height:24px!important;min-height:24px!important;padding:0 1px!important;border-width:1px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlotGlyph{min-height:14px!important;font-size:15px!important}
+  .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlot.empty .puzzleSlotGlyph{min-height:13px!important;font-size:12px!important}
   .puzzleCard.puzzleCard--keys .puzzleAnswerGroupSlots .puzzleSlotLabel{font-size:5px!important;line-height:1!important}
   .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheWrap{padding:2px 4px 1px!important}
   .puzzleCard.puzzleCard--keys .puzzleLiveCartoucheCanvas{max-height:31px!important}

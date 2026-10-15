@@ -4343,7 +4343,7 @@
       const source = NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type) ? (neutralText || '') : (text || '');
       const translated = source ? exactText(source) : '';
       const tp = translated && translated !== source ? translated : (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)
-        ? 'o pali e pana sona ale. ni la o luka e [[o alasa]]. ilo li toki e pona taso lon tenpo pana.'
+        ? 'o pali e pana sona ale. pini la o luka e [[o alasa]]. ilo li toki e pona lon tenpo pana taso.'
         : 'o ante e ilo. sina pilin e ni: ona li pona la o luka e [[o alasa]].');
       renderLocalized(puzzleStatus, tp);
     } else if (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)) {
@@ -6307,6 +6307,62 @@
       : 'Any country name that matches its clue, length and crossings is valid. Press Try answer when ready; correctness is checked only after submission.');
   }
 
+  const NANPA_PROPER_DIGIT_SYLLABLES = Object.freeze({
+    ijo:'ni', wan:'wa', tu:'tu', seli:'se', awen:'na',
+    luka:'lu', utala:'nu', mun:'mu', pipi:'pi', jo:'jo'
+  });
+
+  function nanpaFormatProperNameFromGlyphSequence(tokens) {
+    const source=Array.isArray(tokens)?tokens.map(v=>String(v||'').trim()).filter(Boolean):[];
+    if(source.length<3 || source[0]!=='nanpa' || source[source.length-1]!=='nanpa') return '';
+    const core=source.slice(1,-1);
+    if(core[0]===':') core.shift();
+    if(!core.length) return '';
+    const words=['Nanpa'];
+    let digits='',pendingPrefix='';
+    const cap=value=>value?value.charAt(0).toUpperCase()+value.slice(1):'';
+    const flushDigits=()=>{
+      if(!digits) return;
+      words.push(cap(`${pendingPrefix}${digits}n`));
+      digits=''; pendingPrefix='';
+    };
+    for(let i=0;i<core.length;i++){
+      const token=core[i];
+      const digit=NANPA_PROPER_DIGIT_SYLLABLES[token];
+      if(digit){digits+=digit;continue;}
+      flushDigits();
+      if(token==='ona'){pendingPrefix='no';continue;}
+      if(token==='en'){words.push('Ene');continue;}
+      if(token==='kulupu'){words.push('Eke');continue;}
+      if(token==='kala'){words.push('Eko');continue;}
+      if(token==='kin'){words.push('Oko');continue;}
+      if(token==='kipisi'){words.push('Oken');continue;}
+      if(token==='o' && core[i+1]==='o'){words.push('Ono');i++;continue;}
+      if(token==='o'){words.push('One');continue;}
+      return '';
+    }
+    flushDigits();
+    return words.length>1?words.join(' '):'';
+  }
+
+  function numericProperNameFeedback(tokens, expectedTokens) {
+    if(!Array.isArray(tokens)||!Array.isArray(expectedTokens)||tokens.length!==expectedTokens.length) return {properName:'',correct:false};
+    const properName=nanpaFormatProperNameFromGlyphSequence(tokens);
+    if(!properName) return {properName:'',correct:false};
+    return {properName,correct:expectedTokens.every((expected,index)=>tokens[index]===expected)};
+  }
+
+  function makeNumericProperNameLine(tokens, expectedTokens, className='puzzleNumericProperName') {
+    const expectedProperName=nanpaFormatProperNameFromGlyphSequence(expectedTokens);
+    if(!expectedProperName) return null;
+    const feedback=numericProperNameFeedback(tokens,expectedTokens);
+    const line=document.createElement('div');
+    line.className=`${className}${feedback.correct?' isVisible':''}`;
+    line.textContent=feedback.correct?feedback.properName:' ';
+    line.setAttribute('aria-hidden',feedback.correct?'false':'true');
+    return line;
+  }
+
   function sequenceAnswerGroups(puzzle, seq) {
     const raw = Array.isArray(puzzle?.ui?.payload?.answerGroups) ? puzzle.ui.payload.answerGroups : [];
     if (!raw.length) return [];
@@ -6358,6 +6414,8 @@
       clue.className='puzzleAnswerGroupClue';
       renderExact(clue,group.clue);
       text.append(title,clue);
+      const entry=document.createElement('div');
+      entry.className='puzzleAnswerGroupEntry';
       const slots=document.createElement('div');
       slots.className='puzzleAnswerGroupSlots';
       slots.style.setProperty('--answer-cols',String(group.length));
@@ -6365,7 +6423,12 @@
         const index=group.start+local;
         slots.appendChild(makeSequencePuzzleSlot(puzzle,index,local+1));
       }
-      row.append(text,slots);
+      const current=puzzleSlotValues.slice(group.start,group.start+group.length);
+      const expected=seq.slice(group.start,group.start+group.length);
+      const properName=makeNumericProperNameLine(current,expected,'puzzleAnswerGroupProperName');
+      entry.appendChild(slots);
+      if(properName) entry.appendChild(properName);
+      row.append(text,entry);
       wrap.appendChild(row);
     }
     puzzleSlots.appendChild(wrap);
@@ -6607,7 +6670,11 @@
     if (selectedPuzzleSlotIndex == null && seq.length && puzzleSlotValues.some(v=>!v)) selectedPuzzleSlotIndex = nextEmptyPuzzleSlotIndex(-1);
     const answerGroups=sequenceAnswerGroups(puzzle,seq);
     if(answerGroups.length) renderGroupedSequenceAnswers(puzzle,seq,answerGroups);
-    else for(let index=0;index<seq.length;index++) puzzleSlots.appendChild(makeSequencePuzzleSlot(puzzle,index));
+    else {
+      for(let index=0;index<seq.length;index++) puzzleSlots.appendChild(makeSequencePuzzleSlot(puzzle,index));
+      const properName=makeNumericProperNameLine(puzzleSlotValues,seq);
+      if(properName) puzzleSlots.appendChild(properName);
+    }
     renderPuzzleLiveCartouchePreview(puzzle);
     renderGlyphFamilyPicker();
     puzzleCompleteBtn.disabled = false;
@@ -7298,8 +7365,12 @@
     if(!QA_MODE || !qaState.badge) return false;
     qaState.touchPanelOpen=Boolean(open);
     qaState.badge.classList.toggle('qaPanel--touchOpen',qaState.touchPanelOpen);
+    // Ignore/reveal semantics are device-independent. The old touch-only concealment
+    // meant Ignore appeared to do nothing on laptops because fine-pointer QA panels
+    // could never receive the concealed class.
+    qaState.badge.classList.toggle('qaPanel--concealed',!qaState.touchPanelOpen);
     qaState.badge.classList.toggle('qaPanel--touchConcealed',qaTouchControlsPreferred()&&!qaState.touchPanelOpen);
-    qaState.badge.setAttribute('aria-hidden',qaTouchControlsPreferred()&&!qaState.touchPanelOpen?'true':'false');
+    qaState.badge.setAttribute('aria-hidden',qaState.touchPanelOpen?'false':'true');
     return qaState.touchPanelOpen;
   }
 
@@ -7318,7 +7389,7 @@
   }
 
   function qaHandleHotspotPointerDown(e) {
-    if(!QA_MODE) return;
+    if(!QA_MODE || !qaTouchControlsPreferred()) return;
     // Keep the QA gesture out of the normal viewport drag handler. That handler
     // captures pointers on pointerdown, which would retarget pointerup away from
     // this hotspot and make the mobile double-tap impossible to complete.
@@ -7327,7 +7398,7 @@
   }
 
   function qaHandleHotspotPointerUp(e) {
-    if(!QA_MODE) return;
+    if(!QA_MODE || !qaTouchControlsPreferred()) return;
     e.preventDefault();
     e.stopPropagation();
     const now=window.performance?.now?.() ?? Date.now();
@@ -7363,6 +7434,54 @@
     e.stopImmediatePropagation();
   }
 
+  function qaRevealFromDesktopLevel(e) {
+    if(!QA_MODE || qaTouchControlsPreferred()) return false;
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    qaRevealTouchControls();
+    return true;
+  }
+
+  function qaInstallDesktopLevelReveal() {
+    if(!QA_MODE || !levelEl) return;
+    levelEl.classList.add('qaLevelRevealTarget');
+    // The HUD normally ignores pointer input so gameplay can receive it. In QA mode
+    // the level badge is deliberately the one laptop reveal target; keep its clicks
+    // out of viewport drag / interaction / pointer-lock handling.
+    const block=e=>{ if(!qaTouchControlsPreferred()) e.stopPropagation(); };
+    levelEl.addEventListener('pointerdown',block);
+    levelEl.addEventListener('pointerup',block);
+    levelEl.addEventListener('click',block);
+    levelEl.addEventListener('dblclick',qaRevealFromDesktopLevel);
+  }
+
+  function qaDispatchControlAction(action) {
+    if(!QA_MODE) return Promise.resolve(false);
+    try{
+      switch(String(action||'')){
+        case 'pause': return Promise.resolve(qaTogglePause());
+        case 'run': return Promise.resolve(qaRunCampaign());
+        case 'step': return Promise.resolve(qaStep());
+        case 'back': qaLog('backtracking…'); return Promise.resolve(qaBackToPreviousPuzzleStart());
+        case 'stop': return Promise.resolve(qaStop());
+        case 'slower': return Promise.resolve(qaSetSpeed(qaState.speed/1.35));
+        case 'faster': return Promise.resolve(qaSetSpeed(qaState.speed*1.35));
+        case 'ignore': return Promise.resolve(qaIgnoreTouchControls());
+        case 'restart': return Promise.resolve(qaRestartCampaign());
+        default: return Promise.resolve(false);
+      }
+    }catch(err){ return Promise.reject(err); }
+  }
+
+  function qaHandleControlClick(e) {
+    if(!QA_MODE) return;
+    const button=e.target?.closest?.('.qaMiniButton[data-qa-action]');
+    if(!button || !e.currentTarget?.contains?.(button)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    qaDispatchControlAction(button.dataset.qaAction).catch(err=>qaFail(err));
+  }
+
   function qaUpdateBadge() {
     if(!QA_MODE || !qaState.badge) return;
     const levelNo=campaignAdapter?.currentLevel?.()?.ordinal || state.chapter || '?';
@@ -7379,15 +7498,15 @@
     const panel=document.createElement('div'); panel.className='qaPanel'; panel.setAttribute('role','status'); panel.setAttribute('aria-live','polite');
     const text=document.createElement('span'); text.className='qaStatusText';
     const controls=document.createElement('span'); controls.className='qaControls';
-    const restart=document.createElement('button'); restart.type='button'; restart.className='qaMiniButton qaRestartButton'; restart.title='Restart campaign from Level 1 and run (X)'; restart.setAttribute('aria-label','Restart campaign from Level 1 and run'); restart.textContent='X';
-    const pause=document.createElement('button'); pause.type='button'; pause.className='qaMiniButton'; pause.title='Pause / resume QA playback (P)'; pause.setAttribute('aria-label','Pause or resume QA playback'); pause.textContent='P';
-    const run=document.createElement('button'); run.type='button'; run.className='qaMiniButton'; run.title='Run / continue campaign QA (R)'; run.setAttribute('aria-label','Run or continue QA campaign'); run.textContent='R';
-    const step=document.createElement('button'); step.type='button'; step.className='qaMiniButton'; step.title='One QA step (N)'; step.setAttribute('aria-label','Run one QA step'); step.textContent='N';
-    const back=document.createElement('button'); back.type='button'; back.className='qaMiniButton'; back.title='Previous puzzle start (B)'; back.setAttribute('aria-label','Return to the start of the previous QA puzzle'); back.textContent='B';
-    const stop=document.createElement('button'); stop.type='button'; stop.className='qaMiniButton'; stop.title='Stop QA playback (S)'; stop.setAttribute('aria-label','Stop QA playback'); stop.textContent='S';
-    const slower=document.createElement('button'); slower.type='button'; slower.className='qaMiniButton'; slower.title='Slow QA playback ([)'; slower.setAttribute('aria-label','Slow QA playback'); slower.textContent='−';
-    const faster=document.createElement('button'); faster.type='button'; faster.className='qaMiniButton'; faster.title='Speed up QA playback (])'; faster.setAttribute('aria-label','Speed up QA playback'); faster.textContent='+';
-    const ignore=document.createElement('button'); ignore.type='button'; ignore.className='qaMiniButton qaIgnoreButton'; ignore.title='Hide QA touch controls'; ignore.setAttribute('aria-label','Hide QA touch controls'); ignore.textContent='Ignore';
+    const restart=document.createElement('button'); restart.type='button'; restart.className='qaMiniButton qaRestartButton'; restart.title='Restart campaign from Level 1 and run (X)'; restart.setAttribute('aria-label','Restart campaign from Level 1 and run'); restart.textContent='X'; restart.dataset.qaAction='restart';
+    const pause=document.createElement('button'); pause.type='button'; pause.className='qaMiniButton'; pause.title='Pause / resume QA playback (P)'; pause.setAttribute('aria-label','Pause or resume QA playback'); pause.textContent='P'; pause.dataset.qaAction='pause';
+    const run=document.createElement('button'); run.type='button'; run.className='qaMiniButton'; run.title='Run / continue campaign QA (R)'; run.setAttribute('aria-label','Run or continue QA campaign'); run.textContent='R'; run.dataset.qaAction='run';
+    const step=document.createElement('button'); step.type='button'; step.className='qaMiniButton'; step.title='One QA step (N)'; step.setAttribute('aria-label','Run one QA step'); step.textContent='N'; step.dataset.qaAction='step';
+    const back=document.createElement('button'); back.type='button'; back.className='qaMiniButton'; back.title='Previous puzzle start (B)'; back.setAttribute('aria-label','Return to the start of the previous QA puzzle'); back.textContent='B'; back.dataset.qaAction='back';
+    const stop=document.createElement('button'); stop.type='button'; stop.className='qaMiniButton'; stop.title='Stop QA playback (S)'; stop.setAttribute('aria-label','Stop QA playback'); stop.textContent='S'; stop.dataset.qaAction='stop';
+    const slower=document.createElement('button'); slower.type='button'; slower.className='qaMiniButton'; slower.title='Slow QA playback ([)'; slower.setAttribute('aria-label','Slow QA playback'); slower.textContent='−'; slower.dataset.qaAction='slower';
+    const faster=document.createElement('button'); faster.type='button'; faster.className='qaMiniButton'; faster.title='Speed up QA playback (])'; faster.setAttribute('aria-label','Speed up QA playback'); faster.textContent='+'; faster.dataset.qaAction='faster';
+    const ignore=document.createElement('button'); ignore.type='button'; ignore.className='qaMiniButton qaIgnoreButton'; ignore.title='Hide QA controls'; ignore.setAttribute('aria-label','Hide QA controls'); ignore.textContent='Ignore'; ignore.dataset.qaAction='ignore';
     controls.append(pause,run,step,back,stop,slower,faster,ignore,restart); panel.append(text,controls); viewportWrap?.appendChild(panel);
     const hotspot=document.createElement('div'); hotspot.className='qaHotspot'; hotspot.setAttribute('aria-label','QA controls: double tap'); hotspot.setAttribute('role','button'); hotspot.setAttribute('tabindex','-1'); viewportWrap?.appendChild(hotspot);
     qaState.badge=panel; qaState.statusText=text; qaState.pauseBtn=pause; qaState.stepBtn=step; qaState.runBtn=run; qaState.backBtn=back; qaState.restartBtn=restart; qaState.stopBtn=stop; qaState.slowerBtn=slower; qaState.fasterBtn=faster; qaState.ignoreBtn=ignore; qaState.hotspot=hotspot;
@@ -7401,17 +7520,10 @@
     panel.addEventListener('pointercancel',qaBlockGameplayPointer);
     panel.addEventListener('dblclick',e=>{e.preventDefault();e.stopPropagation();});
     controls.addEventListener('click',qaHandleTouchControlCaptureClick,true);
-    pause.addEventListener('click',()=>qaTogglePause());
-    step.addEventListener('click',()=>qaStep().catch(err=>qaFail(err)));
-    back.addEventListener('click',()=>qaBackToPreviousPuzzleStart().catch(err=>qaFail(err)));
-    run.addEventListener('click',()=>qaRunCampaign().catch(err=>qaFail(err)));
-    restart.addEventListener('click',()=>qaRestartCampaign().catch(err=>qaFail(err)));
-    stop.addEventListener('click',()=>qaStop());
-    slower.addEventListener('click',()=>qaSetSpeed(qaState.speed/1.35));
-    faster.addEventListener('click',()=>qaSetSpeed(qaState.speed*1.35));
-    ignore.addEventListener('click',()=>qaIgnoreTouchControls());
+    controls.addEventListener('click',qaHandleControlClick);
     hotspot.addEventListener('pointerdown',qaHandleHotspotPointerDown,{passive:false});
     hotspot.addEventListener('pointerup',qaHandleHotspotPointerUp,{passive:false});
+    qaInstallDesktopLevelReveal();
     qaSetTouchPanelOpen(!qaTouchControlsPreferred());
     qaUpdateBadge();
   }
@@ -7572,6 +7684,7 @@
 
   async function qaBackToPreviousPuzzleStart() {
     if(!QA_MODE) throw new Error('TPQA is available only with ?qa=1');
+    qaLog('backtracking…');
     await qaStopForwardRunnerForBacktrack();
     if(!qaState.puzzleHistory.length){qaLog('no earlier puzzle checkpoint');return false;}
     const cursor=Math.min(qaState.historyCursor,qaState.puzzleHistory.length-1);
@@ -8246,15 +8359,11 @@
 
   function qaHandleShortcut(e) {
     if(!QA_MODE || e.repeat || qaEditableTarget(e.target)) return false;
-    if(e.code==='KeyP'){qaTogglePause();e.preventDefault();return true;}
-    if(e.code==='KeyN'){qaStep().catch(err=>qaFail(err));e.preventDefault();return true;}
-    if(e.code==='KeyB'){qaBackToPreviousPuzzleStart().catch(err=>qaFail(err));e.preventDefault();return true;}
-    if(e.code==='KeyR'){qaRunCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
-    if(e.code==='KeyX'){qaRestartCampaign().catch(err=>qaFail(err));e.preventDefault();return true;}
-    if(e.code==='KeyS'){qaStop();e.preventDefault();return true;}
-    if(e.code==='BracketLeft'){qaSetSpeed(qaState.speed/1.35);e.preventDefault();return true;}
-    if(e.code==='BracketRight'){qaSetSpeed(qaState.speed*1.35);e.preventDefault();return true;}
-    return false;
+    const action=({KeyP:'pause',KeyN:'step',KeyB:'back',KeyR:'run',KeyX:'restart',KeyS:'stop',BracketLeft:'slower',BracketRight:'faster'})[e.code];
+    if(!action) return false;
+    e.preventDefault();
+    qaDispatchControlAction(action).catch(err=>qaFail(err));
+    return true;
   }
 
   function qaFail(error) {
