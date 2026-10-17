@@ -5,6 +5,34 @@
   const LANG_TP = 'tp';
   const LANG_EN = 'en';
 
+
+  // Semantic [[...]] markers are used both for literal interface labels (A/B/C,
+  // keyboard keys, Sphinx, Sudoku, etc.) and for ordinary Toki Pona operands.
+  // In TP mode, real Toki Pona words must remain sitelen pona; only genuine
+  // literal/non-TP labels stay Latin.
+  const SITELEN_TERM_WORDS = new Set(`
+    a akesi ala alasa ale anpa ante anu awen e en esun ijo ike ilo insa jaki jan jelo jo
+    kala kalama kama kasi ken kepeken kili kiwen ko kon kule kulupu kute la lape laso lawa len lete li
+    lili linja lipu loje lon luka lukin lupa ma mama mani meli mi mije moku moli monsi mu mun musi
+    mute nanpa nasa nasin nena ni nimi noka o olin ona open pakala pali palisa pan pana pi pilin pimeja
+    pini pipi poka poki pona pu sama seli selo seme sewi sijelo sike sin sina sinpin sitelen sona soweli suli
+    suno supa suwi tan taso tawa telo tenpo toki tomo tu unpa uta utala walo wan waso wawa weka wile
+    namako kin oko kipisi leko monsuta tonsi jasima kijetesantakalu soko meso epiku kokosila lanpan n misikeke ku
+    pake apeja majuna powe linluwi kiki su neko neke noke nono noko none
+  `.trim().split(/\s+/));
+
+  function termUsesSitelen(term) {
+    const raw = String(term ?? '').trim();
+    if (!raw) return false;
+    // All-caps tokens such as MA/NEKE are authored as literal codes and must stay
+    // Latin. These title-case names are intentional Toki Pona / notation names.
+    const titleCaseTp = raw === 'Toki Pona' || raw === 'Nasa' || raw === 'Noka';
+    if (raw !== raw.toLowerCase() && !titleCaseTp) return false;
+    const cleaned = raw.toLowerCase().replace(/[.!?]+$/g,'').trim();
+    if (!cleaned || /[^a-z\s]/.test(cleaned)) return false;
+    return cleaned.split(/\s+/).every(word => SITELEN_TERM_WORDS.has(word));
+  }
+
   const UI = {
     pageTitle: { en: 'Toki Pona rooms — complete 12-level campaign', tp: 'musi tomo — nasin musi 12' },
     skipToGame: { en: 'Skip to game', tp: 'o tawa musi' },
@@ -139,7 +167,7 @@
     'l8-dependency-schedule': { title:'nasin pali', instructions:'o pana e pali 7 lon nasin tan open tawa pini. sona ale pi kama open en kama pini o lon lon tenpo sama.' },
     'l8-transit-vault': { title:'tomo nasin nanpa', instructions:'o open lon sewi poka loje, o tawa tawa anpa poka laso kepeken tawa 8 taso. o tawa lon poki sama ala. nanpa pi poki 9 ale lon nasin o kama nanpa wile.' },
 
-    'l9-maze-survey': { title:'alasa lon nasin nasa', instructions:'o alasa e sitelen ma tu wan lon pini nasin weka. o kepeken e ona. sina kama poka la [[E/kepeken]] li lon, lon tenpo ni kin: sitelen li lon monsi lukin sina. jan [[Sphinx]] li toki taso lon tenpo pi sitelen tu wan pini.' },
+    'l9-maze-survey': { title:'alasa lon nasin nasa', instructions:'o alasa e sitelen ma tu wan lon pini nasin weka. o kepeken e ona. sina kama poka la [[E]] / kepeken li lon, lon tenpo ni kin: sitelen li lon monsi lukin sina. jan [[Sphinx]] li toki taso lon tenpo pi sitelen tu wan pini.' },
     'l9-sphinx-riddles': { title:'wile sona pi jan [[Sphinx]]', instructions:'jan [[Sphinx]] li anu e wile sona tu wan tan ma musi 1–8. lon musi sin la wile sona en nasin pi pana sona li ante. o pana e sona pona tawa wile sona tu wan lon tawa wan. sina pakala lon wan la sina kama sin tawa wile sona nanpa 1.' },
     'l9-counterweight': { title:'kiwen awen', instructions:'o tawa e ijo tu wan lon ma sewi en ma anpa. o pana e ijo ale tawa supa ona kepeken sona supa. sina ken jo e ijo wan taso. sina ken kama jo sin e ijo lon supa.' },
     'l9-route-polarity': { title:'nasin suno luka', instructions:'o pona e suno nasin 6 tawa sitelen pona. palisa wan li ante e suno tu wan. sina pona e nasin wan la nasin ante li ken pakala. pona la lupa anpa sin li kama lon ma sewi.' },
@@ -153,7 +181,7 @@
     'l10-textile-routing': { title:'nasin len kule', objective:'o pana e len tu tawa ma pali pona lon tomo sewi.', instructions:'o tawa e len tu tawa ilo pali. len [[laso]] li tawa supa kule. len [[walo]] li tawa supa pini pona. ike la sina ken kama jo sin e len.' },
     'l10-inspection-audit': { title:'lukin pini pi lipu pana', objective:'o lukin e lipu pana [[pan]] e lipu pana [[suwi]]. o anu e lipu ale tawa ma pana anu ma awen ike.', instructions:'lipu tu ni li toki e moku sama pi pana sina lon tenpo pini. sina tawa e moku sin ala. lipu [[pan]] la sona lete li awen lon pona. lipu [[suwi]] la sona lete +8.5 li weka tan pona, li ike. o anu e lipu [[pan]] tawa ma pana. o anu e lipu [[suwi]] tawa ma awen ike.' },
 
-    'l11-call-survey': { title:'palisa kalama tu wan', objective:'o awen e sona tan palisa [[A]], [[B]], [[C]]. ni la o kepeken sitelen ma.', instructions:'palisa [[A]], [[B]], [[C]] li lon ma alasa en ma soweli. o kama poka palisa ale. ni la [[E/kepeken]] li kama lon; o kepeken e ona tawa awen e sona.' },
+    'l11-call-survey': { title:'palisa kalama tu wan', objective:'o awen e sona tan palisa [[A]], [[B]], [[C]]. ni la o kepeken sitelen ma.', instructions:'palisa [[A]], [[B]], [[C]] li lon ma alasa en ma soweli. o kama poka palisa ale. ni la [[E]] / kepeken li kama lon; o kepeken e ona tawa awen e sona.' },
     'l11-call-triangulation': { title:'alasa ma kepeken weka', objective:'o kepeken weka tan palisa tu wan. o alasa e ma awen waso lon pimeja.', instructions:'palisa ale li pana e weka tawa ma sama. weka ni li nanpa e tawa poka en tawa sewi/anpa lon sitelen ma. o anu e poki ma wan: weka ona tawa [[A]], [[B]], [[C]] o sama e nanpa lipu tu wan.' },
     'l11-roost-schedule': { title:'tenpo awen en moku', objective:'o pana sin e lipu tu tu lon nasin tenpo pona.', instructions:'lipu tu tu ni li tawa lon poka tenpo pimeja. o pana e ona tan tenpo open tawa tenpo pini. o kepeken nasin [[suno]] en [[tenpo]] sina sona.' },
     'l11-lineage-match': { title:'lipu mama', objective:'o sama e jan lili tu tu e kulupu mama tu tu kepeken sona ale.', instructions:'jan lili ale li pana e sitelen mama wan taso. sitelen wan taso li ken ala pana e mama ona. kulupu mama [[A–D]] ale li kepeken tenpo wan taso. sona tu tan lipu ante li toki e sitelen insa. o anu e mama tawa jan lili ale; pini la o luka e [[o alasa]].' },
@@ -346,7 +374,7 @@
     "Textile batch complete. The awning shortcut opens, and the Ledger Office, Dispatch Bay and Quarantine inspection shutters open together.": "pali len li pini. nasin lili pi len sewi li open. lupa tawa tomo lipu esun en lupa tawa tomo pana en lupa tawa tomo jaki li open.",
     "Level 10 textile batch complete: awning shortcut and inspection shutters opened.": "ma musi 10: pali len li pini; nasin lili en lupa pi tomo lukin pali li open.",
     "Inspection complete. The dispatch shutter is released.": "lukin pali li pini. lupa pana li open.",
-    "Textile batch complete. FINAL OBJECTIVE: the Ledger Office is now open upstairs. Use the audit console marked ! to review the pan and suwi shipment records.": "pali len li pini. WILE PINI: tomo lipu lon sewi li open. o kepeken ilo lukin lipu pi sitelen {{!}}. o lukin e lipu pana [[pan]] e lipu pana [[suwi]].",
+    "Textile batch complete. FINAL OBJECTIVE: the Ledger Office is now open upstairs. Use the audit console marked ! to review the pan and suwi shipment records.": "pali len li pini. wile pini: tomo lipu lon sewi li open. o kepeken ilo lukin lipu pi sitelen {{!}}. o lukin e lipu pana [[pan]] e lipu pana [[suwi]].",
     "Level 10 textile batch complete: awning shortcut opened and final Ledger audit activated.": "ma musi 10: pali len li pini; nasin lili li open; lukin pini lon tomo lipu li pali.",
     "Level 10 dye-batch reconciliation complete: textile routing objects released beside the mixer.": "ma musi 10: nanpa telo kule li pini; len tu li kama lon poka ilo telo kule tawa pali tawa len.",
     "Final audit approved. pan is cleared for Dispatch; suwi is classified for Quarantine. The Dispatch Bay exit is now OPEN on the market floor.": "lukin pini li pona. lipu [[pan]] li tawa ma pana. lipu [[suwi]] li tawa ma awen ike. lupa weka lon ma pana li OPEN lon anpa.",
@@ -354,7 +382,7 @@
     "Quarantine status: the suwi shipment record is classified unsafe after a +8.5 cold-history excursion.": "sona pi ma awen ike: lipu pana [[suwi]] li ike tan ante lete +8.5.",
     "Final audit approved. The exit terminal is active in this bay.": "lukin pini li pona. ilo weka li pali lon tomo ni.",
     "Dispatch remains sealed until the final Ledger Office audit is approved.": "ma pana li pini. o pini e lukin lipu lon tomo lipu lon open.",
-    "FINAL OBJECTIVE: use the audit console marked ! in this office. Review the pan and suwi shipment records and classify each as Dispatch or Quarantine. You are not moving the goods again.": "WILE PINI: o kepeken ilo lukin lipu pi sitelen {{!}} lon tomo ni. o lukin e lipu pana [[pan]] e lipu pana [[suwi]]. o anu e lipu ale tawa ma pana anu ma awen ike. sina tawa e moku sin ala.",
+    "FINAL OBJECTIVE: use the audit console marked ! in this office. Review the pan and suwi shipment records and classify each as Dispatch or Quarantine. You are not moving the goods again.": "wile pini: o kepeken ilo lukin lipu pi sitelen {{!}} lon tomo ni. o lukin e lipu pana [[pan]] e lipu pana [[suwi]]. o anu e lipu ale tawa ma pana anu ma awen ike. sina tawa e moku sin ala.",
     "Final audit complete. Dispatch Bay is now open on the market floor.": "lukin pini li pini. ma pana lon anpa li open.",
     "The final audit console activates only after the textile routing is complete.": "ilo lukin pini li pali taso lon tenpo ni: pali len li pini.",
     "Audit status: the unsafe suwi shipment record is classified for quarantine. This room is optional after completion.": "sona lukin: lipu pana [[suwi]] li tawa ma awen ike. musi li pini la sina wile ala tawa tomo ni.",
@@ -449,7 +477,7 @@
     'Entry Chamber':'tomo open','Workshop':'tomo pali','Lower Concourse':'nasin anpa','Maze':'nasin nasa','Maze dead end A':'pini nasin [[A]]','Maze dead end B':'pini nasin [[B]]','Maze dead end C':'pini nasin [[C]]','Sealed maze chamber':'tomo len pi nasin nasa','Upper Gallery':'tomo sewi','Observation Room':'tomo lukin','Maintenance Level':'ma pali anpa',
     'Second Atrium':'tomo open nanpa tu','Number Workshop':'tomo pali nanpa','Lower Archive':'tomo lipu anpa','Cartography Room':'tomo sitelen ma','Notation Laboratory':'tomo sona sitelen','Foundation Vault':'tomo awen open',
     'Observation Chamber':'tomo lukin','Relay Gallery':'tomo nasin wawa','Navigation Floor':'ma nasin','Synchronization Core':'ilo tenpo sama','Instrument Workshop':'tomo ilo',
-    'Pump Hall':'tomo telo','Stackworks':'tomo kiwen sike','Codebreaker Lab':'tomo linja len','Equivalence Gallery':'tomo nanpa sama','Chronology Hall':'tomo tenpo',
+    'Pump Hall':'tomo telo','Machine Junction':'nasin ilo','Stackworks':'tomo kiwen sike','Codebreaker Lab':'tomo linja len','Equivalence Gallery':'tomo nanpa sama','Chronology Hall':'tomo tenpo','Schedule Archive':'tomo lipu tenpo',
     'River Dock':'tomo telo tawa','Freight Bay':'tomo poki tawa','Sliding Gallery':'tomo sitelen tawa','Strategy Room':'tomo nasin sona','Pantry Observatory':'tomo lukin poki moku',
     'Card Archive':'tomo lipu musi','Calculation Bench':'supa nanpa','Country Index':'kulupu ma','Number Systems Lab':'tomo nasin nanpa','Position Vault':'tomo ma sike','Records Junction':'nasin lipu',
     'Resonance Hall':'tomo kalama','Airflow Gallery':'tomo nasin kon','Pulse Chamber':'tomo wawa tenpo','Spectrum Laboratory':'tomo kule','Blackout Substation':'tomo wawa pimeja','Sensor Junction':'nasin ilo sona',
@@ -521,7 +549,7 @@
     'Reconcile the three mixed-fraction dye batches, then carry each cloth batch to the correct station. Completion drops an awning shortcut to the market floor.':'o nanpa e kulupu len tu wan kepeken nanpa pi wan en kipisi. ni la o tawa e len tu tawa ma pali ona. pini la nasin lili li open tawa tomo esun.',
     'After the textile chain, two inspection samples appear here. Their records refer to the deliveries and cold history already used in this level.':'pini pi pali len la ijo lukin tu li kama lon ni. lipu ona li kepeken sona pana en sona lete pi ma musi ni.',
     'The final unsafe inspection sample belongs here. Wrong placements remain recoverable.':'ijo lukin ike li tawa ma ni. pana ike la sina ken kama jo sin e ijo.',
-    'Three acoustic pylons are spread across the Field Station and Habitat Hub. Get close to each one and record it with E / USE.':'palisa kalama tu wan li lon ma alasa en ma soweli. o kama poka palisa ale. o kepeken [[E/kepeken]] tawa awen e sona ona.',
+    'Three acoustic pylons are spread across the Field Station and Habitat Hub. Get close to each one and record it with E / USE.':'palisa kalama tu wan li lon ma alasa en ma soweli. o kama poka palisa ale. o kepeken [[E]] / kepeken tawa awen e sona ona.',
     'The hatch returns to the Aviary Walk. The connected registry contains four parent-pair records and four hatchling records.':'lupa li tawa sin tawa nasin waso. lipu mama li jo e kulupu mama tu tu e jan lili tu tu.',
     'Match hatchlings to parent pairs by the two preserved trait glyphs. Each pair is used once; completion releases the two physical parent bands in the Nest Observatory.':'o sama e jan lili e kulupu mama kepeken sitelen mama awen. kulupu ale li kepeken tenpo wan. pini la sitelen mama tu li kama lon tomo lukin mama.',
     'This isolated ward is reached only after the parent-band placement opens the canopy shortcut. Use the accumulated sanctuary records for the final triage.':'nasin tawa tomo ni li open taso lon pini pi pana sitelen mama. o kepeken lipu ale pi ma awen tawa musi pini.',
@@ -665,6 +693,16 @@
       const ma = m[2].toLowerCase() === 'bakery' ? 'tomo pan' : 'tomo suwi';
       return `pana poki: [[${m[1].toLowerCase()}]] → ${ma}.`;
     }
+    // Runtime navigation objectives are generated by CampaignRuntime and therefore
+    // do not exist as fixed campaign copy. Translate the family here so room names
+    // never leak English in TP mode.
+    if ((m = text.match(/^Explore:\s*(.+)$/i))) {
+      const rooms = m[1].split(/\s*\/\s*/).map(name => ROOM_NAMES_TP[name] || name);
+      return `o tawa alasa lon ${rooms.join(' anu ')}.`;
+    }
+    if (text === 'Level complete.') return 'ma musi li pini.';
+    if (text === 'No productive action is currently available.') return 'pali kama pona li lon ala lon tenpo ni.';
+
     // Runtime-generated player responses. These must be translated as families,
     // not as one-off literals, because the English source contains live labels,
     // counts, puzzle titles or carried-object names.
@@ -885,8 +923,14 @@
     while ((match = re.exec(text))) {
       if (match.index > at) appendPlain(text.slice(at, match.index));
       const span = document.createElement('span');
-      span.className = match[1] != null ? 'tpTerm' : 'tpLiteral';
-      span.textContent = match[1] != null ? match[1] : match[2];
+      if (match[1] != null) {
+        const sitelenTerm = tpSitelen && termUsesSitelen(match[1]);
+        span.className = sitelenTerm ? 'tpTerm tpTermSitelen' : 'tpTerm';
+        span.textContent = sitelenTerm ? match[1].toLowerCase() : match[1];
+      } else {
+        span.className = 'tpLiteral';
+        span.textContent = match[2];
+      }
       el.append(span);
       at = re.lastIndex;
     }
@@ -905,6 +949,6 @@
 
   window.TokiPonaRoomsI18n = Object.freeze({
     STORAGE_KEY, LANG_TP, LANG_EN, UI, PUZZLES, EXACT_TP, ROOM_NAMES_TP, ROOM_HINTS_TP,
-    getLanguage, setLanguage, ui, puzzle, exact, roomName, roomHint, render, setExact, stripMarkup, markupTermsFromTranslation, termLabel, numericCartoucheSource
+    getLanguage, setLanguage, ui, puzzle, exact, roomName, roomHint, render, setExact, stripMarkup, markupTermsFromTranslation, termLabel, numericCartoucheSource, termUsesSitelen
   });
 })();

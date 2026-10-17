@@ -2015,9 +2015,9 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   font: 700 12px/1.1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
-/* Latin Toki Pona is passed to the existing nasin nanpa font, whose ligatures
-   provide sitelen pona. References to exact clue tokens stay Latin so a player
-   can identify the named token unambiguously. */
+/* Toki Pona prose is passed to the existing nasin nanpa font, whose ligatures
+   provide sitelen pona. Semantic [[...]] terms that are themselves Toki Pona
+   also stay in sitelen pona; only genuine literal labels/keys remain Latin. */
 .tpSplitWords{display:inline-flex!important;align-items:center;gap:.32em;white-space:nowrap;}
 .tpSplitWords>span{display:inline-block;}
 .tpProse {
@@ -2097,6 +2097,17 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   border-radius: .28em;
   background: rgba(17,17,17,.07);
   box-shadow: inset 0 0 0 1px rgba(17,17,17,.10);
+}
+
+.tpProse .tpTerm.tpTermSitelen,
+.tpTerm.tpTermSitelen {
+  font-family: "NasinNanpaGame", sans-serif !important;
+  font-variant-ligatures: normal !important;
+  font-feature-settings: "liga" 1, "dlig" 1, "calt" 1 !important;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.08;
+  padding: .02em .14em;
 }
 
 /* Keep language names themselves readable in Latin even while the page is in
@@ -2442,6 +2453,27 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   transform:translate(var(--mobile-puzzle-fit-shift-x,0px),var(--mobile-puzzle-fit-shift-y,0px)) scale(var(--mobile-puzzle-fit-scale,1));
   transform-origin:top left;
   will-change:transform;
+}
+
+/* v0.134 — laptop/fine-pointer puzzle containment. Desktop puzzle cards can be
+   height-bounded too; scale/reposition only the puzzle surface so external edge
+   labels, bottom rows and dense controls remain fully visible without scrolling. */
+.puzzleSlots.laptopPuzzleAutoFit{
+  overflow:visible!important;
+  transform:translate(var(--laptop-puzzle-fit-shift-x,0px),var(--laptop-puzzle-fit-shift-y,0px)) scale(var(--laptop-puzzle-fit-scale,1));
+  transform-origin:top left;
+  will-change:transform;
+}
+
+@media (pointer:fine) and (min-width:601px){
+  /* Both mirror puzzles share this safer desktop size. L12's 7x7 board retains
+     room for the N/S edge labels; L8's 5x5 board remains comfortably legible. */
+  .puzzleCard[data-puzzle-type="dual-mirror"] .dualMirrorBoard{
+    grid-template-columns:repeat(var(--mirror-cols),56px);
+    grid-template-rows:repeat(var(--mirror-rows),56px);
+  }
+  .puzzleCard[data-puzzle-type="dual-mirror"] .dualMirrorCell{width:56px;height:56px}
+  .puzzleCard[data-puzzle-type="dual-mirror"] .dualMirrorMirror{font-size:37px}
 }
 
 @media (orientation:landscape) and (max-height:520px) and (max-width:950px){

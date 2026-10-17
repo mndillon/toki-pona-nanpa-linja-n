@@ -2267,7 +2267,7 @@
             ? 'o tawa sewi ↑ kepeken ilo tawa lete. ni la o tawa tomo lipu.'
             : 'o tawa sewi ↑ kepeken palisa pi len sewi lon tomo esun. ni la o tawa tomo lipu.';
         return isTpLanguage()
-          ? `${prefix} · WILE PINI · ${routeTp} o kepeken ilo lukin lipu pi sitelen {{!}}. o anu e lipu [[pan]] e lipu [[suwi]] tawa ma pana anu ma awen ike. sina tawa e moku sin ala.`
+          ? `${prefix} · wile pini · ${routeTp} o kepeken ilo lukin lipu pi sitelen {{!}}. o anu e lipu [[pan]] e lipu [[suwi]] tawa ma pana anu ma awen ike. sina tawa e moku sin ala.`
           : `${prefix} · FINAL OBJECTIVE · ${routeEn} Use the audit console marked !. Review the pan and suwi records and classify each as Dispatch or Quarantine. You are NOT moving the goods again.`;
       }
     }
@@ -4347,9 +4347,9 @@
         : 'o ante e ilo. sina pilin e ni: ona li pona la o luka e [[o alasa]].');
       renderLocalized(puzzleStatus, tp);
     } else if (NO_PREVIEW_MECHANISM_TYPES.has(puzzle?.type)) {
-      puzzleStatus.textContent = neutralText || 'Set the complete answer, then press Try answer. Correctness is checked only when you submit.';
+      renderLocalized(puzzleStatus, neutralText || 'Set the complete answer, then press Try answer. Correctness is checked only when you submit.', {sitelen:false});
     } else {
-      puzzleStatus.textContent = text || 'Adjust the mechanism, then press Try answer.';
+      renderLocalized(puzzleStatus, text || 'Adjust the mechanism, then press Try answer.', {sitelen:false});
     }
     puzzleCompleteBtn.disabled = false;
   }
@@ -6457,6 +6457,15 @@
     }
   }
 
+
+  function laptopPuzzleFitMode() {
+    try {
+      return Boolean(!shortMobileLandscapePuzzleMode() && window.matchMedia?.('(pointer: fine) and (min-width: 601px)').matches);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function centerMobileLandscapeGameArea() {
     if (!shortMobileLandscapePuzzleMode()) return false;
     const scroller = document.scrollingElement || document.documentElement || document.body;
@@ -6481,6 +6490,18 @@
     puzzleSlots.removeAttribute('data-mobile-fit-scale');
     puzzleSlots.removeAttribute('data-mobile-fit-shift-x');
     puzzleSlots.removeAttribute('data-mobile-fit-shift-y');
+  }
+
+
+  function clearLaptopPuzzleFit() {
+    if (!puzzleSlots) return;
+    puzzleSlots.classList.remove('laptopPuzzleAutoFit');
+    puzzleSlots.style.removeProperty('--laptop-puzzle-fit-scale');
+    puzzleSlots.style.removeProperty('--laptop-puzzle-fit-shift-x');
+    puzzleSlots.style.removeProperty('--laptop-puzzle-fit-shift-y');
+    puzzleSlots.removeAttribute('data-laptop-fit-scale');
+    puzzleSlots.removeAttribute('data-laptop-fit-shift-x');
+    puzzleSlots.removeAttribute('data-laptop-fit-shift-y');
   }
 
   function visibleReservedPuzzleBoundaryTop() {
@@ -6591,10 +6612,61 @@
     return scale;
   }
 
+  function applyLaptopPuzzleFit() {
+    if (!puzzleSlots || !puzzleOverlay || puzzleOverlay.hidden || !laptopPuzzleFitMode()) {
+      clearLaptopPuzzleFit();
+      return 1;
+    }
+
+    clearLaptopPuzzleFit();
+    const slotRect = puzzleSlots.getBoundingClientRect();
+    if (!slotRect.width || !slotRect.height) return 1;
+    const boundaryTop = visibleReservedPuzzleBoundaryTop();
+    const safeBottom = boundaryTop == null ? slotRect.bottom : Math.min(slotRect.bottom, boundaryTop - 6);
+    const availableWidth = Math.max(1, puzzleSlots.clientWidth);
+    const availableHeight = Math.max(1, safeBottom - slotRect.top);
+    const visibleRequired = visiblePuzzleSurfaceRequiredSize(slotRect);
+    const rawMinX = visibleRequired.minLeft - slotRect.left;
+    const rawMaxX = visibleRequired.maxRight - slotRect.left;
+    const minX = Math.min(0, rawMinX);
+    const maxX = Math.max(rawMaxX, puzzleSlots.scrollWidth || 0);
+    const minY = Math.min(0, visibleRequired.minTop - slotRect.top);
+    const maxY = Math.max(visibleRequired.maxBottom - slotRect.top, puzzleSlots.scrollHeight || 0);
+    const requiredWidth = Math.max(1, maxX - minX);
+    const requiredHeight = Math.max(1, maxY - minY);
+    let scale = Math.min(1, availableWidth / requiredWidth, availableHeight / requiredHeight);
+    if (!Number.isFinite(scale) || scale <= 0) scale = 1;
+    if (scale < 0.997) scale = Math.max(0.35, scale * 0.985);
+
+    const scaledWidth = requiredWidth * scale;
+    const shiftX = Math.max(0, (availableWidth - scaledWidth) / 2) - (minX * scale);
+    const shiftY = -(minY * scale);
+    const scaleValue = scale.toFixed(4);
+    const shiftXValue = `${shiftX.toFixed(2)}px`;
+    const shiftYValue = `${shiftY.toFixed(2)}px`;
+    if (scale < 0.997 || Math.abs(shiftX) > 0.5 || Math.abs(shiftY) > 0.5) {
+      puzzleSlots.style.setProperty('--laptop-puzzle-fit-scale', scaleValue);
+      puzzleSlots.style.setProperty('--laptop-puzzle-fit-shift-x', shiftXValue);
+      puzzleSlots.style.setProperty('--laptop-puzzle-fit-shift-y', shiftYValue);
+      puzzleSlots.classList.add('laptopPuzzleAutoFit');
+      puzzleSlots.dataset.laptopFitScale = scaleValue;
+      puzzleSlots.dataset.laptopFitShiftX = shiftXValue;
+      puzzleSlots.dataset.laptopFitShiftY = shiftYValue;
+    } else {
+      puzzleSlots.dataset.laptopFitScale = '1';
+      puzzleSlots.dataset.laptopFitShiftX = '0px';
+      puzzleSlots.dataset.laptopFitShiftY = '0px';
+    }
+    return scale;
+  }
+
   function scheduleMobileLandscapePuzzleFit() {
     if (mobileLandscapePuzzleFitRaf) cancelAnimationFrame(mobileLandscapePuzzleFitRaf);
     mobileLandscapePuzzleFitRaf = requestAnimationFrame(() => {
-      mobileLandscapePuzzleFitRaf = requestAnimationFrame(applyMobileLandscapePuzzleFit);
+      mobileLandscapePuzzleFitRaf = requestAnimationFrame(() => {
+        applyMobileLandscapePuzzleFit();
+        applyLaptopPuzzleFit();
+      });
     });
   }
 
