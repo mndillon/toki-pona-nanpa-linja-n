@@ -1125,6 +1125,7 @@
       puzzleVariants: {},
       l9Markers: {},
       l9Placements: {},
+      l9RelicSourceContents: { l9OrbRelic:'orb', l9StoneRelic:'stone', l9VesselRelic:'vessel' },
       l10CartDock: 'receiving',
       l10CartCargo: [],
       l10CartTrips: 0,
@@ -1160,9 +1161,10 @@
   // twitchy. Keep portrait behavior intact, but give landscape a slightly larger
   // neutral centre and lower movement/turn authority for finer control.
   const MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO = 0.37;
-  const MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE = 0.80;
-  const MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE = 0.50;
-  const MOBILE_LANDSCAPE_JOYSTICK_TURN_MAX = 0.62;
+  // In short mobile landscape the joystick is analogue, but its outer rim now
+  // means exactly the same thing as full keyboard input on laptop: 100% of
+  // MOVE_SPEED forward/back and 100% of ROTATE_SPEED left/right. Portrait keeps
+  // the historical boosted joystick response below.
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.25;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
@@ -1313,6 +1315,15 @@
     next.puzzleVariants = Object.assign({}, saved?.puzzleVariants || {});
     next.l9Markers = Object.assign({}, saved?.l9Markers || {});
     next.l9Placements = Object.assign({}, saved?.l9Placements || {});
+    const l9SourceDefaults={l9OrbRelic:'orb',l9StoneRelic:'stone',l9VesselRelic:'vessel'};
+    if(saved?.l9RelicSourceContents && typeof saved.l9RelicSourceContents==='object'){
+      next.l9RelicSourceContents=Object.assign({},l9SourceDefaults,saved.l9RelicSourceContents);
+    }else{
+      next.l9RelicSourceContents=Object.assign({},l9SourceDefaults);
+      for(const [sourceId,carryId] of Object.entries(l9SourceDefaults)){
+        if(next.carrying===`l9:${carryId}` || Object.values(next.l9Placements).includes(carryId)) next.l9RelicSourceContents[sourceId]=null;
+      }
+    }
     next.l10CartDock = ['receiving','market'].includes(String(saved?.l10CartDock || 'receiving')) ? String(saved?.l10CartDock || 'receiving') : 'market';
     next.l10CartCargo = Array.isArray(saved?.l10CartCargo) ? saved.l10CartCargo.slice(0,2) : [];
     next.l10CartTrips = Number(saved?.l10CartTrips) || 0;
@@ -1582,6 +1593,25 @@
     return ({orb:'sike',stone:'kiwen',vessel:'poki'})[String(carryId||'')] || 'ijo';
   }
 
+  function ensureL9RelicSourceContents(){
+    const defaults={l9OrbRelic:'orb',l9StoneRelic:'stone',l9VesselRelic:'vessel'};
+    const sources=(state.l9RelicSourceContents && typeof state.l9RelicSourceContents==='object')
+      ? state.l9RelicSourceContents
+      : {};
+    for(const [sourceId,carryId] of Object.entries(defaults)){
+      if(Object.prototype.hasOwnProperty.call(sources,sourceId))continue;
+      sources[sourceId]=(state.carrying===`l9:${carryId}` || l9RelicPlacedPedestal(carryId))?null:carryId;
+    }
+    state.l9RelicSourceContents=sources;
+    return sources;
+  }
+
+  function l9RelicSourceCarryId(obj){
+    if(!obj || obj.interact!=='l9CarryRelic')return null;
+    const sources=ensureL9RelicSourceContents();
+    return Object.prototype.hasOwnProperty.call(sources,obj.id) ? (sources[obj.id]||null) : null;
+  }
+
   function l9MarkerProgress(){
     const puzzle=campaignPuzzle('l9-maze-survey');
     const ids=puzzle?.ui?.payload?.markerIds||['north-marker','west-marker','south-marker'];
@@ -1715,7 +1745,7 @@
     if (obj.interact === 'l9MazeMarker' && (campaignSolved('l9-maze-survey') || state.l9Markers?.[obj.markerId])) return false;
     if (obj.interact === 'l9CarryRelic') {
       if (campaignSolved('l9-counterweight')) return false;
-      if (state.carrying === `l9:${obj.carryId}` || l9RelicPlacedPedestal(obj.carryId)) return false;
+      return Boolean(l9RelicSourceCarryId(obj));
     }
     if (obj.type === 'cart') return state.l10CartDock === obj.dockId;
     if (obj.interact === 'l10BulkParcel') {
@@ -1814,6 +1844,27 @@
     }
   }
 
+  const LEVEL1_MAZE_PRIMARY_GLYPH_PUZZLES = Object.freeze(['l1-maze-seli','l1-maze-awen','l1-maze-luka']);
+
+  function level1MazePrimaryGlyphsComplete() {
+    return LEVEL1_MAZE_PRIMARY_GLYPH_PUZZLES.every(id => campaignSolved(id));
+  }
+
+  function level1MazeCompletionTeleport(puzzleId) {
+    if (state.levelId !== 'maze') return false;
+    if (LEVEL1_MAZE_PRIMARY_GLYPH_PUZZLES.includes(puzzleId) && level1MazePrimaryGlyphsComplete() && !campaignSolved('l1-maze-code')) {
+      clearMovement();
+      transitionLevel('maze', 1.5, 1.82, -Math.PI/2, 'All three maze glyphs are recovered. You return to the maze entrance to use them on the return-code door.');
+      return true;
+    }
+    if (puzzleId === 'l1-inner-signed-number' && campaignSolved('l1-inner-signed-number')) {
+      clearMovement();
+      transitionLevel('main', 3.2, 9.3, 0, 'The final maze glyph is recovered. You return directly to the Lower Concourse; there is nothing else to collect in the maze.');
+      return true;
+    }
+    return false;
+  }
+
   function level1MazeFullyComplete() {
     const world = campaignWorld();
     return Boolean(
@@ -1831,7 +1882,11 @@
     const puzzleSolved = Boolean(obj.puzzleId && campaignSolved(obj.puzzleId));
     const individuallyRecorded = Boolean(obj.interact === 'l11CallPylon' && state.l11CallMarkers?.[obj.pylonId]);
     const mazeFullyComplete = obj.type === 'mazeGate' ? level1MazeFullyComplete() : false;
-    const key = `${obj.type}:${obj.id || ''}:${obj.puzzleId || ''}:${obj.word || ''}:${obj.panelId || ''}:${state.lowerPowerOn ? 1 : 0}:${state.trapdoorOpen ? 1 : 0}:${puzzleSolved ? 1 : 0}:${individuallyRecorded ? 1 : 0}:${mazeFullyComplete ? 1 : 0}`;
+    const l9SourceCarryId=obj.interact==='l9CarryRelic'?l9RelicSourceCarryId(obj):null;
+    const displayWord=l9SourceCarryId?l9RelicWord(l9SourceCarryId):(obj.word||'');
+    const cartCargo=obj.type==='cart'?(state.l10CartCargo||[]):[];
+    const cartCargoKey=cartCargo.join(',');
+    const key = `${obj.type}:${obj.id || ''}:${obj.puzzleId || ''}:${displayWord}:${obj.panelId || ''}:${cartCargoKey}:${state.lowerPowerOn ? 1 : 0}:${state.trapdoorOpen ? 1 : 0}:${puzzleSolved ? 1 : 0}:${individuallyRecorded ? 1 : 0}:${mazeFullyComplete ? 1 : 0}`;
     if (spriteCache.has(key)) return spriteCache.get(key);
     const c = document.createElement('canvas');
     c.width = 128; c.height = 128;
@@ -1870,20 +1925,22 @@
         verticalOffset = -0.02; break;
       }
       case 'trapdoor': {
+        const isL9RouteHatch=String(obj.id||'').startsWith('l9');
         const isL10ColdHatch=obj.id==='l10GroundColdLift';
         const isL11RouteHatch=String(obj.id||'').startsWith('l11');
         const isL12RouteHatch=String(obj.id||'').startsWith('l12');
-        const trapOpen=String(obj.id||'').startsWith('l9') || isL10ColdHatch || isL11RouteHatch || isL12RouteHatch || state.trapdoorOpen;
-        if(isL10ColdHatch || isL11RouteHatch || isL12RouteHatch){
+        const isMarkedRouteHatch=isL9RouteHatch || isL10ColdHatch || isL11RouteHatch || isL12RouteHatch;
+        const trapOpen=isMarkedRouteHatch || state.trapdoorOpen;
+        if(isMarkedRouteHatch){
           g.fillStyle='#d7c28b';g.beginPath();g.arc(64,19,17,0,Math.PI*2);g.fill();
           g.strokeStyle='#17140e';g.lineWidth=3;g.stroke();
           g.fillStyle='#17140e';g.font='900 25px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('↓',64,18);
         }
         g.fillStyle = trapOpen ? '#050708' : '#443b32';
         g.beginPath(); g.moveTo(16, 66); g.lineTo(45, 31); g.lineTo(116, 54); g.lineTo(88, 94); g.closePath(); g.fill();
-        g.strokeStyle = (isL10ColdHatch || isL11RouteHatch || isL12RouteHatch) ? '#d7c28b' : '#938474'; g.lineWidth = (isL10ColdHatch || isL11RouteHatch || isL12RouteHatch) ? 8 : 4; g.stroke();
+        g.strokeStyle = isMarkedRouteHatch ? '#d7c28b' : '#938474'; g.lineWidth = isMarkedRouteHatch ? 8 : 4; g.stroke();
         g.strokeStyle = trapOpen ? '#000' : '#25211d'; g.lineWidth = 5; g.beginPath(); g.moveTo(41, 54); g.lineTo(94, 72); g.stroke();
-        verticalOffset = (isL10ColdHatch || isL11RouteHatch || isL12RouteHatch) ? 0.22 : 0.30; break;
+        verticalOffset = isMarkedRouteHatch ? 0.22 : 0.30; break;
       }
       case 'console': {
         g.fillStyle = '#344149'; g.fillRect(21, 26, 86, 96);
@@ -1939,7 +1996,7 @@
         g.shadowColor='rgba(232,205,125,.5)';g.shadowBlur=13;
         g.fillStyle='#8b7650';g.beginPath();g.arc(64,69,38,0,Math.PI*2);g.fill();
         g.shadowBlur=0;g.strokeStyle='#d7c28b';g.lineWidth=4;g.stroke();
-        g.fillStyle='#15140f';g.font=`54px "${NASIN_NANPA_FONT}"`;g.textAlign='center';g.textBaseline='middle';g.fillText(glyphChar(obj.word||'ijo'),64,68);
+        g.fillStyle='#15140f';g.font=`54px "${NASIN_NANPA_FONT}"`;g.textAlign='center';g.textBaseline='middle';g.fillText(glyphChar(displayWord||'ijo'),64,68);
         g.restore();verticalOffset=0.19;break;
       }
       case 'parcel': {
@@ -1951,12 +2008,32 @@
         verticalOffset=0.18;break;
       }
       case 'cart': {
+        const cargo=cartCargo.slice(0,2);
+        // Draw carried crates above the trolley body so its load state is obvious in-world.
+        // This is presentation only; delivery capacity and routing logic remain unchanged.
+        if(cargo.length){
+          const crateW=cargo.length===1?48:40;
+          const gap=4;
+          const totalW=crateW*cargo.length+gap*(cargo.length-1);
+          const startX=64-totalW/2;
+          for(let i=0;i<cargo.length;i++){
+            const x=startX+i*(crateW+gap);
+            g.fillStyle='#8a6c46';g.fillRect(x,22,crateW,35);
+            g.strokeStyle='#d1b887';g.lineWidth=3;g.strokeRect(x,22,crateW,35);
+            g.fillStyle='#efe3c1';g.fillRect(x+7,28,crateW-14,15);
+            g.fillStyle='#17140f';g.font=`20px "${NASIN_NANPA_FONT}"`;g.textAlign='center';g.textBaseline='middle';g.fillText(glyphChar(l10ParcelWord(cargo[i])),x+crateW/2,35);
+          }
+        }
         g.fillStyle='#5d666b';g.fillRect(18,50,92,45);
-        g.strokeStyle='#b1b8bb';g.lineWidth=4;g.strokeRect(18,50,92,45);
+        g.strokeStyle=cargo.length===2?'#d7c28b':'#b1b8bb';g.lineWidth=cargo.length===2?5:4;g.strokeRect(18,50,92,45);
         g.fillStyle='#30373a';g.fillRect(28,39,72,18);
         g.strokeStyle='#949da1';g.lineWidth=5;g.beginPath();g.moveTo(95,51);g.lineTo(111,25);g.stroke();
         g.fillStyle='#202426';g.beginPath();g.arc(37,105,13,0,Math.PI*2);g.arc(91,105,13,0,Math.PI*2);g.fill();
         g.fillStyle='#d7c28b';g.font=`31px "${NASIN_NANPA_FONT}"`;g.textAlign='center';g.textBaseline='middle';g.fillText(glyphChar('tawa'),64,74);
+        if(cargo.length===2){
+          g.fillStyle='#d7c28b';g.beginPath();g.arc(99,76,12,0,Math.PI*2);g.fill();
+          g.fillStyle='#17140e';g.font='900 10px system-ui,sans-serif';g.fillText('2/2',99,76);
+        }
         verticalOffset=0.15;break;
       }
       case 'pedestal': {
@@ -2032,6 +2109,29 @@
       mapCtx.beginPath();mapCtx.arc(mx,my,size*0.52,0,Math.PI*2);mapCtx.fill();mapCtx.stroke();
       mapCtx.fillStyle='#111';mapCtx.font=`900 ${Math.max(8,Math.floor(size*0.82))}px system-ui,sans-serif`;mapCtx.textAlign='center';mapCtx.textBaseline='middle';mapCtx.fillText(arrow,mx,my-0.5);mapCtx.restore();
     };
+    const drawGoldKeyMarker=(obj)=>{
+      if(!obj)return;
+      const mx=ox+obj.x*cell,my=oy+obj.y*cell,size=Math.max(7,cell*0.88);
+      mapCtx.save();
+      mapCtx.translate(mx,my);
+      mapCtx.rotate(-Math.PI/5);
+      mapCtx.strokeStyle='#20190a';
+      mapCtx.fillStyle='#e5bd55';
+      mapCtx.lineWidth=Math.max(1.15,cell*0.11);
+      mapCtx.beginPath();
+      mapCtx.arc(-size*0.25,0,size*0.20,0,Math.PI*2);
+      mapCtx.fill();mapCtx.stroke();
+      mapCtx.beginPath();
+      mapCtx.moveTo(-size*0.05,0);
+      mapCtx.lineTo(size*0.38,0);
+      mapCtx.lineTo(size*0.38,size*0.18);
+      mapCtx.lineTo(size*0.24,size*0.18);
+      mapCtx.lineTo(size*0.24,size*0.08);
+      mapCtx.lineTo(-size*0.05,size*0.08);
+      mapCtx.closePath();
+      mapCtx.fill();mapCtx.stroke();
+      mapCtx.restore();
+    };
     for (let y = 0; y < map.length; y++) for (let x = 0; x < map[y].length; x++) {
       if (!explored[`${x},${y}`]) continue;
       const c = map[y][x];
@@ -2041,6 +2141,23 @@
       mapCtx.fillRect(ox + x*cell, oy + y*cell, Math.ceil(cell), Math.ceil(cell));
     }
     if (state.levelId === 'maze') {
+      // Level 1 keeps the maze itself under fog-of-war, but its objective locations are
+      // deliberately visible from the start so the introductory maze teaches navigation
+      // without requiring blind dead-end hunting. Collected markers disappear individually.
+      const level1MazeMarkers = [
+        ['l1-maze-seli','glyphSeli'],
+        ['l1-maze-awen','glyphAwen'],
+        ['l1-maze-luka','glyphLuka']
+      ];
+      for (const [puzzleId,objectId] of level1MazeMarkers) {
+        if (!campaignSolved(puzzleId)) drawGoldKeyMarker(level().objects.find(obj=>obj.id===objectId));
+      }
+      // Once Maintenance opens the delayed inner door, reveal the final objective key even
+      // if the narrow inner corridor itself has not yet been explored on the map.
+      if (campaignWorld().innerMazeDoorUnlocked && !campaignSolved('l1-inner-signed-number')) {
+        drawGoldKeyMarker(level().objects.find(obj=>obj.id==='innerNumberPanel'));
+      }
+
       // The entrance/exit is deliberately shown even when the rest of the maze is only partially explored.
       const ex = ox + 1.5 * cell;
       const ey = oy + 1.18 * cell;
@@ -2059,6 +2176,23 @@
       mapCtx.restore();
     }
     if (state.levelId === 'l9maze') {
+      // Level 9 keeps the labyrinth itself under fog-of-war, but the three required
+      // survey/glyph objectives are shown from the moment the player enters so the
+      // larger branching maze remains exploratory without becoming aimless.
+      const level9MazeMarkers = [
+        ['north-marker','l9MarkerNorth'],
+        ['west-marker','l9MarkerWest'],
+        ['south-marker','l9MarkerSouth']
+      ];
+      for (const [markerId,objectId] of level9MazeMarkers) {
+        if (!state.l9Markers?.[markerId]) drawGoldKeyMarker(level().objects.find(obj=>obj.id===objectId));
+      }
+      // After the Sphinx is solved, make the actual progression route unmistakable:
+      // the lower-chamber trapdoor gets a persistent minimap down-arrow until the
+      // counterweight stage is complete. The upper ladder remains only a convenience exit.
+      if (campaignSolved('l9-sphinx-riddles') && !campaignSolved('l9-counterweight')) {
+        drawRouteMarker(level().objects.find(obj=>obj.id==='l9SphinxTrapdoor'),'↓');
+      }
       // Level 9 starts on a ladder rather than a door, so keep the labyrinth entrance
       // permanently marked even when nearby cells are still unexplored.
       const ex = ox + 1.55 * cell;
@@ -2219,8 +2353,8 @@
     }
     if (progress.levelNo === 9 && campaignSolved('l9-sphinx-riddles') && !campaignSolved('l9-counterweight')) {
       return isTpLanguage()
-        ? `${prefix} · jan [[Sphinx]] li pini · o kepeken nasin weka lili tawa tomo kama.`
-        : `${prefix} · Sphinx solved · Use the quick exit from the Sphinx Court to reach the next chamber.`;
+        ? `${prefix} · jan [[Sphinx]] li pini · o kepeken lupa anpa pi sitelen ↓ lon tomo jan [[Sphinx]]. o tawa anpa tawa tomo ijo suli.`
+        : `${prefix} · Sphinx solved · Take the gold-marked trapdoor ↓ in the Sphinx Court down to the Counterweight Chamber.`;
     }
     if (progress.levelNo === 10) {
       const world=campaignWorld();
@@ -2595,11 +2729,14 @@
         const survey=l9MarkerProgress();
         return `${p} · inspect survey marker (${survey.found}/${survey.needed} already found)`;
       }
-      case 'l9CarryRelic':
-        return state.carrying ? `${p} · hands full` : `${p} · take ${obj.word||l9RelicWord(obj.carryId)}`;
+      case 'l9CarryRelic': {
+        const sourceCarryId=l9RelicSourceCarryId(obj),sourceWord=l9RelicWord(sourceCarryId);
+        if(state.carrying&&String(state.carrying).startsWith('l9:'))return `${p} · swap carried ${l9RelicWord(String(state.carrying).slice(3))} for ${sourceWord}`;
+        return state.carrying ? `${p} · hands full` : `${p} · take ${sourceWord}`;
+      }
       case 'l9RelicPedestal': {
         const puzzle=campaignPuzzle('l9-counterweight'),spec=puzzle?.ui?.payload?.pedestals?.find(x=>x.id===obj.pedestalId),placed=state.l9Placements?.[obj.pedestalId];
-        if(state.carrying&&String(state.carrying).startsWith('l9:'))return placed?`${p} · pedestal occupied`:`${p} · place carried relic · ${spec?.clue||''}`;
+        if(state.carrying&&String(state.carrying).startsWith('l9:'))return placed?`${p} · swap carried relic with ${l9RelicWord(placed)}`:`${p} · place carried relic · ${spec?.clue||''}`;
         if(placed)return `${p} · take placed ${l9RelicWord(placed)} · ${spec?.clue||''}`;
         return `${p} · inspect pedestal · ${spec?.clue||''}`;
       }
@@ -2718,11 +2855,15 @@
       case 'l9UpperToVault': return `${p} · o tawa anpa kepeken lupa sin`;
       case 'l9VaultToUpper': return `${p} · o kama sin tawa tomo sewi`;
       case 'l9MazeMarker': { const survey=l9MarkerProgress(); return `${p} · o lukin e sitelen alasa (${survey.found}/${survey.needed})`; }
-      case 'l9CarryRelic': return state.carrying ? `${p} · luka sina li jo e ijo` : `${p} · o kama jo e [[${obj.word||l9RelicWord(obj.carryId)}]]`;
+      case 'l9CarryRelic': {
+        const sourceCarryId=l9RelicSourceCarryId(obj),sourceWord=l9RelicWord(sourceCarryId);
+        if(state.carrying&&String(state.carrying).startsWith('l9:'))return `${p} · o ante e [[${l9RelicWord(String(state.carrying).slice(3))}]] kepeken [[${sourceWord}]]`;
+        return state.carrying ? `${p} · luka sina li jo e ijo` : `${p} · o kama jo e [[${sourceWord}]]`;
+      }
       case 'l9RelicPedestal': {
         const puzzle=campaignPuzzle('l9-counterweight'),spec=puzzle?.ui?.payload?.pedestals?.find(x=>x.id===obj.pedestalId),placed=state.l9Placements?.[obj.pedestalId];
         const clue=exactText(spec?.clue||'');
-        if(state.carrying&&String(state.carrying).startsWith('l9:'))return placed?`${p} · supa li jo e ijo`:`${p} · o pana e ijo jo lon supa · ${clue}`;
+        if(state.carrying&&String(state.carrying).startsWith('l9:'))return placed?`${p} · o ante e ijo jo kepeken [[${l9RelicWord(placed)}]]`:`${p} · o pana e ijo jo lon supa · ${clue}`;
         if(placed)return `${p} · o kama jo e [[${l9RelicWord(placed)}]] · ${clue}`;
         return `${p} · o lukin e supa · ${clue}`;
       }
@@ -2908,6 +3049,7 @@
     saveState();
     renderCollection();
     updateHUD();
+    level1MazeCompletionTeleport(puzzleId);
     if (result.levelComplete) window.setTimeout(() => { if (glyphPopup.hidden) openLevelComplete(); }, 80);
     return result;
   }
@@ -3067,8 +3209,16 @@
       }
       case 'l9CarryRelic': {
         if(campaignSolved('l9-counterweight')){showMessage('The counterweight relics are already balanced.');softTone();break;}
+        const sources=ensureL9RelicSourceContents(),sourceCarryId=l9RelicSourceCarryId(obj);
+        if(!sourceCarryId){showMessagePair('There is no relic here.','ijo alasa li lon ala ni.');softTone();break;}
+        if(state.carrying&&String(state.carrying).startsWith('l9:')){
+          const carriedId=String(state.carrying).slice(3);
+          sources[obj.id]=carriedId;state.carrying=`l9:${sourceCarryId}`;spriteCache.clear();
+          showMessagePair(`You swap the ${l9RelicWord(carriedId)} relic for the ${l9RelicWord(sourceCarryId)} relic.`,`sina ante e [[${l9RelicWord(carriedId)}]] kepeken [[${l9RelicWord(sourceCarryId)}]].`);
+          stepTone();break;
+        }
         if(state.carrying){showMessage('You can carry only one object at a time.');blockedTone();break;}
-        state.carrying=`l9:${obj.carryId}`;showMessage(`You take the ${obj.word||l9RelicWord(obj.carryId)} relic.`);pickupTone();spriteCache.clear();
+        sources[obj.id]=null;state.carrying=`l9:${sourceCarryId}`;showMessage(`You take the ${l9RelicWord(sourceCarryId)} relic.`);pickupTone();spriteCache.clear();
         break;
       }
       case 'l9RelicPedestal': {
@@ -3076,13 +3226,17 @@
         state.l9Placements=state.l9Placements||{};
         const placed=state.l9Placements[obj.pedestalId];
         if(state.carrying&&String(state.carrying).startsWith('l9:')){
-          if(placed){showMessage('That pedestal is occupied. Pick up its relic first.');blockedTone();break;}
           const carryId=String(state.carrying).slice(3);
-          state.l9Placements[obj.pedestalId]=carryId;state.carrying=null;spriteCache.clear();
+          if(placed){
+            state.l9Placements[obj.pedestalId]=carryId;state.carrying=`l9:${placed}`;spriteCache.clear();
+            showMessagePair(`You swap the ${l9RelicWord(carryId)} relic with the ${l9RelicWord(placed)} relic on the pedestal.`,`sina ante e [[${l9RelicWord(carryId)}]] kepeken [[${l9RelicWord(placed)}]] lon supa.`);
+          }else{
+            state.l9Placements[obj.pedestalId]=carryId;state.carrying=null;spriteCache.clear();
+          }
           if(l9CounterweightPlacementCorrect()){
             const result=completeCampaignPuzzle('l9-counterweight','Earned by carrying and correctly placing all three relics across the three floors.');
             if(result.ok)showMessage('The counterweights balance. A direct ladder to the upper loft drops into place.');
-          }else showMessage(`Relic placed. ${spec?.clue||'Check the pedestal clue.'}`);
+          }else if(!placed) showMessage(`Relic placed. ${spec?.clue||'Check the pedestal clue.'}`);
           stepTone();
         }else if(placed){
           state.carrying=`l9:${placed}`;delete state.l9Placements[obj.pedestalId];spriteCache.clear();
@@ -3693,6 +3847,210 @@
     return out;
   }
 
+  const SUDOKU_VARIANT_VERSION = 1;
+
+  function sudokuBitCount(mask) {
+    let n = 0, value = Number(mask) || 0;
+    while (value) { value &= value - 1; n++; }
+    return n;
+  }
+
+  function sudokuCandidateMask(grid, index) {
+    if (!Array.isArray(grid) || grid.length !== 81 || Number(grid[index])) return 0;
+    const row = Math.floor(index / 9), col = index % 9;
+    let used = 0;
+    for (let k = 0; k < 9; k++) {
+      const rv = Number(grid[row * 9 + k]) || 0, cv = Number(grid[k * 9 + col]) || 0;
+      if (rv) used |= 1 << rv;
+      if (cv) used |= 1 << cv;
+    }
+    const boxRow = Math.floor(row / 3) * 3, boxCol = Math.floor(col / 3) * 3;
+    for (let y = boxRow; y < boxRow + 3; y++) for (let x = boxCol; x < boxCol + 3; x++) {
+      const value = Number(grid[y * 9 + x]) || 0;
+      if (value) used |= 1 << value;
+    }
+    return 0x3fe & ~used;
+  }
+
+  function sudokuValidSolution(solution) {
+    if (!Array.isArray(solution) || solution.length !== 81) return false;
+    const grid = solution.map(Number);
+    if (grid.some(value => !Number.isInteger(value) || value < 1 || value > 9)) return false;
+    const validUnit = indices => new Set(indices.map(index => grid[index])).size === 9;
+    for (let r = 0; r < 9; r++) if (!validUnit(Array.from({length:9}, (_, c) => r * 9 + c))) return false;
+    for (let c = 0; c < 9; c++) if (!validUnit(Array.from({length:9}, (_, r) => r * 9 + c))) return false;
+    for (let br = 0; br < 3; br++) for (let bc = 0; bc < 3; bc++) {
+      const indices=[];
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) indices.push((br * 3 + r) * 9 + bc * 3 + c);
+      if (!validUnit(indices)) return false;
+    }
+    return true;
+  }
+
+  function sudokuSolutionCount(puzzle, limit=2) {
+    const grid = Array.from(puzzle || []).slice(0,81).map(value => Number(value) || 0);
+    if (grid.length !== 81) return 0;
+    let count = 0;
+    const search = () => {
+      if (count >= limit) return;
+      let bestIndex = -1, bestMask = 0, bestCount = 10;
+      for (let index = 0; index < 81; index++) {
+        if (grid[index]) continue;
+        const mask = sudokuCandidateMask(grid,index), choices = sudokuBitCount(mask);
+        if (!choices) return;
+        if (choices < bestCount) {
+          bestIndex = index; bestMask = mask; bestCount = choices;
+          if (choices === 1) break;
+        }
+      }
+      if (bestIndex < 0) { count++; return; }
+      for (let digit = 1; digit <= 9; digit++) {
+        if (!(bestMask & (1 << digit))) continue;
+        grid[bestIndex] = digit;
+        search();
+        grid[bestIndex] = 0;
+        if (count >= limit) return;
+      }
+    };
+    search();
+    return count;
+  }
+
+  function sudokuSinglesLogicalSolve(puzzle) {
+    const grid = Array.from(puzzle || []).slice(0,81).map(value => Number(value) || 0);
+    if (grid.length !== 81) return { solved:false, filled:0 };
+    const units=[];
+    for (let r=0;r<9;r++) units.push(Array.from({length:9},(_,c)=>r*9+c));
+    for (let c=0;c<9;c++) units.push(Array.from({length:9},(_,r)=>r*9+c));
+    for (let br=0;br<3;br++) for (let bc=0;bc<3;bc++) {
+      const unit=[];
+      for (let r=0;r<3;r++) for (let c=0;c<3;c++) unit.push((br*3+r)*9+bc*3+c);
+      units.push(unit);
+    }
+    let changed=true;
+    while (changed) {
+      changed=false;
+      const fills=[];
+      for (let index=0;index<81;index++) {
+        if (grid[index]) continue;
+        const mask=sudokuCandidateMask(grid,index), choices=sudokuBitCount(mask);
+        if (!choices) return { solved:false, filled:grid.filter(Boolean).length };
+        if (choices===1) fills.push([index,Math.log2(mask)|0]);
+      }
+      if (!fills.length) {
+        for (const unit of units) for (let digit=1;digit<=9;digit++) {
+          const spots=unit.filter(index=>!grid[index] && (sudokuCandidateMask(grid,index)&(1<<digit)));
+          if (spots.length===1) fills.push([spots[0],digit]);
+        }
+      }
+      if (fills.length) {
+        for (const [index,digit] of fills) {
+          if (grid[index] && grid[index]!==digit) return { solved:false, filled:grid.filter(Boolean).length };
+          grid[index]=digit;
+        }
+        changed=true;
+      }
+    }
+    return { solved:grid.every(Boolean), filled:grid.filter(Boolean).length };
+  }
+
+  function sudokuVariantQuality(puzzle) {
+    const grid=Array.from(puzzle||[]).slice(0,81).map(value=>Number(value)||0);
+    if (grid.length!==81) return { acceptable:false };
+    const clues=grid.filter(Boolean).length, blanks=81-clues;
+    let multiple=0, singles=0;
+    for (let index=0;index<81;index++) {
+      if (grid[index]) continue;
+      const choices=sudokuBitCount(sudokuCandidateMask(grid,index));
+      if (choices>=2) multiple++;
+      else if (choices===1) singles++;
+      else return { acceptable:false, clues, blanks, multiple, singles, multipleRatio:0 };
+    }
+    const unitClues=[];
+    for (let r=0;r<9;r++) unitClues.push(grid.slice(r*9,r*9+9).filter(Boolean).length);
+    for (let c=0;c<9;c++) unitClues.push(Array.from({length:9},(_,r)=>grid[r*9+c]).filter(Boolean).length);
+    for (let br=0;br<3;br++) for (let bc=0;bc<3;bc++) {
+      let count=0;
+      for (let r=0;r<3;r++) for (let c=0;c<3;c++) if (grid[(br*3+r)*9+bc*3+c]) count++;
+      unitClues.push(count);
+    }
+    const multipleRatio=blanks?multiple/blanks:0, logical=sudokuSinglesLogicalSolve(grid);
+    return {
+      acceptable: clues>=27 && clues<=31 && Math.min(...unitClues)>=2 && singles>=1 && singles<=12 && multipleRatio>=0.70 && logical.solved,
+      clues, blanks, multiple, singles, multipleRatio, minUnitClues:Math.min(...unitClues), logicalFilled:logical.filled
+    };
+  }
+
+  function sudokuRandomizedSolution(baseSolution) {
+    const source=sudokuValidSolution(baseSolution)?Array.from(baseSolution).map(Number):null;
+    if (!source) return null;
+    const digits=shuffledCopy([1,2,3,4,5,6,7,8,9]);
+    const rows=[];
+    for (const band of shuffledCopy([0,1,2])) for (const row of shuffledCopy([0,1,2])) rows.push(band*3+row);
+    const cols=[];
+    for (const stack of shuffledCopy([0,1,2])) for (const col of shuffledCopy([0,1,2])) cols.push(stack*3+col);
+    const transpose=Boolean(randomIndex(2));
+    const solution=[];
+    for (let r=0;r<9;r++) for (let c=0;c<9;c++) {
+      const rr=transpose?rows[c]:rows[r], cc=transpose?cols[r]:cols[c];
+      solution.push(digits[source[rr*9+cc]-1]);
+    }
+    return solution;
+  }
+
+  function generateSudokuVariant(payload) {
+    const baseSolution=Array.from(payload?.solution||[]).map(Number);
+    if (!sudokuValidSolution(baseSolution)) return null;
+    for (let attempt=0;attempt<120;attempt++) {
+      const solution=sudokuRandomizedSolution(baseSolution);
+      if (!solution) break;
+      const targetClues=27+randomIndex(5), puzzle=Array.from(solution);
+      let clues=81;
+      for (const index of shuffledCopy(Array.from({length:81},(_,i)=>i))) {
+        if (clues<=targetClues) break;
+        const value=puzzle[index];
+        puzzle[index]=0;
+        if (sudokuSolutionCount(puzzle,2)!==1) puzzle[index]=value;
+        else clues--;
+      }
+      if (clues!==targetClues) continue;
+      const quality=sudokuVariantQuality(puzzle);
+      if (!quality.acceptable) continue;
+      return { version:SUDOKU_VARIANT_VERSION, puzzle, solution, clues, quality:{multipleRatio:quality.multipleRatio,singles:quality.singles,minUnitClues:quality.minUnitClues} };
+    }
+    return null;
+  }
+
+  function getSudokuVariant(puzzle) {
+    if (!state.puzzleVariants || typeof state.puzzleVariants !== 'object') state.puzzleVariants={};
+    const payload=puzzle?.ui?.payload||{}, saved=state.puzzleVariants[puzzle.id];
+    const validVariant=variant=>{
+      if (!variant || Number(variant.version)!==SUDOKU_VARIANT_VERSION || !Array.isArray(variant.puzzle) || !Array.isArray(variant.solution)) return false;
+      if (variant.puzzle.length!==81 || !sudokuValidSolution(variant.solution)) return false;
+      const givens=variant.puzzle.map(value=>Number(value)||0), solution=variant.solution.map(Number), clues=givens.filter(Boolean).length;
+      return clues>=27 && clues<=31 && givens.every((value,index)=>!value || value===solution[index]);
+    };
+    if (validVariant(saved)) return { puzzle:saved.puzzle.map(Number), solution:saved.solution.map(Number) };
+
+    // Preserve an in-progress v0.151 Sudoku when this build is opened over an
+    // existing save. New Level 12 runs have no saved mechanism state and therefore
+    // receive a freshly generated variant below.
+    const legacyState=state.l12MechanismStates?.[puzzle.id];
+    if (legacyState && Array.isArray(payload.puzzle) && Array.isArray(payload.solution)) {
+      const legacy={version:SUDOKU_VARIANT_VERSION,puzzle:Array.from(payload.puzzle).map(Number),solution:Array.from(payload.solution).map(Number),legacy:true};
+      state.puzzleVariants[puzzle.id]=legacy;
+      saveState();
+      return { puzzle:Array.from(legacy.puzzle), solution:Array.from(legacy.solution) };
+    }
+
+    const generated=generateSudokuVariant(payload);
+    const fallback={version:SUDOKU_VARIANT_VERSION,puzzle:Array.from(payload.puzzle||[]).map(Number),solution:Array.from(payload.solution||[]).map(Number),fallback:true};
+    const variant=generated||fallback;
+    state.puzzleVariants[puzzle.id]=variant;
+    saveState();
+    return { puzzle:Array.from(variant.puzzle), solution:Array.from(variant.solution) };
+  }
+
   function codebreakerGlyphPool() {
     const campaign = campaignAdapter?.runtime?.campaign;
     const current = campaignAdapter?.currentLevel?.();
@@ -3707,6 +4065,18 @@
       }
     }
     return out;
+  }
+
+  function randomizedCodebreakerSecret(requested, minDisplaced=0) {
+    const size = Math.max(2, Math.floor(Number(requested) || 2));
+    const identity = Array.from({length:size}, (_, index) => index);
+    const minimum = Math.max(0, Math.min(size, Math.floor(Number(minDisplaced) || 0)));
+    for (let attempt=0; attempt<48; attempt++) {
+      const candidate = shuffledCopy(identity);
+      const displaced = candidate.reduce((count, value, index) => count + (Number(value) !== index ? 1 : 0), 0);
+      if (displaced >= minimum) return candidate;
+    }
+    return minimum ? identity.map((_, index) => (index + 1) % size) : shuffledCopy(identity);
   }
 
   function getCodebreakerVariant(puzzle) {
@@ -3724,7 +4094,8 @@
     if (pool.length < requested) pool = STANDARD_120.filter(word => collected(word));
     if (pool.length < requested) pool = STANDARD_120.slice();
     const words = shuffledCopy(pool).slice(0, requested);
-    const secret = shuffledCopy(Array.from({length:requested}, (_, index) => index));
+    const minDisplaced = puzzle?.id === 'l12-master-code' ? Math.min(requested, 4) : 0;
+    const secret = randomizedCodebreakerSecret(requested, minDisplaced);
     const variant = { words, secret };
     state.puzzleVariants[puzzle.id] = variant;
     saveState();
@@ -3882,7 +4253,8 @@
       case 'lineage-match': return { assignments:(payload.hatchlings||[]).map(()=>null) };
       case 'habitat-triage': return { akesi:null, moli:null };
       case 'sudoku': {
-        const cells=Array.from(payload.puzzle||[]).slice(0,81).map(v=>Number(v)||0);
+        const variant=getSudokuVariant(puzzle);
+        const cells=Array.from(variant.puzzle||[]).slice(0,81).map(v=>Number(v)||0);
         while(cells.length<81)cells.push(0);
         return { cells, notes:Array.from({length:81},()=>[]), selected:null, noteMode:false };
       }
@@ -4162,7 +4534,7 @@
       case 'path-grid': return Boolean(st.finished);
       case 'lights-out': return Array.isArray(st.lights) && st.lights.length > 0 && st.lights.every(v => Number(v) === Number(payload.target ?? 1));
       case 'balance-scale': return balanceSum(puzzle) === Number(payload.target);
-      case 'context-match': return Number(st.selectedIndex) === Number(payload.correctIndex);
+      case 'context-match': return st.selectedIndex != null && Number(st.selectedIndex) === Number(payload.correctIndex);
       case 'jug-transfer': return Array.isArray(st.amounts) && st.amounts.some(v => Number(v) === Number(payload.target));
       case 'hanoi-stack': {
         const n=Math.max(1,Number(payload.discCount)||3), target=Math.max(0,Number(payload.targetRod)||2);
@@ -4225,7 +4597,10 @@
       case 'call-triangulation': return Array.isArray(st.selected) && Number(st.selected[0])===Number(payload.target?.[0]) && Number(st.selected[1])===Number(payload.target?.[1]);
       case 'lineage-match': return JSON.stringify(st.assignments||[])===JSON.stringify(payload.targetAssignments||[]);
       case 'habitat-triage': return String(st.akesi||'')===String(payload.target?.akesi||'') && String(st.moli||'')===String(payload.target?.moli||'');
-      case 'sudoku': return Array.isArray(st.cells) && st.cells.length===81 && JSON.stringify(st.cells.map(Number))===JSON.stringify((payload.solution||[]).map(Number));
+      case 'sudoku': {
+        const variant=getSudokuVariant(puzzle);
+        return Array.isArray(st.cells) && st.cells.length===81 && JSON.stringify(st.cells.map(Number))===JSON.stringify((variant.solution||[]).map(Number));
+      }
       case 'pattern-sequence': return Number(st.selectedIndex)===Number(payload.correctIndex);
       default: return false;
     }
@@ -4362,7 +4737,7 @@
     const names=isTpLanguage()?['poka loje','meso','poka laso']:['left','middle','right'];
     (st.values||[]).forEach((value,index)=>{
       const dial=document.createElement('div'); dial.className=`dialUnit${tutorialFeedbackMatches(puzzle,'dial',index)?' tutorialConfirmed':''}`;
-      const label=document.createElement('div'); label.className='dialLabel'; label.textContent=names[index]||`dial ${index+1}`;
+      const label=document.createElement('div'); label.className='dialLabel'; renderLocalized(label,names[index]||`dial ${index+1}`,{sitelen:isTpLanguage()});
       const up=document.createElement('button'); up.type='button'; up.className='dialAdjust'; up.textContent='▲'; up.setAttribute('aria-label',`Increase ${label.textContent}`);
       const display=document.createElement('div'); display.className='dialValue'; renderBareNanpaDigits(display,value,{className:'dialBareDigit'});
       const down=document.createElement('button'); down.type='button'; down.className='dialAdjust'; down.textContent='▼'; down.setAttribute('aria-label',`Decrease ${label.textContent}`);
@@ -4461,7 +4836,7 @@
     const target=document.createElement('div'); target.className='contextTarget'; target.innerHTML='<strong>TIME</strong><span>03:09</span>';
     const choices=document.createElement('div'); choices.className='contextChoices';
     (payload.choices||[]).forEach((choice,index)=>{
-      const b=document.createElement('button');b.type='button';b.className=`contextChoice${Number(st.selectedIndex)===index?' selected':''}`;b.setAttribute('aria-label',`Choice ${index+1}`);
+      const b=document.createElement('button');b.type='button';b.className=`contextChoice${st.selectedIndex != null && Number(st.selectedIndex)===index?' selected':''}`;b.setAttribute('aria-label',`Choice ${index+1}`);
       const tag=document.createElement('span');tag.className='contextChoiceTag';tag.textContent=String.fromCharCode(65+index);
       const c=document.createElement('canvas');c.width=320;c.height=78;c.className='contextChoiceCanvas';b.append(tag,c);b.addEventListener('click',()=>{clearTutorialSubmissionFeedback();st.selectedIndex=index;renderCampaignPuzzle();});choices.appendChild(b);
       renderNanpaSourceToCanvas(choice.source,c,38);
@@ -4572,7 +4947,7 @@
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const fractions=payload.fractions||[], decimals=payload.decimals||[], percents=payload.percents||[];
     const wrap=document.createElement('div');wrap.className='equivalenceWrap';
     const grid=document.createElement('div');grid.className='equivalenceGrid';
-    for(const title of ['fraction','decimal','percent']){const h=document.createElement('div');h.className='equivalenceHeader';renderLocalized(h,isTpLanguage()?({fraction:'kipisi',decimal:'nanpa lili',percent:'mute 100'}[title]):title);grid.appendChild(h);}
+    for(const title of ['fraction','decimal','percent']){const h=document.createElement('div');h.className='equivalenceHeader';renderLocalized(h,isTpLanguage()?({fraction:'kipisi',decimal:'nanpa lili',percent:'mute kipisi'}[title]):title);grid.appendChild(h);}
     const makeCard=(entry,column,row,movable)=>{
       const b=document.createElement(movable?'button':'div'); if(movable)b.type='button'; b.className=`equivalenceCard${st.selected?.column===column&&st.selected?.row===row?' selected':''}${movable?' movable':''}`;
       const c=document.createElement('canvas');c.width=220;c.height=68;c.className='equivalenceCanvas'; const small=document.createElement('small');small.textContent=entry?.source||'';b.append(c,small);renderNanpaSourceToCanvas(entry?.source||'',c,34);
@@ -5968,8 +6343,8 @@
   }
 
   function renderSudokuPuzzle(puzzle){
-    const payload=puzzle.ui?.payload||{},st=puzzleMechanismState;
-    const givens=Array.from(payload.puzzle||[]).slice(0,81).map(v=>Number(v)||0);
+    const st=puzzleMechanismState,variant=getSudokuVariant(puzzle);
+    const givens=Array.from(variant.puzzle||[]).slice(0,81).map(v=>Number(v)||0);
     const cells=Array.from(st.cells||givens).slice(0,81).map(v=>Number(v)||0);
     while(cells.length<81)cells.push(0);
     st.cells=cells;
@@ -6690,7 +7065,11 @@
     renderLocalized(puzzleEyebrow, eyebrow);
     renderLocalized(puzzleTitle, puzzleText(puzzle,'title') || puzzle.id);
     const instructionText = String(puzzleText(puzzle,'instructions') || '');
-    renderLocalized(puzzleInstructions, instructionText);
+    // In glyph-entry puzzles, the instruction is the source clue the player must
+    // convert into sitelen/nanpa-linja-n. Keep any numeric values in that explanatory
+    // text as ordinary decimal notation in TP too; rendering the clue itself as a
+    // numeric cartouche would partially give away the answer.
+    renderLocalized(puzzleInstructions, instructionText, {decimalNumbers:puzzle.type === 'glyph-key-code' || puzzle.type === 'equivalence-grid'});
     const helpLink = puzzle.ui?.helpLink;
     if (helpLink?.href) {
       if (instructionText) puzzleInstructions.appendChild(document.createTextNode(' '));
@@ -6980,7 +7359,7 @@
 
   async function ensureLevelRenderer() {
     if (!levelRendererPromise) {
-      levelRendererPromise = import(new URL('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285', document.baseURI).href)
+      levelRendererPromise = import(new URL('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=286', document.baseURI).href)
         .then(mod => mod.default || mod)
         .then(async SitelenRenderer => SitelenRenderer.create({
           layout:{fontPx:64,align:'center',spacingPreset:'compact',paddingPx:10},
@@ -7042,7 +7421,7 @@
     levelIntroCartouche?.setAttribute('aria-label', isTpLanguage()
       ? `ma musi ${levelNo}: nanpa lon poki nanpa-linja-n lili`
       : `Level ${levelNo} as an abbreviated nanpa-linja-n numeric cartouche`);
-    renderLocalized(levelIntroHint, isTpLanguage() ? 'o luka e ma ante la musi li open. Enter/Space li open kin.' : 'Tap anywhere to start · Enter/Space also starts');
+    renderLocalized(levelIntroHint, isTpLanguage() ? 'o luka e ma ante la musi li open.' : 'Tap anywhere to start · Enter/Space also starts');
     levelIntroShownAt = performance.now();
     openModal(levelIntroOverlay);
     renderLevelIntroCartouche(levelNo);
@@ -7210,7 +7589,8 @@
             forward /= len; strafe /= len;
           }
           const cos = Math.cos(state.angle), sin = Math.sin(state.angle);
-          const ms = mobileMovement ? MOBILE_MOVE_SPEED : MOVE_SPEED;
+          const landscapeJoystickDriving = joystickDriving && shortMobileLandscapePuzzleMode();
+          const ms = landscapeJoystickDriving ? MOVE_SPEED : (mobileMovement ? MOBILE_MOVE_SPEED : MOVE_SPEED);
           const ss = mobileMovement ? MOBILE_STRAFE_SPEED : STRAFE_SPEED;
           const dx = (cos * forward * ms + -sin * strafe * ss) * stepDt;
           const dy = (sin * forward * ms + cos * strafe * ss) * stepDt;
@@ -8106,7 +8486,7 @@
       case 'call-triangulation': return {...fresh,selected:Array.from(p.target||[]).map(Number)};
       case 'lineage-match': return {...fresh,assignments:Array.from(p.targetAssignments||[])};
       case 'habitat-triage': return {...fresh,akesi:p.target?.akesi,moli:p.target?.moli};
-      case 'sudoku': return {...fresh,cells:Array.from(p.solution||[]).map(Number),notes:Array.from({length:81},()=>[]),selected:null,noteMode:false};
+      case 'sudoku': {const variant=getSudokuVariant(puzzle);return {...fresh,cells:Array.from(variant.solution||[]).map(Number),notes:Array.from({length:81},()=>[]),selected:null,noteMode:false};}
       default: throw new Error(`TPQA has no mechanism solver for ${puzzle.type}`);
     }
   }
@@ -8119,7 +8499,7 @@
     if(puzzle.type==='coordinate-map') return {id:puzzle.id,type:puzzle.type,target:[Number(p.targetX),Number(p.targetY)],source:p.source};
     if(puzzle.type==='codebreaker'){const v=getCodebreakerVariant(puzzle);return {id:puzzle.id,type:puzzle.type,words:v.words,secret:v.secret,answer:v.secret.map(i=>v.words[i])};}
     if(puzzle.type==='sphinx-riddles'){const v=getSphinxVariant(puzzle);return {id:puzzle.id,type:puzzle.type,answers:v.riddleOrder.map((ri,stage)=>{const r=p.riddles[ri];return {prompt:r.prompt||r.clue,answer:r.answer,choices:v.choiceOrders[stage]};})};}
-    if(puzzle.type==='sudoku') return {id:puzzle.id,type:puzzle.type,solution:Array.from(p.solution||[])};
+    if(puzzle.type==='sudoku'){const variant=getSudokuVariant(puzzle);return {id:puzzle.id,type:puzzle.type,puzzle:Array.from(variant.puzzle||[]),solution:Array.from(variant.solution||[])};}
     const solved=isMechanismPuzzle(puzzle)?qaSolvedMechanismState(puzzle):null;
     return {id:puzzle.id,type:puzzle.type,solution:solved,payload:p};
   }
@@ -8167,6 +8547,8 @@
     if(puzzle.id==='l9-counterweight'){
       if(String(state.carrying||'').startsWith('l9:')){state.carrying=null;changed=true;}
       if(Object.keys(state.l9Placements||{}).length){state.l9Placements={};changed=true;}
+      const baselineSources={l9OrbRelic:'orb',l9StoneRelic:'stone',l9VesselRelic:'vessel'};
+      if(JSON.stringify(state.l9RelicSourceContents||{})!==JSON.stringify(baselineSources)){state.l9RelicSourceContents=baselineSources;changed=true;}
     }else if(puzzle.id==='l10-delivery-routing'){
       const baselineLocations={bread:'receiving',sweet:'receiving'};
       if(state.l10CartDock!=='receiving'){state.l10CartDock='receiving';changed=true;}
@@ -8539,6 +8921,18 @@
     };
   }
 
+  function mobileJoystickDesktopMatchedStrength(radius, deadRadius, outerRadius) {
+    const usable = Math.max(1, outerRadius - deadRadius);
+    const t = Math.max(0, Math.min(1, (radius - deadRadius) / usable));
+    // No outer-rim boost in mobile landscape: these are normalized analogue
+    // commands. At the rim both values are exactly 1.0, matching full keyboard
+    // movement/rotation once the common desktop speed constants are applied.
+    return {
+      move: Math.pow(t, MOBILE_JOYSTICK_MOVE_EXPONENT),
+      turn: Math.pow(t, MOBILE_JOYSTICK_TURN_EXPONENT)
+    };
+  }
+
   function resetMobileJoystickGesture(gesture = mobileJoystickGesture) {
     gesture.drive = 'idle';
     gesture.steeringAngle = 0;
@@ -8552,10 +8946,12 @@
     return a;
   }
 
-  function mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, gesture = mobileJoystickGesture) {
+  function mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, gesture = mobileJoystickGesture, desktopMatched = false) {
     const radius = Math.hypot(dx, dy);
     const absoluteIntent = mobileJoystickIntent(dx, dy, deadRadius);
-    const strength = mobileJoystickStrength(radius, deadRadius, outerRadius);
+    const strength = desktopMatched
+      ? mobileJoystickDesktopMatchedStrength(radius, deadRadius, outerRadius)
+      : mobileJoystickStrength(radius, deadRadius, outerRadius);
     if (!Number.isFinite(radius) || radius <= deadRadius) {
       resetMobileJoystickGesture(gesture);
       return { intent:'idle', moveStrength:0, turnStrength:0, drive:'idle', steering:0, strength };
@@ -8631,9 +9027,8 @@
     const landscape = shortMobileLandscapePuzzleMode();
     return {
       deadRatio: landscape ? MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO : MOBILE_JOYSTICK_DEAD_RATIO,
-      moveScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_MOVE_SCALE : 1,
-      turnScale: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_SCALE : 1,
-      turnMax: landscape ? MOBILE_LANDSCAPE_JOYSTICK_TURN_MAX : MOBILE_JOYSTICK_TURN_MAX
+      desktopMatched: landscape,
+      turnMax: landscape ? 1 : MOBILE_JOYSTICK_TURN_MAX
     };
   }
 
@@ -8647,9 +9042,9 @@
     const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
     const tuning = mobileJoystickTuning();
     const deadRadius = outerRadius * tuning.deadRatio;
-    const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius);
-    const tunedTurnStrength = Math.min(tuning.turnMax, command.turnStrength * tuning.turnScale);
-    setMobileJoystickIntent(command.intent, command.moveStrength * tuning.moveScale, tunedTurnStrength);
+    const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, mobileJoystickGesture, tuning.desktopMatched);
+    const tunedTurnStrength = Math.min(tuning.turnMax, command.turnStrength);
+    setMobileJoystickIntent(command.intent, command.moveStrength, tunedTurnStrength);
     mobileMovePad.dataset.sector = command.intent;
     mobileMovePad.style.setProperty('--joystick-strength', Math.min(1, command.strength.move).toFixed(3));
     if (mobileJoystickThumb) {

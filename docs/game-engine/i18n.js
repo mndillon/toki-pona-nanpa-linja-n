@@ -349,6 +349,8 @@
     "You descend the new shortcut into the isolated Recovery Ward.": "sina tawa anpa lon nasin lili sin tawa tomo pona sin.",
     "You descend through the FINAL hatch into the last Sudoku chamber.": "sina tawa anpa lon lupa [[FINAL]] tawa tomo [[Sudoku]] pini.",
     "You return to the maze entrance. The solved maze remains open.": "sina kama sin tawa open pi nasin nasa. nasin nasa pini li awen open.",
+    "All three maze glyphs are recovered. You return to the maze entrance to use them on the return-code door.": "sitelen nasin tu wan ale li kama. sina kama sin tawa open pi nasin nasa tawa kepeken ona lon lupa nanpa.",
+    "The final maze glyph is recovered. You return directly to the Lower Concourse; there is nothing else to collect in the maze.": "sitelen pini pi nasin nasa li kama. sina tawa lon tenpo lili tawa nasin anpa. ijo ante pi kama jo li lon nasin nasa ala.",
 
     // Common mechanism/UI text.
     'AND: both · OR: either · XOR: different': '[[AND]]: tu ale li lon · [[OR]]: wan anu tu li lon · [[XOR]]: wan taso li lon',
@@ -474,6 +476,33 @@
   };
 
   const ROOM_NAMES_TP = {
+    // Level-wide fallback labels are used when the player is between named rooms.
+    // Keep them translated too; raw English sent through the sitelen renderer collapses
+    // into unreadable Latin-looking text. The level number is already shown separately.
+    'ground level':'ma anpa',
+    'physical maze':'nasin nasa',
+    'upper level':'ma sewi',
+    'maintenance level':'ma pali anpa',
+    'level 2 foundation wing':'ma open pi sitelen',
+    'level 3 signal and time wing':'ma wawa en ma tenpo',
+    'level 4 machine and equivalence wing':'ma ilo en ma nanpa sama',
+    'level 5 transit and strategy wing':'ma tawa en ma nasin sona',
+    'level 6 records and number systems wing':'ma lipu en ma nasin nanpa',
+    'level 7 sensory systems wing':'ma ilo pilin',
+    'level 8 constraint systems wing':'ma nasin wile',
+    'level 9 upper galleries':'tomo sewi',
+    'level 9 vertical labyrinth':'nasin nasa lon sewi lon anpa',
+    'level 9 lower shafts':'ma anpa pi lupa sewi',
+    'level 10 market ground':'ma esun anpa',
+    'level 10 upper loft':'tomo sewi',
+    'level 10 cold basement':'tomo lete anpa',
+    'level 11 nocturnal sanctuary ground':'ma awen pi tenpo pimeja',
+    'level 11 canopy and nests':'ma kasi sewi en tomo mama',
+    'level 11 incubator service':'ma pali pi poki mama',
+    'level 12 final archive ground':'ma open pi tomo lipu pini',
+    'level 12 final archive upper':'ma sewi pi tomo lipu pini',
+    'level 12 final archive lower':'ma anpa pi tomo lipu pini',
+    'level 12 final sudoku chamber':'musi [[Sutoku]]',
     'Entry Chamber':'tomo open','Workshop':'tomo pali','Lower Concourse':'nasin anpa','Maze':'nasin nasa','Maze dead end A':'pini nasin [[A]]','Maze dead end B':'pini nasin [[B]]','Maze dead end C':'pini nasin [[C]]','Sealed maze chamber':'tomo len pi nasin nasa','Upper Gallery':'tomo sewi','Observation Room':'tomo lukin','Maintenance Level':'ma pali anpa',
     'Second Atrium':'tomo open nanpa tu','Number Workshop':'tomo pali nanpa','Lower Archive':'tomo lipu anpa','Cartography Room':'tomo sitelen ma','Notation Laboratory':'tomo sona sitelen','Foundation Vault':'tomo awen open',
     'Observation Chamber':'tomo lukin','Relay Gallery':'tomo nasin wawa','Navigation Floor':'ma nasin','Synchronization Core':'ilo tenpo sama','Instrument Workshop':'tomo ilo',
@@ -485,7 +514,7 @@
     'Survey Gallery':'tomo alasa','Vertical Labyrinth':'nasin nasa lon sewi lon anpa','Sphinx Court':'tomo jan [[Sphinx]]','Counterweight Chamber':'tomo kiwen awen','Counterweight Loft':'tomo sewi pi kiwen awen','Alignment Vault':'tomo ma sama','Transit Junction':'nasin tawa',
     'Receiving Bay':'ma kama poki','Central Market Arcade':'tomo esun insa','Cold Store':'tomo lete','Textile / Dye Loft':'tomo sewi pi len kule','Ledger Office':'tomo lipu nanpa','Dispatch Bay':'ma pana weka','Quarantine':'ma awen ike',
     'Field Station':'tomo alasa ma','Habitat Hub':'tomo ma soweli','Aviary Walk':'nasin waso','Nest Observatory':'tomo lukin mama','Incubator Service':'tomo poki mama','Lineage Registry':'lipu mama','Recovery Ward':'tomo pona sin',
-    'Final Archive Vestibule':'open pi tomo lipu pini','Fracture Core':'ilo pakala insa','Identity Gallery':'tomo nasin sitelen','Relation Observatory':'tomo lukin nasin','Totality Cipher Vault':'tomo linja len','Final Sudoku Chamber':'tomo [[Sudoku]] pini'
+    'Final Archive Vestibule':'open pi tomo lipu pini','Fracture Core':'ilo pakala insa','Identity Gallery':'tomo nasin sitelen','Relation Observatory':'tomo lukin nasin','Totality Cipher Vault':'tomo linja len','Final Sudoku Chamber':'musi [[Sutoku]]'
   };
 
   const ROOM_HINTS_TP = {
@@ -864,14 +893,28 @@
     return !blocked(after);
   }
 
-  function appendTpText(parent, text) {
+  function appendTpText(parent, text, options = {}) {
     const source = String(text ?? '');
+    const decimalNumbers = options.decimalNumbers === true;
     const re = /\d+\+\d+\s*\/\s*\d+|[+\-−]?\d+\s+\d+\s*\/\s*\d+|[+\-−]?\d+\s*\/\s*\d+|[+\-−]?\d+\.\d+%?|[+\-−]?\d+%|[+\-−]?\d+/g;
     let at = 0, match;
     while ((match = re.exec(source))) {
       const start = match.index, end = re.lastIndex;
       if (!numericTokenHasSafeBoundaries(source,start,end)) continue;
       if (start > at) appendLiteralProtectedText(parent, source.slice(at,start));
+      const latin = match[0].replace(/\s*\/\s*/g,'/').replace(/\s+/g,' ');
+      if (decimalNumbers) {
+        // Instruction text for glyph-entry numeric puzzles is the source clue.
+        // Keep those values as ordinary decimal/Latin notation so the instruction
+        // does not itself reveal the nanpa-linja-n form the player is being asked
+        // to construct.
+        const numeric = document.createElement('span');
+        numeric.className = 'tpLiteral tpInstructionDecimal';
+        numeric.textContent = latin;
+        parent.append(numeric);
+        at = end;
+        continue;
+      }
       const cartoucheSource = numericCartoucheSource(match[0]);
       if (!cartoucheSource) { appendLiteralProtectedText(parent, match[0]); at=end; continue; }
       const numeric = document.createElement('span');
@@ -880,7 +923,6 @@
       // upgrades this placeholder to a renderer-backed canvas. Until that finishes,
       // CSS exposes only the ordinary Latin fallback from data-latin.
       numeric.textContent = '';
-      const latin = match[0].replace(/\s*\/\s*/g,'/').replace(/\s+/g,' ');
       if (numeric.setAttribute) {
         numeric.setAttribute('data-nanpa-source',cartoucheSource);
         numeric.setAttribute('data-latin',latin);
@@ -917,7 +959,7 @@
     let at = 0, match;
     const appendPlain = chunk => {
       if (!chunk) return;
-      if (tpSitelen) appendTpText(el,chunk);
+      if (tpSitelen) appendTpText(el,chunk,{decimalNumbers:options.decimalNumbers===true});
       else el.append(document.createTextNode(chunk));
     };
     while ((match = re.exec(text))) {

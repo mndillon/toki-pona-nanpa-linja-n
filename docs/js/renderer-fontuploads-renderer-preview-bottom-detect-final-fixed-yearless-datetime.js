@@ -58,13 +58,13 @@ const SitelenRenderer = (() => {
       globalThis.__NANPA_DEBUG_LOGS__.push(entry);
       if (globalThis.__NANPA_DEBUG_LOGS__.length > 2000) globalThis.__NANPA_DEBUG_LOGS__.shift();
     } catch (_) {}
-    try { console.log(`[nanpa-debug:${entry.seq}] ${entry.label}`, entry.payload); } catch (_) {}
+    try { /* console.log(`[nanpa-debug:${entry.seq}] ${entry.label}`, entry.payload); */ } catch (_) {}
   }
 
   function nanpaDebugTable(label, rows) {
     if (!nanpaDebugIsEnabled()) return;
     nanpaDebugEmit(label, { rows });
-    try { console.table(rows); } catch (_) {}
+    try { /* console.table(rows); */ } catch (_) {}
   }
 
   function nanpaDebugCps(cps) {
@@ -100,24 +100,24 @@ const SitelenRenderer = (() => {
     globalThis.enableNanpaDebug = function enableNanpaDebug() {
       globalThis.__NANPA_DEBUG__ = true;
       try { globalThis.localStorage && globalThis.localStorage.setItem("nanpaDebug", "1"); } catch (_) {}
-      console.log("[nanpa-debug] enabled");
+      // console.log("[nanpa-debug] enabled");
     };
     globalThis.disableNanpaDebug = function disableNanpaDebug() {
       globalThis.__NANPA_DEBUG__ = false;
       try { globalThis.localStorage && globalThis.localStorage.removeItem("nanpaDebug"); } catch (_) {}
-      console.log("[nanpa-debug] disabled");
+      // console.log("[nanpa-debug] disabled");
     };
     globalThis.clearNanpaDebugLogs = function clearNanpaDebugLogs() {
       globalThis.__NANPA_DEBUG_LOGS__ = [];
       __nanpaDebugSeq = 0;
-      console.log("[nanpa-debug] logs cleared");
+      // console.log("[nanpa-debug] logs cleared");
     };
     globalThis.copyNanpaDebugLogs = function copyNanpaDebugLogs() {
       const text = JSON.stringify(globalThis.__NANPA_DEBUG_LOGS__ || [], null, 2);
       if (globalThis.navigator?.clipboard?.writeText) {
-        globalThis.navigator.clipboard.writeText(text).then(() => console.log("[nanpa-debug] logs copied to clipboard"));
+        globalThis.navigator.clipboard.writeText(text).then(() => { /* console.log("[nanpa-debug] logs copied to clipboard"); */ });
       } else {
-        console.log(text);
+        // console.log(text);
       }
       return text;
     };
@@ -1070,7 +1070,7 @@ const SitelenRenderer = (() => {
     const key = `${adapterId}:${message}`;
     if (__fontRenderAdapterWarnings.has(key)) return;
     __fontRenderAdapterWarnings.add(key);
-    try { console.warn(`[font-render-adapter:${adapterId}] ${message}`); } catch (_) {}
+    try { /* console.warn(`[font-render-adapter:${adapterId}] ${message}`); */ } catch (_) {}
   }
 
   function preferredWordByCp() {
@@ -1571,7 +1571,7 @@ const SitelenRenderer = (() => {
         usedFallback: effectiveId !== requestedId
       };
     } catch (error) {
-      try { console.warn(`[font-render-adapter] ${requestedId} failed; using identity.`, error); } catch (_) {}
+      try { /* console.warn(`[font-render-adapter] ${requestedId} failed; using identity.`, error); */ } catch (_) {}
       return {
         canonicalCps: canonical,
         renderCps: canonical.slice(),
@@ -5536,7 +5536,7 @@ function wireHaloControls() {
           await document.fonts.ready;
         }
       } catch (e) {
-        console.warn("[font] load threw error:", e);
+        // console.warn("[font] load threw error:", e);
       }
     }
 
@@ -12976,7 +12976,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (_autoRenderTimer) clearTimeout(_autoRenderTimer);
       _autoRenderTimer = setTimeout(async () => {
         try { await renderFromTextarea(); }
-        catch (e) { console.warn("[auto-render] failed:", e); }
+        catch (e) { /* console.warn("[auto-render] failed:", e); */ }
       }, 90);
     }
 
@@ -13042,7 +13042,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     function scheduleAutoSaveTextDraft(value){
       if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
       _autoSaveTimer = setTimeout(() => {
-        idbSetTextDraft(value).catch((e) => console.warn("[idb autosave] failed:", e));
+        idbSetTextDraft(value).catch((e) => { /* console.warn("[idb autosave] failed:", e); */ });
       }, 250);
     }
 
@@ -13333,7 +13333,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         u.searchParams.set(key, value);
         a.setAttribute("href", u.pathname + "?" + u.searchParams.toString() + u.hash);
       } catch (e) {
-        console.warn("[link] failed to set query param:", e);
+        // console.warn("[link] failed to set query param:", e);
       }
     }
 
@@ -13399,7 +13399,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             }
           }
         } catch (e) {
-          console.warn("[idb restore] failed:", e);
+          // console.warn("[idb restore] failed:", e);
         }
 
         initFgColorControls();
@@ -13424,7 +13424,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
         announceStatus("Fonts loaded. Ready to render.");
       } catch (e) {
-        console.warn(e);
+        // console.warn(e);
         if (btnRender) btnRender.disabled = false;
         if (btnDownload) btnDownload.disabled = false;
         announceStatus("Font loading failed; rendering may use fallback fonts.");
