@@ -159,6 +159,7 @@
 
   const mobileMovePad = document.getElementById('mobileMovePad');
   const mobileJoystickThumb = document.getElementById('mobileJoystickThumb');
+  const mobileJoystickInner = mobileMovePad?.querySelector('.mobileJoystickInner') || null;
   const mobileUseBtn = document.getElementById('mobileUseBtn');
   const mazeQuickExitBtn = document.getElementById('mazeQuickExitBtn');
   const languageSelect = document.getElementById('languageSelect');
@@ -1157,14 +1158,23 @@
   const VIEWPORT_MOVE_THRESHOLD = 0.36;
   const VIEWPORT_MOVE_EXPONENT = 1.7;
   const MOBILE_JOYSTICK_DEAD_RATIO = 0.34;
-  // Short mobile landscape has less thumb travel and makes the old response feel
-  // twitchy. Keep portrait behavior intact, but give landscape a slightly larger
-  // neutral centre and lower movement/turn authority for finer control.
-  const MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO = 0.37;
-  // In short mobile landscape the joystick is analogue, but its outer rim now
-  // means exactly the same thing as full keyboard input on laptop: 100% of
-  // MOVE_SPEED forward/back and 100% of ROTATE_SPEED left/right. Portrait keeps
-  // the historical boosted joystick response below.
+  // Portrait retains the historical centre-based dead zone. Short mobile
+  // landscape instead keys activation to the visible thumb beginning to leave
+  // the inner circle, so movement is perceptible immediately outside that
+  // visual neutral area rather than only after most of the thumb travel is used.
+  const MOBILE_LANDSCAPE_VISUAL_DEAD_MARGIN = 2;
+  const MOBILE_LANDSCAPE_DEAD_MIN_RATIO = 0.08;
+  const MOBILE_LANDSCAPE_DEAD_MAX_RATIO = 0.24;
+  const MOBILE_LANDSCAPE_MOVE_START = 0.16;
+  const MOBILE_LANDSCAPE_TURN_START = 0.10;
+  const MOBILE_LANDSCAPE_STRAIGHT_ANGLE = Math.PI / 8;       // 22.5° from vertical
+  const MOBILE_LANDSCAPE_DIAGONAL_ANGLE = Math.PI / 4;      // 45° from vertical
+  const MOBILE_LANDSCAPE_TURN_ONLY_ANGLE = Math.PI * 3 / 8; // 67.5° from vertical
+  const MOBILE_LANDSCAPE_DIAGONAL_TURN_MAX = 0.34;
+  // In short mobile landscape the joystick is analogue, and its outer rim means
+  // exactly the same thing as full keyboard input on laptop: 100% MOVE_SPEED for
+  // straight forward/back and 100% ROTATE_SPEED for pure left/right rotation.
+  // Portrait keeps the historical boosted response below.
   const MOBILE_JOYSTICK_MOVE_EXPONENT = 1.25;
   const MOBILE_JOYSTICK_TURN_EXPONENT = 2.25;
   const MOBILE_JOYSTICK_BOOST_START = 0.20;
@@ -8924,13 +8934,91 @@
   function mobileJoystickDesktopMatchedStrength(radius, deadRadius, outerRadius) {
     const usable = Math.max(1, outerRadius - deadRadius);
     const t = Math.max(0, Math.min(1, (radius - deadRadius) / usable));
-    // No outer-rim boost in mobile landscape: these are normalized analogue
-    // commands. At the rim both values are exactly 1.0, matching full keyboard
-    // movement/rotation once the common desktop speed constants are applied.
+    if (t <= 0) return { move:0, turn:0 };
+    // Landscape must visibly respond as soon as the thumb leaves the inner
+    // circle. Start with modest authority, then rise smoothly to exactly 1.0 at
+    // the rim so full deflection still matches desktop W/S and arrow turning.
     return {
-      move: Math.pow(t, MOBILE_JOYSTICK_MOVE_EXPONENT),
-      turn: Math.pow(t, MOBILE_JOYSTICK_TURN_EXPONENT)
+      move: MOBILE_LANDSCAPE_MOVE_START + (1 - MOBILE_LANDSCAPE_MOVE_START) * Math.pow(t, 1.05),
+      turn: MOBILE_LANDSCAPE_TURN_START + (1 - MOBILE_LANDSCAPE_TURN_START) * Math.pow(t, 1.25)
     };
+  }
+
+  function mobileLandscapeJoystickDeadRadius(outerRadius, innerDiameter, thumbDiameter) {
+    const outer = Math.max(1, Number(outerRadius) || 1);
+    const inner = Math.max(0, Number(innerDiameter) || 0);
+    const thumb = Math.max(0, Number(thumbDiameter) || 0);
+    const fallback = outer * 0.16;
+    const visualCrossing = inner > 0 && thumb > 0
+      ? (inner - thumb) / 2 + MOBILE_LANDSCAPE_VISUAL_DEAD_MARGIN
+      : fallback;
+    return Math.max(
+      outer * MOBILE_LANDSCAPE_DEAD_MIN_RATIO,
+      Math.min(outer * MOBILE_LANDSCAPE_DEAD_MAX_RATIO, visualCrossing)
+    );
+  }
+
+  function mobileJoystickSmoothStep(a, b, value) {
+    if (b <= a) return value >= b ? 1 : 0;
+    const t = Math.max(0, Math.min(1, (value - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function mobileLandscapeJoystickCommand(dx, dy, deadRadius, outerRadius) {
+    const radius = Math.hypot(dx, dy);
+    const strength = mobileJoystickDesktopMatchedStrength(radius, deadRadius, outerRadius);
+    if (!Number.isFinite(radius) || radius <= deadRadius) {
+      return { intent:'idle', moveStrength:0, turnStrength:0, strength };
+    }
+
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    const angleFromVertical = Math.atan2(ax, ay); // 0=up/down, PI/2=left/right
+
+    // Cross/hatch response around the inner circle:
+    //   vertical core: straight forward/back only;
+    //   diagonal shoulders: retain translation and add only a small turn;
+    //   horizontal core: rotate only.
+    // The transitions are continuous, which avoids sector-boundary jitter.
+    let moveWeight = 1;
+    if (angleFromVertical > MOBILE_LANDSCAPE_DIAGONAL_ANGLE) {
+      moveWeight = 1 - mobileJoystickSmoothStep(
+        MOBILE_LANDSCAPE_DIAGONAL_ANGLE,
+        MOBILE_LANDSCAPE_TURN_ONLY_ANGLE,
+        angleFromVertical
+      );
+    }
+
+    let turnWeight = 0;
+    if (angleFromVertical > MOBILE_LANDSCAPE_STRAIGHT_ANGLE) {
+      if (angleFromVertical <= MOBILE_LANDSCAPE_TURN_ONLY_ANGLE) {
+        turnWeight = MOBILE_LANDSCAPE_DIAGONAL_TURN_MAX * mobileJoystickSmoothStep(
+          MOBILE_LANDSCAPE_STRAIGHT_ANGLE,
+          MOBILE_LANDSCAPE_DIAGONAL_ANGLE,
+          Math.min(angleFromVertical, MOBILE_LANDSCAPE_DIAGONAL_ANGLE)
+        );
+      } else {
+        turnWeight = MOBILE_LANDSCAPE_DIAGONAL_TURN_MAX +
+          (1 - MOBILE_LANDSCAPE_DIAGONAL_TURN_MAX) * mobileJoystickSmoothStep(
+            MOBILE_LANDSCAPE_TURN_ONLY_ANGLE,
+            Math.PI / 2,
+            angleFromVertical
+          );
+      }
+    }
+
+    const moveStrength = strength.move * moveWeight;
+    const turnStrength = strength.turn * turnWeight;
+    const moving = moveStrength > 0.0001;
+    const turning = turnStrength > 0.0001;
+    const north = dy < 0;
+    const west = dx < 0;
+    let intent = 'idle';
+    if (moving) intent = north ? 'N' : 'S';
+    if (turning) intent += west ? 'W' : 'E';
+    if (!moving && turning) intent = west ? 'W' : 'E';
+
+    return { intent, moveStrength, turnStrength, strength, moveWeight, turnWeight };
   }
 
   function resetMobileJoystickGesture(gesture = mobileJoystickGesture) {
@@ -9026,8 +9114,9 @@
   function mobileJoystickTuning() {
     const landscape = shortMobileLandscapePuzzleMode();
     return {
-      deadRatio: landscape ? MOBILE_LANDSCAPE_JOYSTICK_DEAD_RATIO : MOBILE_JOYSTICK_DEAD_RATIO,
+      deadRatio: MOBILE_JOYSTICK_DEAD_RATIO,
       desktopMatched: landscape,
+      visualDeadZone: landscape,
       turnMax: landscape ? 1 : MOBILE_JOYSTICK_TURN_MAX
     };
   }
@@ -9041,8 +9130,14 @@
     const dy = e.clientY - cy;
     const outerRadius = Math.max(1, Math.min(rect.width, rect.height) / 2);
     const tuning = mobileJoystickTuning();
-    const deadRadius = outerRadius * tuning.deadRatio;
-    const command = mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, mobileJoystickGesture, tuning.desktopMatched);
+    const innerRect = tuning.visualDeadZone ? mobileJoystickInner?.getBoundingClientRect() : null;
+    const thumbRect = tuning.visualDeadZone ? mobileJoystickThumb?.getBoundingClientRect() : null;
+    const deadRadius = tuning.visualDeadZone
+      ? mobileLandscapeJoystickDeadRadius(outerRadius, innerRect?.width, thumbRect?.width)
+      : outerRadius * tuning.deadRatio;
+    const command = tuning.desktopMatched
+      ? mobileLandscapeJoystickCommand(dx, dy, deadRadius, outerRadius)
+      : mobileJoystickGestureCommand(dx, dy, deadRadius, outerRadius, mobileJoystickGesture, false);
     const tunedTurnStrength = Math.min(tuning.turnMax, command.turnStrength);
     setMobileJoystickIntent(command.intent, command.moveStrength, tunedTurnStrength);
     mobileMovePad.dataset.sector = command.intent;
