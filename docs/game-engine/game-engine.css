@@ -1052,6 +1052,7 @@ kbd {
 /* Coordinate map puzzle */
 .coordinatePuzzleClue { width:100%; text-align:center; }
 .coordinatePuzzleLabel { color:var(--muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+.coordinatePuzzleLabel.tpProse { text-transform:none; letter-spacing:0; word-spacing:.2em; }
 .coordinatePuzzleCanvas { display:block; width:min(100%,430px); height:auto; margin:5px auto 8px; }
 .coordinateMapGrid {
   --map-cols:12;
