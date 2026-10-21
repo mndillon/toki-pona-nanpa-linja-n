@@ -2038,7 +2038,9 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   font-family: "NasinNanpaGame", sans-serif !important;
   font-variant-ligatures: normal !important;
   font-feature-settings: "liga" 1, "dlig" 1, "calt" 1 !important;
-  letter-spacing: 0;
+  /* TP sitelen-pona source must never inherit English all-caps/tracking styles. */
+  text-transform: none !important;
+  letter-spacing: 0 !important;
 }
 .tpProse .tpLiteral,
 .tpLiteral {

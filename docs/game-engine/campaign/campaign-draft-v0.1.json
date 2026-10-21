@@ -4687,7 +4687,7 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "Three-floor alignment",
-            "instructions": "Rotate the three floor plans until shafts A, B and C all occupy the marked coordinates on every floor. Each floor rotates independently by quarter turns.",
+            "instructions": "Rotate the three linked floor plans until shafts A, B and C all occupy the marked coordinates on every floor. Turning upper also turns maze by one quarter-turn; turning maze turns lower by two; turning lower turns upper one quarter-turn in the opposite direction. Counter-clockwise reverses the same links.",
             "payload": {
               "size": 5,
               "targetMarkers": {
@@ -4722,7 +4722,7 @@
                       4
                     ]
                   },
-                  "startRotation": 2,
+                  "startRotation": 3,
                   "targetRotation": 0
                 },
                 {
@@ -4742,7 +4742,7 @@
                       2
                     ]
                   },
-                  "startRotation": 0,
+                  "startRotation": 1,
                   "targetRotation": 1
                 },
                 {
@@ -4762,9 +4762,26 @@
                       2
                     ]
                   },
-                  "startRotation": 1,
+                  "startRotation": 2,
                   "targetRotation": 3
                 }
+              ],
+              "linkEffects": [
+                [
+                  1,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  2
+                ],
+                [
+                  -1,
+                  0,
+                  1
+                ]
               ]
             }
           }

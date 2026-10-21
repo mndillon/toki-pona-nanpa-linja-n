@@ -4519,6 +4519,21 @@
     });
   }
 
+  function layerAlignmentTurnEffects(payload,index){
+    const layers=payload?.layers||[],authored=payload?.linkEffects?.[index];
+    if(Array.isArray(authored)&&authored.length===layers.length)return authored.map(v=>Number(v)||0);
+    return layers.map((_,i)=>i===index?1:0);
+  }
+
+  function turnLayerAlignment(payload,state,index,direction){
+    const layers=payload?.layers||[],effects=layerAlignmentTurnEffects(payload,index),dir=direction<0?-1:1;
+    const current=Array.from(state?.rotations||[]);
+    state.rotations=layers.map((layer,i)=>{
+      const base=Number(current[i]??layer.startRotation)||0;
+      return ((base+dir*(Number(effects[i])||0))%4+4)%4;
+    });
+  }
+
   function marketTillSum(puzzle,state=puzzleMechanismState){
     const tokens=puzzle?.ui?.payload?.tokens||[],selected=state?.selected||[];
     return tokens.reduce((sum,value,index)=>sum+(selected[index]?(Number(value)||0):0),0);
@@ -6061,7 +6076,7 @@
     const rows=document.createElement('div');rows.className='coupledLampRows';
     const makeRow=(label,values,current=false)=>{
       const row=document.createElement('div');row.className='coupledLampRow';row.style.setProperty('--coupled-cols',String(Math.max(1,values.length)));
-      const lab=document.createElement('strong');lab.textContent=label;row.appendChild(lab);
+      const lab=document.createElement('strong');renderLocalized(lab,label,{sitelen:isTpLanguage()});row.appendChild(lab);
       values.forEach((value,index)=>{
         const lamp=document.createElement('span');lamp.className=`coupledLamp${Number(value)?' on':''}`;
         renderMechanismNumber(lamp,index+1);row.appendChild(lamp);
@@ -6099,8 +6114,8 @@
       const left=document.createElement('button');left.type='button';left.textContent='↶';left.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor counter-clockwise`);
       const label=document.createElement('strong');renderExact(label,layer.label||layer.id||`floor ${index+1}`);
       const right=document.createElement('button');right.type='button';right.textContent='↷';right.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor clockwise`);
-      left.addEventListener('click',()=>{st.rotations[index]=(Number(st.rotations[index])+3)%4;renderCampaignPuzzle();});
-      right.addEventListener('click',()=>{st.rotations[index]=(Number(st.rotations[index])+1)%4;renderCampaignPuzzle();});
+      left.addEventListener('click',()=>{turnLayerAlignment(payload,st,index,-1);renderCampaignPuzzle();});
+      right.addEventListener('click',()=>{turnLayerAlignment(payload,st,index,1);renderCampaignPuzzle();});
       head.append(left,label,right);
 
       const grid=document.createElement('div');grid.className='layerAlignGrid';grid.style.setProperty('--layer-size',String(size));
@@ -6119,10 +6134,19 @@
         grid.appendChild(cell);
       }
       const rot=document.createElement('small');rot.className='layerRotation';renderExact(rot,`quarter-turns: ${Number(st.rotations[index])||0}`);
-      unit.append(head,grid,rot);stack.appendChild(unit);
+      const link=document.createElement('small');link.className='layerRotation layerLinkEffect';
+      const effects=layerAlignmentTurnEffects(payload,index),order=[index,...layers.map((_,i)=>i).filter(i=>i!==index)];
+      const parts=order.filter(i=>Number(effects[i])!==0).map(i=>{
+        const raw=layers[i]?.label||layers[i]?.id||`floor ${i+1}`;
+        const name=isTpLanguage()?exactText(raw):raw;
+        const amount=Number(effects[i])||0;
+        return `${name} ${amount>0?'+':''}${amount}`;
+      });
+      renderLocalized(link,`↷ ${parts.join(' · ')}`,{sitelen:isTpLanguage()});
+      unit.append(head,grid,rot,link);stack.appendChild(unit);
     });
     wrap.append(targetBox,stack);puzzleSlots.appendChild(wrap);
-    setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All three floors align on shafts A, B and C. Press Try answer to confirm the vault.':'Rotate each floor until every A, B and C marker occupies its matching target.');
+    setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All three floors align on shafts A, B and C. Press Try answer to confirm the vault.':'The floor controls are linked. Rotate them until every A, B and C marker occupies its matching target.');
   }
 
 

@@ -837,13 +837,18 @@
             requirements:{states:{l9VaultAccess:true}},
             rewards:{glyphs:['tomo','la'],setStates:{l9ExitUnlocked:true}},skipIfRewardsOwned:true,skipSafe:true,
             alreadyOwnedEffects:{setStates:{l9ExitUnlocked:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'Three-floor alignment',instructions:'Rotate the three floor plans until shafts A, B and C all occupy the marked coordinates on every floor. Each floor rotates independently by quarter turns.',payload:{
+            ui:{presentation:'fullscreen',canExit:true,title:'Three-floor alignment',instructions:'Rotate the three linked floor plans until shafts A, B and C all occupy the marked coordinates on every floor. Turning upper also turns maze by one quarter-turn; turning maze turns lower by two; turning lower turns upper one quarter-turn in the opposite direction. Counter-clockwise reverses the same links.',payload:{
               size:5,
               targetMarkers:{A:[1,0],B:[4,2],C:[2,4]},
+              linkEffects:[
+                [1,1,0],
+                [0,1,2],
+                [-1,0,1]
+              ],
               layers:[
-                {id:'upper',label:'upper',markers:{A:[1,0],B:[4,2],C:[2,4]},startRotation:2,targetRotation:0},
-                {id:'middle',label:'maze',markers:{A:[0,3],B:[2,0],C:[4,2]},startRotation:0,targetRotation:1},
-                {id:'lower',label:'lower',markers:{A:[4,1],B:[2,4],C:[0,2]},startRotation:1,targetRotation:3}
+                {id:'upper',label:'upper',markers:{A:[1,0],B:[4,2],C:[2,4]},startRotation:3,targetRotation:0},
+                {id:'middle',label:'maze',markers:{A:[0,3],B:[2,0],C:[4,2]},startRotation:1,targetRotation:1},
+                {id:'lower',label:'lower',markers:{A:[4,1],B:[2,4],C:[0,2]},startRotation:2,targetRotation:3}
               ]
             }}
           }
