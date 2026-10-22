@@ -167,8 +167,8 @@
     'l8-dependency-schedule': { title:'nasin pali', instructions:'o pana e pali 7 lon nasin tan open tawa pini. sona ale pi kama open en kama pini o lon lon tenpo sama.' },
     'l8-transit-vault': { title:'tomo nasin nanpa', instructions:'o open lon sewi poka loje, o tawa tawa anpa poka laso kepeken tawa 8 taso. o tawa lon poki sama ala. nanpa pi poki 9 ale lon nasin o kama nanpa wile.' },
 
-    'l9-maze-survey': { title:'alasa lon nasin nasa', instructions:'o alasa e sitelen ma tu wan lon pini nasin weka. o kepeken e ona. sina kama poka la [[E]] / kepeken li lon, lon tenpo ni kin: sitelen li lon monsi lukin sina. jan [[Sphinx]] li toki taso lon tenpo pi sitelen tu wan pini.' },
-    'l9-sphinx-riddles': { title:'wile sona pi jan [[Sphinx]]', instructions:'jan [[Sphinx]] li anu e wile sona tu wan tan ma musi 1–8. lon musi sin la wile sona en nasin pi pana sona li ante. o pana e sona pona tawa wile sona tu wan lon tawa wan. sina pakala lon wan la sina kama sin tawa wile sona nanpa 1.' },
+    'l9-maze-survey': { title:'alasa lon nasin nasa', instructions:'o alasa e sitelen ma tu wan lon pini nasin weka. o kepeken e ona. sina kama poka la [[E]] / kepeken li lon, lon tenpo ni kin: sitelen li lon monsi lukin sina. soweli [[Sphinx]] li toki taso lon tenpo pi sitelen tu wan pini.' },
+    'l9-sphinx-riddles': { title:'wile sona pi soweli [[Sphinx]]', instructions:'soweli [[Sphinx]] li anu e wile sona tu wan tan ma musi 1–8. lon musi sin la wile sona en nasin pi pana sona li ante. o pana e sona pona tawa wile sona tu wan lon tawa wan. sina pakala lon wan la sina kama sin tawa wile sona nanpa 1.' },
     'l9-counterweight': { title:'kiwen awen', instructions:'o tawa e ijo tu wan lon ma sewi en ma anpa. o pana e ijo ale tawa supa ona kepeken sona supa. sina ken jo e ijo wan taso. sina ken kama jo sin e ijo lon supa.' },
     'l9-route-polarity': { title:'nasin suno luka', instructions:'o pona e suno nasin 6 tawa sitelen pona. palisa wan li ante e suno tu wan. sina pona e nasin wan la nasin ante li ken pakala. pona la lupa anpa sin li kama lon ma sewi.' },
     'l9-layer-alignment': { title:'ma tu wan lon linja', instructions:'o sike e sitelen ma tu wan pi nasin kulupu. lon ma ale la lupa [[A]], [[B]], [[C]] o lon lon sama sitelen. sina sike e ma sewi la ma nasin nasa li sike sama 1/4. sina sike e ma nasin nasa la ma anpa li sike sama 2/4. sina sike e ma anpa la ma sewi li sike 1/4 lon nasin ante. sike poka ante li ante e nasin ni.' },
@@ -314,7 +314,7 @@
     'feed mass changed twice': 'suli moku li ante tenpo tu',
     'environmental probe stuck at +12.0 for 6 h': 'ilo ma li awen lon +12.0 lon tenpo 6 [[h]]',
 
-    "The Sphinx Court changes: a quick-exit ladder rises to the upper loft and a trapdoor opens to the lower chambers.": "tomo jan [[Sphinx]] li ante: palisa weka lili li tawa sewi; lupa weka lili li tawa anpa.",
+    "The Sphinx Court changes: a quick-exit ladder rises to the upper loft and a trapdoor opens to the lower chambers.": "tomo soweli [[Sphinx]] li ante: palisa weka lili li tawa sewi; lupa weka lili li tawa anpa.",
     "Level 10 freight spine powered from the percentage allocation ledger.": "ma musi 10: lipu % li pana e wawa tawa nasin poki tawa.",
     "Level 10 cold chain stable: scientific recorder activated.": "ma musi 10: nasin lete li pona; ilo lipu [[neko]] li open.",
     "Level 10 scientific notation record complete: upper service lift activated.": "ma musi 10: lipu [[neko]] li pini; ilo tawa sewi li open.",
@@ -328,14 +328,14 @@
     "Level 12 totality cipher complete.": "ma musi 12: linja len li pini.",
     "Level 12 triple relation mirror array complete.": "ma musi 12: ilo lukin linja tu wan li pini.",
     "Level 12 final Sudoku complete: 120/120 glyphs recovered.": "ma musi 12: [[Sudoku]] pini li pini; sitelen 120/120 li kama.",
-    "Labyrinth survey complete: 3/3. Return to the Sphinx Court.": "alasa nasin nasa li pini: 3/3. o kama sin tawa tomo jan [[Sphinx]].",
+    "Labyrinth survey complete: 3/3. Return to the Sphinx Court.": "alasa nasin nasa li pini: 3/3. o kama sin tawa tomo soweli [[Sphinx]].",
     "You re-enter the solved maze. Use Leave maze (X) from anywhere when you want to return outside.": "sina kama sin lon nasin nasa pini. sina wile tawa weka la o kepeken “o tawa weka” {{(}}[[X]]{{)}} lon ma seme.",
     "You enter the maze. The entrance seals behind you.": "sina tawa insa nasin nasa. lupa open li pini lon monsi sina.",
     "You leave the maze. Its entrance remains open for the rest of the level.": "sina tawa weka tan nasin nasa. lupa ona li awen open lon ma musi ni.",
     "You climb down into the Lower Concourse.": "sina tawa anpa tawa nasin anpa.",
-    "You take the quick-exit ladder from the Sphinx Court into the Counterweight Loft.": "sina kepeken palisa weka lili tan tomo jan [[Sphinx]] tawa tomo sewi pi kiwen awen.",
-    "You descend directly into the Sphinx Court.": "sina tawa anpa lon nasin lili tawa tomo jan [[Sphinx]].",
-    "You take the quick-exit trapdoor beneath the Sphinx Court into the Counterweight Chamber.": "sina kepeken lupa weka lili tan tomo jan [[Sphinx]] tawa tomo kiwen awen.",
+    "You take the quick-exit ladder from the Sphinx Court into the Counterweight Loft.": "sina kepeken palisa weka lili tan tomo soweli [[Sphinx]] tawa tomo sewi pi kiwen awen.",
+    "You descend directly into the Sphinx Court.": "sina tawa anpa lon nasin lili tawa tomo soweli [[Sphinx]].",
+    "You take the quick-exit trapdoor beneath the Sphinx Court into the Counterweight Chamber.": "sina kepeken lupa weka lili tan tomo soweli [[Sphinx]] tawa tomo kiwen awen.",
     "The counterweight ladder carries you directly to the upper loft.": "palisa pi kiwen awen li tawa e sina tawa tomo sewi.",
     "You descend the counterweight shortcut.": "sina tawa anpa lon nasin lili pi kiwen awen.",
     "You descend through the newly exposed vault trapdoor.": "sina tawa anpa lon lupa sin pi tomo awen.",
@@ -398,7 +398,7 @@
     "Level 10 inspection complete: dispatch shutter released.": "ma musi 10: lukin pali li pini; lupa pana li open.",
     "Parent bands aligned. A direct ladder opens from the Nest Observatory to the Recovery Ward.": "sitelen mama li lon ma pona. palisa tawa li open tan tomo lukin mama tawa tomo pona sin.",
     "Level 11 parent-band placement complete: Recovery Ward shortcut opened.": "ma musi 11: sitelen mama li lon ma pona; nasin lili tawa tomo pona sin li open.",
-    "The Sphinx yields. A quick-exit ladder to the upper loft and a trapdoor to the lower chambers open in the court.": "jan [[Sphinx]] li pona e nasin. palisa tawa sewi en lupa tawa anpa li open lon tomo ni.",
+    "The Sphinx yields. A quick-exit ladder to the upper loft and a trapdoor to the lower chambers open in the court.": "soweli [[Sphinx]] li pona e nasin. palisa tawa sewi en lupa tawa anpa li open lon tomo ni.",
     "All three market allocations are correct. Conveyor and freight-cart power comes online across the market.": "pana esun tu wan ale li pona. wawa li kama tawa ilo linja en ilo tawa poki.",
     "Cold chain stable. The recorder console is now active; normalize its three values before the service lift can run.": "nasin lete li pona. ilo lipu li open. o ante e nanpa tu wan tawa nasin [[neko]] pona; ni la ilo tawa sewi li ken pali.",
     "Scientific record accepted. The chilled service lift now runs directly between the basement and textile loft.": "lipu nanpa [[neko]] li pona. ilo tawa sewi lete li pali tan anpa tawa tomo len sewi.",
@@ -429,7 +429,7 @@
     "The upper hatch is sealed. The maze mechanism controls it.": "lupa sewi li pini. ilo pi nasin nasa li lawa e ona.",
     "The maintenance hatch is locked.": "lupa tawa tomo pali li pini.",
     "The labyrinth survey is already complete.": "alasa pi nasin nasa li pini lon tenpo pini.",
-    "Survey complete: 3/3. Return to the Sphinx Court at the centre of the labyrinth.": "alasa li pini: 3/3. o kama sin tawa tomo jan [[Sphinx]] lon meso nasin nasa.",
+    "Survey complete: 3/3. Return to the Sphinx Court at the centre of the labyrinth.": "alasa li pini: 3/3. o kama sin tawa tomo soweli [[Sphinx]] lon meso nasin nasa.",
     "The counterweight relics are already balanced.": "ijo kiwen awen li sama suli lon tenpo pini.",
     "You can carry only one object at a time.": "sina ken jo e ijo tawa wan taso.",
     "That pedestal is occupied. Pick up its relic first.": "ijo li lon supa ni. o kama jo e ona lon open.",
@@ -511,7 +511,7 @@
     'Card Archive':'tomo lipu musi','Calculation Bench':'supa nanpa','Country Index':'kulupu ma','Number Systems Lab':'tomo nasin nanpa','Position Vault':'tomo ma sike','Records Junction':'nasin lipu',
     'Resonance Hall':'tomo kalama','Airflow Gallery':'tomo nasin kon','Pulse Chamber':'tomo wawa tenpo','Spectrum Laboratory':'tomo kule','Blackout Substation':'tomo wawa pimeja','Sensor Junction':'nasin ilo sona',
     'Deduction Chamber':'tomo sona nasin','Dual Mirror Array':'tomo ilo lukin tu','Truth Gate Rack':'tomo lupa lon','Dependency Scheduler':'tomo nasin pali','Transit Vault':'tomo nasin nanpa','Constraint Junction':'nasin sona',
-    'Survey Gallery':'tomo alasa','Vertical Labyrinth':'nasin nasa lon sewi lon anpa','Sphinx Court':'tomo jan [[Sphinx]]','Counterweight Chamber':'tomo kiwen awen','Counterweight Loft':'tomo sewi pi kiwen awen','Alignment Vault':'tomo ma sama','Transit Junction':'nasin tawa',
+    'Survey Gallery':'tomo alasa','Vertical Labyrinth':'nasin nasa lon sewi lon anpa','Sphinx Court':'tomo soweli [[Sphinx]]','Counterweight Chamber':'tomo kiwen awen','Counterweight Loft':'tomo sewi pi kiwen awen','Alignment Vault':'tomo ma sama','Transit Junction':'nasin tawa',
     'Receiving Bay':'ma kama poki','Central Market Arcade':'tomo esun insa','Cold Store':'tomo lete','Textile / Dye Loft':'tomo sewi pi len kule','Ledger Office':'tomo lipu nanpa','Dispatch Bay':'ma pana weka','Quarantine':'ma awen ike',
     'Field Station':'tomo alasa ma','Habitat Hub':'tomo ma soweli','Aviary Walk':'nasin waso','Nest Observatory':'tomo lukin mama','Incubator Service':'tomo poki mama','Lineage Registry':'lipu mama','Recovery Ward':'tomo pona sin',
     'Final Archive Vestibule':'open pi tomo lipu pini','Fracture Core':'ilo pakala insa','Identity Gallery':'tomo nasin sitelen','Relation Observatory':'tomo lukin nasin','Totality Cipher Vault':'tomo linja len','Final Sudoku Chamber':'musi [[Sutoku]]'
@@ -570,7 +570,7 @@
     'Reach the exit in exactly eight moves and hit the exact sum without revisiting.':'o kama tawa pini kepeken tawa 8 taso. o kama e nanpa sama. o tawa sin lon ma sama ala.',
     'The marked entrance ladder stays visible on the minimap. Branches begin almost immediately; inspect three distant survey markers and find the maze relic.':'palisa open li awen lon sitelen ma. nasin mute li open lon poka. o lukin e sitelen alasa tu wan weka. o alasa e ijo nasin nasa.',
     'A ladder descends into the labyrinth. The final vault trapdoor will appear on this floor later.':'palisa li tawa anpa tawa nasin nasa. lon tenpo kama la lupa anpa pi tomo pini li kama lon ma ni.',
-    'The Sphinx answers only after all three survey markers have been inspected. Solving it opens quick exits here.':'jan [[Sphinx]] li toki taso lon tenpo pi sitelen alasa tu wan pini. pona la nasin weka kepeken tenpo lili li open.',
+    'The Sphinx answers only after all three survey markers have been inspected. Solving it opens quick exits here.':'soweli [[Sphinx]] li toki taso lon tenpo pi sitelen alasa tu wan pini. pona la nasin weka kepeken tenpo lili li open.',
     'Three relics from three floors belong on three different pedestals. Placed relics can be picked up again.':'ijo tu wan tan ma tu wan li tawa supa tu wan ante. sina ken kama jo sin e ijo lon supa.',
     'One relic begins here. Later, the counterweight system opens a direct vertical shortcut and the shaft-polarity console becomes useful.':'ijo wan li lon ni. lon tenpo kama la ilo kiwen awen li open e nasin lili tawa sewi tawa anpa; ilo nasin wawa li kama suli.',
     'Rotate the three floor plans until all three vertical shafts line up with the marked coordinates.':'o sike e sitelen ma tu wan. lupa tawa sewi tawa anpa [[A]], [[B]], [[C]] ale o kama lon lon sitelen.',
@@ -736,7 +736,7 @@
     // not as one-off literals, because the English source contains live labels,
     // counts, puzzle titles or carried-object names.
     if ((m = text.match(/^The Sphinx is waiting for the labyrinth survey: (\d+)\/(\d+) markers inspected\.$/i)))
-      return `jan [[Sphinx]] li awen e pini pi alasa nasin nasa: sitelen ${m[1]}/${m[2]} li kama sona.`;
+      return `soweli [[Sphinx]] li awen e pini pi alasa nasin nasa: sitelen ${m[1]}/${m[2]} li kama sona.`;
     if ((m = text.match(/^The triangulation console needs all three acoustic pylons: (\d+)\/(\d+) recorded\.$/i)))
       return `ilo alasa ma li wile e sona pi palisa kalama ale: ${m[1]}/${m[2]} li awen lon lipu.`;
     if (/^.+(?:door|shutter) opens\.$/i.test(text)) return 'lupa ni li open.';

@@ -717,7 +717,7 @@
         '###############################'
       ],
       rooms:[
-        {areaId:'l9Sphinx',name:'Sphinx Court',x1:12,y1:7,x2:18.99,y2:13.99,instruction:'o pana e sona tawa jan lawa.',hint:'The Sphinx answers only after all three survey markers have been inspected. Solving it opens quick exits here.'},
+        {areaId:'l9Sphinx',name:'Sphinx Court',x1:12,y1:7,x2:18.99,y2:13.99,instruction:'o pana e sona tawa soweli [[Sphinx]].',hint:'The Sphinx answers only after all three survey markers have been inspected. Solving it opens quick exits here.'},
         {areaId:'l9Maze',name:'Vertical Labyrinth',x1:1,y1:1,x2:29.9,y2:19.9,instruction:'o alasa e sitelen tu wan.',hint:'The marked entrance ladder stays visible on the minimap. Branches begin almost immediately; inspect three distant survey markers and find the maze relic.'}
       ],
       doors:[],
@@ -2358,12 +2358,12 @@
     }
     if (progress.levelNo === 9 && campaignWorld().l9SphinxReady && !campaignSolved('l9-sphinx-riddles')) {
       return isTpLanguage()
-        ? `${prefix} · sitelen alasa 3/3 li pini · o kama sin tawa tomo jan [[Sphinx]] lon insa nasin nasa.`
+        ? `${prefix} · sitelen alasa 3/3 li pini · o kama sin tawa tomo soweli [[Sphinx]] lon insa nasin nasa.`
         : `${prefix} · Survey complete 3/3 · Return to the Sphinx Court at the centre of the labyrinth.`;
     }
     if (progress.levelNo === 9 && campaignSolved('l9-sphinx-riddles') && !campaignSolved('l9-counterweight')) {
       return isTpLanguage()
-        ? `${prefix} · jan [[Sphinx]] li pini · o kepeken lupa anpa pi sitelen ↓ lon tomo jan [[Sphinx]]. o tawa anpa tawa tomo ijo suli.`
+        ? `${prefix} · soweli [[Sphinx]] li pini · o kepeken lupa anpa pi sitelen ↓ lon tomo soweli [[Sphinx]]. o tawa anpa tawa tomo ijo suli.`
         : `${prefix} · Sphinx solved · Take the gold-marked trapdoor ↓ in the Sphinx Court down to the Counterweight Chamber.`;
     }
     if (progress.levelNo === 10) {
@@ -2840,7 +2840,7 @@
         const puzzle = campaignPuzzle(obj.puzzleId);
         if (campaignSolved(obj.puzzleId)) return `${p} · o lukin e musi pini: ${puzzleText(puzzle,'title') || 'musi'}`;
         if (obj.puzzleId === 'l9-sphinx-riddles' && !campaignPuzzleAvailable(obj.puzzleId)) {
-          const survey=l9MarkerProgress(); return `${p} · jan [[Sphinx]] · alasa ${survey.found}/${survey.needed}`;
+          const survey=l9MarkerProgress(); return `${p} · soweli [[Sphinx]] · alasa ${survey.found}/${survey.needed}`;
         }
         if (obj.puzzleId === 'l11-call-triangulation' && !campaignPuzzleAvailable(obj.puzzleId)) {
           const calls=l11CallProgress(); return `${p} · ilo alasa ma · kalama ${calls.found}/${calls.needed}`;
@@ -2857,9 +2857,9 @@
       case 'l9UpperToMaze': return `${p} · o tawa anpa tawa nasin nasa`;
       case 'l9MazeToUpper': return `${p} · o tawa sewi tawa tomo alasa`;
       case 'l9SphinxToUpper': return `${p} · o kepeken nasin weka lili tawa sewi`;
-      case 'l9UpperShortcutToSphinx': return `${p} · o tawa anpa tawa jan [[Sphinx]]`;
+      case 'l9UpperShortcutToSphinx': return `${p} · o tawa anpa tawa soweli [[Sphinx]]`;
       case 'l9SphinxToLower': return `${p} · o tawa anpa kepeken lupa lili`;
-      case 'l9LowerToSphinx': return `${p} · o kama sin tawa jan [[Sphinx]]`;
+      case 'l9LowerToSphinx': return `${p} · o kama sin tawa soweli [[Sphinx]]`;
       case 'l9WeightsToUpper': return `${p} · o tawa sewi kepeken nasin kiwen awen`;
       case 'l9UpperShortcutToWeights': return `${p} · o tawa anpa tawa tomo kiwen awen`;
       case 'l9UpperToVault': return `${p} · o tawa anpa kepeken lupa sin`;
