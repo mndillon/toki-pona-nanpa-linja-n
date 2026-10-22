@@ -4975,7 +4975,7 @@
     for(const title of ['fraction','decimal','percent']){const h=document.createElement('div');h.className='equivalenceHeader';renderLocalized(h,isTpLanguage()?({fraction:'kipisi',decimal:'nanpa lili',percent:'mute kipisi'}[title]):title);grid.appendChild(h);}
     const makeCard=(entry,column,row,movable)=>{
       const b=document.createElement(movable?'button':'div'); if(movable)b.type='button'; b.className=`equivalenceCard${st.selected?.column===column&&st.selected?.row===row?' selected':''}${movable?' movable':''}`;
-      const c=document.createElement('canvas');c.width=220;c.height=68;c.className='equivalenceCanvas'; const small=document.createElement('small');small.textContent=entry?.source||'';b.append(c,small);renderNanpaSourceToCanvas(entry?.source||'',c,34);
+      const c=document.createElement('canvas');c.width=220;c.height=68;c.className='equivalenceCanvas';b.appendChild(c);renderNanpaSourceToCanvas(entry?.source||'',c,34);
       if(movable)b.addEventListener('click',()=>{
         const key=column==='decimal'?'decimalOrder':'percentOrder';
         if(!st.selected || st.selected.column!==column){st.selected={column,row};renderCampaignPuzzle();return;}
