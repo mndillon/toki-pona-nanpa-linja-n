@@ -3866,24 +3866,24 @@
                 {
                   "edge": "W",
                   "index": 1,
-                  "label": "A"
+                  "label": "1"
                 },
                 {
                   "edge": "W",
                   "index": 3,
-                  "label": "B"
+                  "label": "2"
                 }
               ],
               "targets": [
                 {
                   "edge": "S",
                   "index": 3,
-                  "label": "A"
+                  "label": "1"
                 },
                 {
                   "edge": "E",
                   "index": 1,
-                  "label": "B"
+                  "label": "2"
                 }
               ],
               "mirrors": [
@@ -3968,12 +3968,15 @@
             "presentation": "fullscreen",
             "canExit": true,
             "title": "Truth gate rack",
-            "instructions": "Choose AND, OR or XOR for each unknown gate so the circuit matches all eight rows of the truth table. The output must match every row at once.",
+            "instructions": "Choose ∧, ∨, ⊕, ⊼, ⊽ or ⊙ for each unknown gate so the circuit matches all eight rows of the truth table. The output must match every row at once.",
             "payload": {
               "gateOptions": [
                 "AND",
                 "OR",
-                "XOR"
+                "XOR",
+                "NAND",
+                "NOR",
+                "XNOR"
               ],
               "initialGates": [
                 "AND",
@@ -6500,7 +6503,7 @@
             "canExit": true,
             "title": "Triple relation mirror array",
             "objective": "Route all three beams to their own exits simultaneously.",
-            "instructions": "Ten mirrors are shared by three beams. Rotate them so A, B and C each reach the matching marked exit at the same time. Every mirror participates in the unique solution.",
+            "instructions": "Ten mirrors are shared by three numbered beams. Rotate them so each beam reaches the exit carrying the same number at the same time. Every mirror participates in the unique solution.",
             "payload": {
               "width": 7,
               "height": 7,
@@ -6508,34 +6511,34 @@
                 {
                   "edge": "W",
                   "index": 4,
-                  "label": "A"
+                  "label": "1"
                 },
                 {
                   "edge": "N",
                   "index": 2,
-                  "label": "B"
+                  "label": "2"
                 },
                 {
                   "edge": "S",
                   "index": 2,
-                  "label": "C"
+                  "label": "3"
                 }
               ],
               "targets": [
                 {
                   "edge": "E",
                   "index": 5,
-                  "label": "A"
+                  "label": "1"
                 },
                 {
                   "edge": "N",
                   "index": 4,
-                  "label": "B"
+                  "label": "2"
                 },
                 {
                   "edge": "E",
                   "index": 0,
-                  "label": "C"
+                  "label": "3"
                 }
               ],
               "mirrors": [

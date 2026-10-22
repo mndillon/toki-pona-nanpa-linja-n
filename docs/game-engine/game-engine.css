@@ -1620,8 +1620,14 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 .dualMirrorBeams{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:3}
 .dualMirrorBeam{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.84}
 .dualMirrorBeam.beam1{stroke:#b14343}.dualMirrorBeam.beam2{stroke:#395fae;stroke-dasharray:12 8}
-.dualMirrorEdgeLabel{font:900 18px/1 system-ui,sans-serif;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:#f7ead4;stroke-width:5;fill:#111}
-.dualMirrorEdgeLabel.out{font-size:16px}
+/* Mirror ports use the edge cell itself: a compact nanpa-linja-n number cartouche
+   identifies the beam and directional ni replaces the old Latin IN/OUT label. */
+.dualMirrorPorts{position:absolute;inset:0;z-index:4;pointer-events:none}
+.dualMirrorPortMarker{position:absolute;transform:translate(-50%,-50%);display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);place-items:center;min-width:0;min-height:0;padding:1px;border:1px solid rgba(17,17,17,.34);border-radius:4px;background:rgba(247,234,212,.88);overflow:hidden;box-sizing:border-box}
+.dualMirrorPortNumber{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;overflow:hidden}
+.dualMirrorPortNumber>.tpNumeric{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;min-height:0;margin:0}
+.dualMirrorPortNumber>.tpNumeric>.tpNumericCanvas{display:block;width:auto;height:auto;max-width:94%;max-height:15px;object-fit:contain}
+.dualMirrorPortNi{display:block;max-width:100%;font-family:"NasinNanpaGame",sans-serif;font-variant-ligatures:normal;font-feature-settings:"liga" 1,"dlig" 1,"calt" 1;font-size:18px;font-weight:400;line-height:.9;white-space:nowrap;color:#111}
 
 .truthGateWrap{display:grid;grid-template-columns:minmax(0,.9fr) minmax(300px,1.1fr);gap:10px 12px;width:min(100%,720px);align-items:center}
 .truthGateDiagram{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
@@ -2726,7 +2732,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
 
   /* L8 / L12 logic: XOR/OR and mirror arrays are explicitly landscape-first. */
   .deductionWrap{grid-template-columns:minmax(220px,.95fr) minmax(0,1.05fr)!important;gap:5px;width:100%}.deductionClues,.dependencyClues{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.deductionClue{padding:2px 3px;font-size:7px;line-height:1.04}.deductionTokens,.dependencyTokens{grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:2px}.deductionToken,.dependencyTokens .deductionToken{min-height:44px;padding:3px 1px 2px}.deductionGlyph,.dependencyTokens .deductionGlyph{font-size:21px}.deductionLabel{font-size:6px;display:block}
-  .dualMirrorWrap{gap:2px}.dualMirrorLegend{font-size:7px;line-height:1.05}.dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),30px)!important;grid-template-rows:repeat(var(--mirror-rows),30px)!important;gap:1px}.dualMirrorCell{width:30px!important;height:30px!important}.dualMirrorMirror{font-size:20px!important}.dualMirrorEdgeLabel{font-size:13px}.dualMirrorEdgeLabel.out{font-size:11px}
+  .dualMirrorWrap{gap:2px}.dualMirrorLegend{font-size:7px;line-height:1.05}.dualMirrorBoard{grid-template-columns:repeat(var(--mirror-cols),30px)!important;grid-template-rows:repeat(var(--mirror-rows),30px)!important;gap:1px}.dualMirrorCell{width:30px!important;height:30px!important}.dualMirrorMirror{font-size:20px!important}.dualMirrorPortMarker{padding:0;border-radius:3px}.dualMirrorPortNumber>.tpNumeric>.tpNumericCanvas{max-width:92%;max-height:10px}.dualMirrorPortNi{font-size:12px;line-height:.82}
   .truthGateWrap{grid-template-columns:minmax(176px,.8fr) minmax(170px,1.2fr)!important;gap:3px 5px;width:100%}.truthGateDiagram{gap:3px}.truthGateSelect{min-height:42px;padding:2px;gap:2px}.truthGateSelect small{font-size:7px}.truthGateSelect strong{font-size:12px}.truthTable{grid-template-columns:repeat(5,29px);gap:1px}.truthTable>strong{height:16px;padding:0;font-size:6.5px}.truthBit{width:29px;height:18px;font-size:13px}.truthGateProgress{grid-column:1/-1;padding:2px 4px;font-size:8px;line-height:1}.truthGateKey{display:none}
   .exactPathWrap{grid-template-columns:minmax(150px,.75fr) auto;grid-template-rows:auto auto;gap:3px 6px}.exactPathMeters{grid-column:1}.exactPathGrid{grid-column:2;grid-row:1 / span 2;grid-template-columns:repeat(var(--path-cols),36px)!important;gap:2px}.exactPathCell{width:36px;height:36px;min-height:36px}.exactPathValue{font-size:19px}.exactPathControls{grid-column:1;grid-row:2;gap:3px}.exactPathControls button{min-height:27px}
 

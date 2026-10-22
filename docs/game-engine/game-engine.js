@@ -4474,7 +4474,15 @@
     a=Number(a)?1:0;b=Number(b)?1:0;
     if(name==='AND')return a&b;
     if(name==='OR')return a|b;
+    if(name==='XOR')return a^b;
+    if(name==='NAND')return (a&b)?0:1;
+    if(name==='NOR')return (a|b)?0:1;
+    if(name==='XNOR')return (a^b)?0:1;
     return a^b;
+  }
+
+  function truthGateSymbol(name){
+    return ({AND:'∧',OR:'∨',XOR:'⊕',NAND:'⊼',NOR:'⊽',XNOR:'⊙'})[name]||'⊕';
   }
 
   function truthGateOutput(gates,row){
@@ -5905,33 +5913,52 @@
 
   function renderDeductionOrderPuzzle(puzzle){renderOrderConstraintPuzzle(puzzle,{tokensKey:'tokens',clueClass:'deductionClues',rowClass:'deductionTokens'});}
 
+  function dualMirrorPortCell(item,width,height){
+    const edge=item?.edge,index=Number(item?.index)||0;
+    if(edge==='W')return {x:0,y:index};
+    if(edge==='E')return {x:Math.max(0,width-1),y:index};
+    if(edge==='N')return {x:index,y:0};
+    return {x:index,y:Math.max(0,height-1)};
+  }
+
+  function dualMirrorPortNi(edge,isSource){
+    const arrows=isSource
+      ? {W:'→',E:'←',N:'↓',S:'↑'}
+      : {W:'←',E:'→',N:'↑',S:'↓'};
+    // UCSUR ni + ZWJ + arrow selects the directional ni glyph in nasin nanpa.
+    return `${glyphChar('ni')}\u200D${arrows[edge]||'→'}`;
+  }
+
+  function makeDualMirrorPortMarker(item,index,isSource,width,height){
+    const cell=dualMirrorPortCell(item,width,height),marker=document.createElement('div');
+    marker.className=`dualMirrorPortMarker ${isSource?'in':'out'} beam${index+1}`;
+    marker.style.left=`${((cell.x+.5)/width)*100}%`;
+    marker.style.top=`${((cell.y+.5)/height)*100}%`;
+    marker.style.width=`calc(${100/width}% - 4px)`;
+    marker.style.height=`calc(${100/height}% - 4px)`;
+    marker.setAttribute('aria-label',`Beam ${index+1} ${isSource?'inlet':'outlet'} at ${String(item?.edge||'').toUpperCase()} edge`);
+
+    const number=document.createElement('span');number.className='dualMirrorPortNumber';
+    renderAlwaysNanpaMechanismNumber(number,index+1,{className:'dualMirrorPortCartouche'});
+    const direction=document.createElement('span');direction.className='dualMirrorPortNi';direction.textContent=dualMirrorPortNi(item?.edge,isSource);direction.setAttribute('aria-hidden','true');
+    marker.append(number,direction);
+    return marker;
+  }
+
   function renderDualMirrorPuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,width=Number(payload.width)||5,height=Number(payload.height)||5,mirrors=payload.mirrors||[];
     const wrap=document.createElement('div');wrap.className='dualMirrorWrap';
     const legend=document.createElement('div');legend.className='dualMirrorLegend';
-    const beamLabels=(payload.sources||[]).map((source,index)=>source.label||String.fromCharCode(65+index));
-    renderLocalized(legend,isTpLanguage()?`linja ${beamLabels.join(', ')} ale li jo e open wan e pini sama wan. o sike e ilo lukin / ↔ \\.`:`${beamLabels.join(', ')} each have one inlet and one matching outlet. Rotate mirrors / ↔ \\.`);
+    renderLocalized(legend,isTpLanguage()?'linja suno ale li jo e open nanpa wan e pini pi nanpa sama. o sike e ilo lukin / ↔ \\.':'Each numbered beam has one inlet and one matching numbered outlet. Rotate mirrors / ↔ \\.');
     const board=document.createElement('div');board.className='dualMirrorBoard';board.style.setProperty('--mirror-cols',String(width));board.style.setProperty('--mirror-rows',String(height));
 
-    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','dualMirrorBeams');svg.setAttribute('viewBox',`-50 -50 ${width*100+100} ${height*100+100}`);svg.setAttribute('aria-hidden','true');
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('class','dualMirrorBeams');svg.setAttribute('viewBox',`0 0 ${width*100} ${height*100}`);svg.setAttribute('aria-hidden','true');
     (payload.sources||[]).forEach((source,index)=>{
       const trace=dualMirrorTrace(puzzle,st,index),poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
       poly.setAttribute('class',`dualMirrorBeam beam${index+1}`);
       poly.setAttribute('points',trace.points.map(p=>`${p.x*100},${p.y*100}`).join(' '));
       svg.appendChild(poly);
     });
-    const edgePoint=(edge,index)=>{
-      if(edge==='W')return {x:-20,y:(index+.5)*100};
-      if(edge==='E')return {x:width*100+20,y:(index+.5)*100};
-      if(edge==='N')return {x:(index+.5)*100,y:-20};
-      return {x:(index+.5)*100,y:height*100+20};
-    };
-    for(const group of [['sources','IN'],['targets','OUT']]){
-      (payload[group[0]]||[]).forEach((item,index)=>{
-        const p=edgePoint(item.edge,Number(item.index)||0),text=document.createElementNS('http://www.w3.org/2000/svg','text');
-        text.setAttribute('class',`dualMirrorEdgeLabel ${group[1].toLowerCase()}`);text.setAttribute('x',String(p.x));text.setAttribute('y',String(p.y));text.textContent=`${item.label||String.fromCharCode(65+index)} ${group[1]}`;svg.appendChild(text);
-      });
-    }
     board.appendChild(svg);
 
     const mirrorMap=new Map(mirrors.map((m,i)=>[`${m.x},${m.y}`,i]));
@@ -5947,12 +5974,16 @@
       }
       board.appendChild(cell);
     }
+    const ports=document.createElement('div');ports.className='dualMirrorPorts';
+    (payload.sources||[]).forEach((item,index)=>ports.appendChild(makeDualMirrorPortMarker(item,index,true,width,height)));
+    (payload.targets||[]).forEach((item,index)=>ports.appendChild(makeDualMirrorPortMarker(item,index,false,width,height)));
+    board.appendChild(ports);
     wrap.append(legend,board);puzzleSlots.appendChild(wrap);
-    setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All beams reach their matching exits. Press Try answer to confirm the array.':`${(payload.sources||[]).length} beams must reach their matching OUT markers simultaneously.`);
+    setMechanismStatus(puzzle,mechanismSolved(puzzle)?'All beams reach their matching exits. Press Try answer to confirm the array.':`${(payload.sources||[]).length} numbered beams must reach their matching exit markers simultaneously.`);
   }
 
   function renderTruthGatesPuzzle(puzzle){
-    const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,options=payload.gateOptions||['AND','OR','XOR'],rows=payload.rows||[];
+    const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,options=payload.gateOptions||['AND','OR','XOR','NAND','NOR','XNOR'],rows=payload.rows||[];
     const gates=st.gates||[];
     const currentOutputs=rows.map(row=>truthGateOutput(gates,row));
     const rowMatches=rows.map((row,index)=>currentOutputs[index]===Number(row.y));
@@ -5964,9 +5995,10 @@
     for(let i=0;i<3;i++){
       const gate=document.createElement('button');gate.type='button';gate.className=`truthGateSelect gate-${String(gates[i]||options[0]).toLowerCase()}`;
       const label=document.createElement('small');label.textContent=labels[i];
-      const value=document.createElement('strong');value.textContent=gates[i]||options[0];
+      const gateName=gates[i]||options[0];
+      const value=document.createElement('strong');value.textContent=truthGateSymbol(gateName);
       gate.append(label,value);
-      gate.setAttribute('aria-label',`${labels[i]} is ${value.textContent}. Tap to change gate.`);
+      gate.setAttribute('aria-label',`${labels[i]} is ${gateName}. Tap to change gate.`);
       gate.addEventListener('click',()=>{
         clearTutorialSubmissionFeedback();
         const current=options.indexOf(st.gates[i]);st.gates[i]=options[(current+1+options.length)%options.length];renderCampaignPuzzle();
@@ -5991,7 +6023,7 @@
     const progress=document.createElement('div');progress.className=`truthGateProgress${solved?' solved':''}`;
     if(isTpLanguage()) renderLocalized(progress,`linja pona: ${matchCount} / ${rows.length}${solved?' · ale li pona; o luka e [[o alasa]].':''}`);
     else progress.textContent=`${matchCount} / ${rows.length} rows match${solved?' — grid solved; press Try answer to confirm.':''}`;
-    const key=document.createElement('div');key.className='truthGateKey';renderExact(key,'AND: both · OR: either · XOR: different');
+    const key=document.createElement('div');key.className='truthGateKey';key.textContent='∧ · ∨ · ⊕ · ⊼ · ⊽ · ⊙';
     wrap.append(diagram,table,progress,key);puzzleSlots.appendChild(wrap);
     setMechanismStatus(puzzle,'','Choose gates and watch the Y now column. Make every row match Y target, then press Try answer.');
   }

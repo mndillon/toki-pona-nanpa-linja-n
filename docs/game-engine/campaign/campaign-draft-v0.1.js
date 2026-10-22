@@ -688,8 +688,8 @@
             alreadyOwnedEffects:{setStates:{l8MirrorDone:true}},
             ui:{presentation:'fullscreen',canExit:true,title:'Dual mirror array',instructions:'Rotate the seven mirrors so both beams reach their marked exits at the same time. Every mirror is used by the solution.',payload:{
               width:5,height:5,
-              sources:[{edge:'W',index:1,label:'A'},{edge:'W',index:3,label:'B'}],
-              targets:[{edge:'S',index:3,label:'A'},{edge:'E',index:1,label:'B'}],
+              sources:[{edge:'W',index:1,label:'1'},{edge:'W',index:3,label:'2'}],
+              targets:[{edge:'S',index:3,label:'1'},{edge:'E',index:1,label:'2'}],
               mirrors:[
                 {x:4,y:4},{x:1,y:0},{x:3,y:1},{x:3,y:3},{x:3,y:0},{x:4,y:3},{x:1,y:4}
               ],
@@ -702,8 +702,8 @@
             requirements:{states:{l8BranchAccess:true}},
             rewards:{glyphs:['ala','anu'],setStates:{l8TruthDone:true}},skipIfRewardsOwned:true,skipSafe:true,
             alreadyOwnedEffects:{setStates:{l8TruthDone:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'Truth gate rack',instructions:'Choose AND, OR or XOR for each unknown gate so the circuit matches all eight rows of the truth table. The output must match every row at once.',payload:{
-              gateOptions:['AND','OR','XOR'],
+            ui:{presentation:'fullscreen',canExit:true,title:'Truth gate rack',instructions:'Choose ∧, ∨, ⊕, ⊼, ⊽ or ⊙ for each unknown gate so the circuit matches all eight rows of the truth table. The output must match every row at once.',payload:{
+              gateOptions:['AND','OR','XOR','NAND','NOR','XNOR'],
               initialGates:['AND','AND','AND'],
               targetGates:['XOR','OR','XOR'],
               rows:[
@@ -1168,10 +1168,10 @@
             requirements:{states:{l12IdentityDone:true}},
             rewards:{glyphs:['olin','pi'],setStates:{l12RelationDone:true}},skipIfRewardsOwned:true,skipSafe:true,
             alreadyOwnedEffects:{setStates:{l12RelationDone:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'Triple relation mirror array',objective:'Route all three beams to their own exits simultaneously.',instructions:'Ten mirrors are shared by three beams. Rotate them so A, B and C each reach the matching marked exit at the same time. Every mirror participates in the unique solution.',payload:{
+            ui:{presentation:'fullscreen',canExit:true,title:'Triple relation mirror array',objective:'Route all three beams to their own exits simultaneously.',instructions:'Ten mirrors are shared by three numbered beams. Rotate them so each beam reaches the exit carrying the same number at the same time. Every mirror participates in the unique solution.',payload:{
               width:7,height:7,
-              sources:[{edge:'W',index:4,label:'A'},{edge:'N',index:2,label:'B'},{edge:'S',index:2,label:'C'}],
-              targets:[{edge:'E',index:5,label:'A'},{edge:'N',index:4,label:'B'},{edge:'E',index:0,label:'C'}],
+              sources:[{edge:'W',index:4,label:'1'},{edge:'N',index:2,label:'2'},{edge:'S',index:2,label:'3'}],
+              targets:[{edge:'E',index:5,label:'1'},{edge:'N',index:4,label:'2'},{edge:'E',index:0,label:'3'}],
               mirrors:[{x:0,y:0},{x:5,y:3},{x:1,y:1},{x:2,y:2},{x:0,y:2},{x:4,y:1},{x:5,y:2},{x:1,y:5},{x:1,y:4},{x:1,y:3}],
               initialOrientations:[1,1,1,0,0,1,0,0,0,0],
               targetOrientations:[0,0,0,1,1,0,1,1,1,1]

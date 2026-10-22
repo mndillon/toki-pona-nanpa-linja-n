@@ -163,7 +163,7 @@
 
     'l8-deduction-order': { title:'tomo sona nasin', instructions:'o kepeken sona 7 ale. linja sitelen wan taso li ken pona. o luka e sitelen tu la ona li ante ma.' },
     'l8-dual-mirror': { title:'ilo lukin tu', instructions:'o sike e ilo lukin 7. linja suno tu o kama lon lupa ona lon tenpo sama. nasin pona li kepeken ilo lukin ale.' },
-    'l8-truth-gates': { title:'lupa sona', instructions:'o anu e [[AND]], [[OR]], anu [[XOR]] tawa lupa tu wan. lon linja sona 8 ale la pini ilo o sama e pini wile.' },
+    'l8-truth-gates': { title:'lupa sona', instructions:'o anu e [[∧]], [[∨]], [[⊕]], [[⊼]], [[⊽]], anu [[⊙]] tawa lupa tu wan. lon linja sona 8 ale la pini ilo o sama e pini wile.' },
     'l8-dependency-schedule': { title:'nasin pali', instructions:'o pana e pali 7 lon nasin tan open tawa pini. sona ale pi kama open en kama pini o lon lon tenpo sama.' },
     'l8-transit-vault': { title:'tomo nasin nanpa', instructions:'o open lon sewi poka loje, o tawa tawa anpa poka laso kepeken tawa 8 taso. o tawa lon poki sama ala. nanpa pi poki 9 ale lon nasin o kama nanpa wile.' },
 
@@ -191,7 +191,7 @@
     'l12-parity-core': { title:'ilo luka pi ante tu', objective:'o pona e linja lipu 10 kepeken ilo luka 10.', instructions:'ilo luka 10 li ante e suno nasin 10 lon kulupu. suno wan li ken kama tan ilo mute. ilo luka ale li jo e nasin tu: lon anu ala. sina luka e ilo sama tenpo tu la ona li kama tawa nasin open. o pali e sitelen suno wile. o luka e [[o alasa]]. kulupu ilo wan taso li pona.' },
     'l12-identity-order': { title:'nasin sitelen 8', objective:'o alasa e linja wan taso pi sitelen 8. sona ale o lon lon tenpo sama.', instructions:'sona wan taso li ken ala pini e linja. o ante e sitelen 8. sona ma 9 ale o lon lon tenpo sama. ni la o luka e [[o alasa]].' },
     'l12-master-code': { title:'linja len sitelen 6', objective:'o alasa e linja sitelen 6. ilo li pana e nanpa pi ma sama e nanpa pi ma ante.', instructions:'musi ni li anu e sitelen jo 6. sitelen ale li lon linja len tenpo wan taso. o pali e linja 6. o luka e [[o alasa]]. o kepeken nanpa tu: ma sama en ma ante. sina open sin e lipu la linja len li awen sama.' },
-    'l12-relation-mirrors': { title:'ilo lukin linja tu wan', objective:'o tawa e linja suno [[A]], [[B]], [[C]] tawa lupa ona lon tenpo sama.', instructions:'ilo lukin 10 li lon nasin pi linja suno tu wan. o sike e ona. [[A]], [[B]], [[C]] ale o kama lon lupa sama nimi ona lon tenpo sama. nasin pona wan taso li kepeken ilo lukin ale.' },
+    'l12-relation-mirrors': { title:'ilo lukin linja tu wan', objective:'o tawa e linja suno tu wan tawa lupa pi nanpa sama lon tenpo sama.', instructions:'ilo lukin 10 li lon nasin pi linja suno tu wan. o sike e ona. linja suno ale o kama lon lupa pi nanpa sama lon tenpo sama. nasin pona wan taso li kepeken ilo lukin ale.' },
     'l12-final-sudoku': { title:'[[Sudoku]] 9×9 kepeken [[nanpa-linja-n]]', objective:'o pini e [[Sudoku]] pi suli meso. ni li musi sona pini pi musi ale.', instructions:'lon linja poka ale, lon linja sewi ale, en lon poki 3×3 ale la nanpa 1–9 o lon tenpo wan taso. [[Sudoku]] ni li suli meso; nasin pona wan taso li lon. sitelen suli li [[nanpa-linja-n]]. nanpa [[Latin]] lili li sona namako. sina ken awen e nanpa lili lon poki. ilo li toki e pona taso lon tenpo pi luka [[o alasa]].' }
   };
 
