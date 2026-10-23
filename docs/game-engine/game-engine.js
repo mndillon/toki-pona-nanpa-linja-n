@@ -4954,7 +4954,8 @@
 
   function renderCodebreakerPuzzle(puzzle) {
     const payload=puzzle.ui?.payload||{}; const st=puzzleMechanismState; const variant=getCodebreakerVariant(puzzle); const words=variant.words; const secret=variant.secret;
-    const wrap=document.createElement('div');wrap.className='codebreakerWrap';
+    const isRetainedCluePuzzle=puzzle?.id==='l12-master-code' || puzzle?.id==='l4-codebreaker';
+    const wrap=document.createElement('div');wrap.className=`codebreakerWrap${isRetainedCluePuzzle?' codebreakerWrap--retained-clues':''}`;
     const stage=document.createElement('div');stage.className='codebreakerStage';
     const legend=document.createElement('div');legend.className='codeLegend';
     const legendTitle=document.createElement('strong');renderExact(legendTitle,'available glyphs');legend.appendChild(legendTitle);
@@ -4968,7 +4969,21 @@
     });
     const feedbackPanel=document.createElement('div');feedbackPanel.className='codeFeedbackPanel';
     const history=document.createElement('div');history.className='codeHistory';
-    for(const item of st.history){const row=document.createElement('div');row.className='codeHistoryRow';const code=document.createElement('span');code.className='codeHistorySymbols';for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}const fb=document.createElement('span');renderExact(fb,`exact ${item.exact} · misplaced ${item.misplaced}`);row.append(code,fb);history.appendChild(row);}    
+    st.history.forEach((item,index)=>{
+      const row=document.createElement('div');row.className='codeHistoryRow';
+      const code=document.createElement('span');code.className='codeHistorySymbols';
+      for(const v of item.guess){const word=words[Number(v)%words.length]||words[0];const glyph=document.createElement('span');glyph.className='sitelenGlyph';glyph.textContent=glyphChar(word);glyph.title=word;code.appendChild(glyph);}
+      const fb=document.createElement('span');renderExact(fb,`exact ${item.exact} · misplaced ${item.misplaced}`);
+      row.append(code,fb);
+      if(isRetainedCluePuzzle && index<st.history.length-1){
+        row.classList.add('codeHistoryRow--removable');
+        const remove=document.createElement('button');remove.type='button';remove.className='codeHistoryRemove';remove.textContent='×';
+        remove.setAttribute('aria-label',`Remove clue ${index+1}`);
+        remove.addEventListener('click',()=>{st.history.splice(index,1);saveState();renderCampaignPuzzle();});
+        row.appendChild(remove);
+      }
+      history.appendChild(row);
+    });
     stage.append(legend,guess,submit);
     feedbackPanel.append(history);
     wrap.append(stage,feedbackPanel);
