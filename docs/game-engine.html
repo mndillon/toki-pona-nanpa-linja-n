@@ -106,6 +106,17 @@
       <summary id="fieldNotesSummary">Field notes</summary>
       <div id="fieldLog" class="fieldLog" aria-live="polite"></div>
     </details>
+
+    <div id="gameDisclaimer" class="help" style="margin-top:14px;" aria-live="polite">
+      <div id="gameDisclaimerEn" lang="en" hidden>
+        <strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct,
+        complete, or suitable for any purpose. You are responsible for verifying results.
+      </div>
+      <div id="gameDisclaimerTp" lang="tok">
+        sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pona.
+        sina o lukin e ni: sitelen li pona anu seme.
+      </div>
+    </div>
   </main>
 
   <div id="levelIntroOverlay" class="overlayScreen levelIntroOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="levelIntroEyebrow">
@@ -225,6 +236,22 @@
   <script src="./game-engine/game-engine-reset.js?v=42"></script>
   <script src="./game-engine/game-engine.js?v=159"></script>
 
+<script>
+  (() => {
+    const languageSelect = document.getElementById('languageSelect');
+    const disclaimerEn = document.getElementById('gameDisclaimerEn');
+    const disclaimerTp = document.getElementById('gameDisclaimerTp');
+
+    function syncGameDisclaimerLanguage() {
+      const isEnglish = languageSelect?.value === 'en';
+      if (disclaimerEn) disclaimerEn.hidden = !isEnglish;
+      if (disclaimerTp) disclaimerTp.hidden = isEnglish;
+    }
+
+    syncGameDisclaimerLanguage();
+    languageSelect?.addEventListener('change', syncGameDisclaimerLanguage);
+  })();
+</script>
 
 <script>
   const productionHosts = new Set([
