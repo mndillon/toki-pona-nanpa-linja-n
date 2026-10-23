@@ -6133,6 +6133,16 @@
     setMechanismStatus(puzzle,mechanismSolved(puzzle)?'The route pattern is safe. Press Try answer to confirm the shaft control.':'Match every route lamp to the safe pattern.');
   }
 
+  function layerAlignmentDisplayLabel(layer,index){
+    const raw=layer?.label||layer?.id||`floor ${Number(index)+1}`;
+    if(!isTpLanguage())return raw;
+    const id=String(layer?.id||'').toLowerCase();
+    if(id==='upper')return 'ma sewi';
+    if(id==='middle')return 'ma nasin nasa';
+    if(id==='lower')return 'ma anpa';
+    return raw;
+  }
+
   function renderLayerAlignmentPuzzle(puzzle){
     const payload=puzzle.ui?.payload||{},st=puzzleMechanismState,size=Math.max(2,Number(payload.size)||5),layers=payload.layers||[],target=payload.targetMarkers||{};
     const wrap=document.createElement('div');wrap.className='layerAlignWrap';
@@ -6144,7 +6154,7 @@
       const unit=document.createElement('div');unit.className='layerAlignUnit';
       const head=document.createElement('div');head.className='layerAlignHead';
       const left=document.createElement('button');left.type='button';left.textContent='↶';left.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor counter-clockwise`);
-      const label=document.createElement('strong');renderExact(label,layer.label||layer.id||`floor ${index+1}`);
+      const label=document.createElement('strong');renderLocalized(label,layerAlignmentDisplayLabel(layer,index),{sitelen:isTpLanguage()});
       const right=document.createElement('button');right.type='button';right.textContent='↷';right.setAttribute('aria-label',`Rotate ${layer.label||layer.id} floor clockwise`);
       left.addEventListener('click',()=>{turnLayerAlignment(payload,st,index,-1);renderCampaignPuzzle();});
       right.addEventListener('click',()=>{turnLayerAlignment(payload,st,index,1);renderCampaignPuzzle();});
@@ -6169,8 +6179,7 @@
       const link=document.createElement('small');link.className='layerRotation layerLinkEffect';
       const effects=layerAlignmentTurnEffects(payload,index),order=[index,...layers.map((_,i)=>i).filter(i=>i!==index)];
       const parts=order.filter(i=>Number(effects[i])!==0).map(i=>{
-        const raw=layers[i]?.label||layers[i]?.id||`floor ${i+1}`;
-        const name=isTpLanguage()?exactText(raw):raw;
+        const name=layerAlignmentDisplayLabel(layers[i],i);
         const amount=Number(effects[i])||0;
         return `${name} ${amount>0?'+':''}${amount}`;
       });
