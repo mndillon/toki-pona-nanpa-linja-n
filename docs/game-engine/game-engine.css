@@ -2609,7 +2609,7 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
     width:100%;height:28px!important;gap:2px!important;overflow:hidden!important;padding:0!important;
   }
   .puzzleFamilyKey{width:auto!important;min-width:0!important;height:28px!important;min-height:28px!important;padding:1px 2px!important;font-size:10px!important}
-  .puzzleGlyphDrawer{max-height:150px!important;padding:4px 5px!important;overflow:hidden!important}
+  .puzzleGlyphDrawer{max-height:150px!important;padding:4px 5px!important;overflow:hidden!important;background:rgba(250,236,215,.68)!important}
   .puzzleGlyphDrawerHeader{min-height:24px!important;padding-bottom:2px!important}
   .puzzleGlyphDrawerClose{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important}
   .puzzleGlyphDrawerFamilies{grid-template-columns:repeat(14,minmax(0,1fr))!important;gap:2px!important;margin-bottom:2px!important}
