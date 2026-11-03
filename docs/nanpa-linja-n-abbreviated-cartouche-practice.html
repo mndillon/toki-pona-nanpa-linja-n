@@ -1789,7 +1789,7 @@
     return requestedKind === "mixed" ? shuffle(items) : items;
   }
   async function getNanpaModule(){
-    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285");
+    if (!nanpaModulePromise) nanpaModulePromise = import("./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=290");
     return nanpaModulePromise;
   }
 
@@ -1958,7 +1958,7 @@
   }
 
   async function getVoice(){
-    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=86").then(m => m.createTokiPonaVoice());
+    if (!voicePromise) voicePromise = import("./js/toki-pona-voice-api.js?v=87").then(m => m.createTokiPonaVoice());
     return voicePromise;
   }
 
@@ -3329,74 +3329,48 @@
     });
   }
 
-  function buildReviewSemanticSourceGroups(fullCodepoints){
-    const cps = Array.from(fullCodepoints || []).map(Number);
-    if (!cps.length) return [];
-    const groups = [];
-    const openingFrame = cps[0];
-    const typedDateTimeOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO || openingFrame === ABBREV_CP_TOKI;
-    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedDateTimeOpening;
-    const closingFrame = typedDateTimeOpening ? ABBREV_CP_NANPA : openingFrame;
-    let openingEnd = 1;
-    if (supportedFrame && cps.length > 1 && (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON)) openingEnd = 2;
-    groups.push(Array.from({length:openingEnd},(_,index) => index));
-
-    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === closingFrame;
-    const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
-    let cursor = openingEnd;
-    while (cursor < interiorEnd){
-      let length = Math.min(2,interiorEnd - cursor);
-      if (cps[cursor] === ABBREV_CP_NENA && cursor + 1 < interiorEnd){
-        const next = cps[cursor + 1];
-        if (next === ABBREV_CP_ONA){
-          length = Math.min(2,interiorEnd - cursor);
-        }else{
-          const third = cps[cursor + 2];
-          const fourth = cps[cursor + 3];
-          const fourPart = cursor + 3 < interiorEnd &&
-            (next === ABBREV_CP_E || next === ABBREV_CP_EN) &&
-            (third === ABBREV_CP_O || third === ABBREV_CP_EN || third === ABBREV_CP_OPEN || third === ABBREV_CP_NENA || third === ABBREV_CP_KULE || third === ABBREV_CP_KULUPU ||
-             (typedDateTimeOpening && third === ABBREV_CP_KASI)) &&
-            (fourth === ABBREV_CP_E || fourth === ABBREV_CP_EN);
-          if (fourPart || next === ABBREV_CP_O || next === ABBREV_CP_EN || next === ABBREV_CP_OPEN) length = Math.min(4,interiorEnd - cursor);
-        }
-      }
-      groups.push(Array.from({length},(_,offset) => cursor + offset));
-      cursor += length;
-    }
-    if (hasClosingFrame){
-      if (groups.length) groups[groups.length - 1].push(cps.length - 1);
-      else groups.push([cps.length - 1]);
-    }
-    return groups;
+  // The spoken proper name is divided into syllables, but some punctuation
+  // words (Ene, Inin, Eke, etc.) are kept as one audio unit. Map those audio
+  // units directly to the full cartouche's structural glyph pairs. Inferring
+  // groups from glyph lookahead is incorrect for telephone numbers: nena+en
+  // (the opening Ne of Newan) was being mistaken for a four-glyph unit, which
+  // shifted every subsequent highlight in both cartouches.
+  function reviewSemanticGlyphCountForAudioUnit(unit){
+    if (!unit?.wholeNumericPunctuationWord) return 2;
+    const word = String(unit.word ?? "").toLowerCase();
+    if (/^e(?:ke)+n?$/.test(word)) return 2 * (1 + (word.match(/ke/g) || []).length);
+    if (/^(?:ke){2,3}n?$/.test(word)) return 2 * (word.match(/ke/g) || []).length;
+    if (["ene","inin","one","ono","oko","eko","oken"].includes(word)) return 4;
+    return 2;
   }
 
   function buildReviewSemanticUnitSourceMap(units,fullCodepoints){
-    const groups = buildReviewSemanticSourceGroups(fullCodepoints);
+    const cps = Array.from(fullCodepoints || []).map(Number);
     const map = Array.from({length:units.length},() => []);
-    if (!groups.length || !units.length) return map;
-    let unitCursor = 0;
-    let groupCursor = 0;
-    const firstWord = String(units[0]?.word ?? "").toLowerCase();
-    if (["nanpa","nasa","tenpo","suno","toki"].includes(firstWord)){
-      const firstWordIndex = units[0].wordIndex;
-      while (unitCursor < units.length && units[unitCursor].wordIndex === firstWordIndex){
-        map[units[unitCursor].index] = Array.from(groups[0]);
-        unitCursor++;
-      }
-      groupCursor = 1;
+    if (!cps.length || !units.length) return map;
+
+    const openingFrame = cps[0];
+    const typedOpening = openingFrame === ABBREV_CP_TENPO || openingFrame === ABBREV_CP_SUNO || openingFrame === ABBREV_CP_TOKI;
+    const supportedFrame = openingFrame === ABBREV_CP_NANPA || openingFrame === ABBREV_CP_NASA || openingFrame === ABBREV_CP_NOKA || typedOpening;
+    const closingFrame = typedOpening ? ABBREV_CP_NANPA : openingFrame;
+    const openingEnd = supportedFrame && cps.length > 1 &&
+      (cps[1] === ABBREV_CP_E || cps[1] === ABBREV_CP_EN || cps[1] === ABBREV_CP_KOLON) ? 2 : 1;
+    const hasClosingFrame = supportedFrame && cps.length > openingEnd && cps[cps.length - 1] === closingFrame;
+    const interiorEnd = hasClosingFrame ? cps.length - 1 : cps.length;
+
+    // In nanpa format this is Nanpa/Toki/Suno/Tenpo; in legacy format the
+    // opening nanpa+e itself spells the opening Ne syllable of the first word.
+    map[units[0].index] = Array.from({length:openingEnd},(_unused,index) => index);
+    let cursor = openingEnd;
+    for (let index=1;index<units.length;index++){
+      const unit = units[index];
+      const end = Math.min(interiorEnd,cursor + reviewSemanticGlyphCountForAudioUnit(unit));
+      map[unit.index] = Array.from({length:Math.max(0,end-cursor)},(_unused,offset) => cursor + offset);
+      cursor = end;
     }
-    while (unitCursor < units.length && groupCursor < groups.length){
-      map[units[unitCursor].index] = Array.from(groups[groupCursor]);
-      unitCursor++;
-      groupCursor++;
-    }
-    if (unitCursor < units.length && groups.length){
-      const last = groups[groups.length - 1];
-      while (unitCursor < units.length){
-        map[units[unitCursor].index] = Array.from(last);
-        unitCursor++;
-      }
+    if (hasClosingFrame){
+      const lastUnit = units[units.length - 1];
+      map[lastUnit.index].push(cps.length - 1);
     }
     return map;
   }
@@ -3479,20 +3453,11 @@
     }
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
-    const sourceRanges = reviewAudioUnitSourceRanges(units);
     if (!runs.length) return [];
-    if (runs.length !== sourceRanges.total){
-      const semantic = buildReviewSemanticUnitSourceMap(units,canvas?._reviewFullCodepoints || []);
-      return semantic.map(indexes => reviewCartoucheRectsForRunIndexes(layout,runs,indexes));
-    }
-    const map = [];
-    for (const unit of units){
-      const range = sourceRanges.ranges[unit.index];
-      const indexes = [];
-      for (let index=range.start;index<range.end;index++) indexes.push(index);
-      map[unit.index] = reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
-    }
-    return map;
+    // Latin character offsets cannot be used as glyph offsets, even when
+    // their total lengths happen to coincide for a particular value.
+    const semantic = buildReviewSemanticUnitSourceMap(units,canvas?._reviewFullCodepoints || []);
+    return semantic.map(indexes => reviewCartoucheRectsForRunIndexes(layout,runs,indexes));
   }
   function buildReviewAbbreviatedCartoucheHighlightMap(canvas,units,fullCodepoints,kind){
     if (canvas?._reviewSharedKind === "hexadecimal" || canvas?._reviewSharedKind === "binary"){
@@ -3501,56 +3466,17 @@
     const layout = canvas?._reviewCartoucheLayout;
     const runs = Array.from(layout?.runs || []);
     const sourceIndices = Array.from(canvas?._reviewSharedSourceIndices || []).map(Number);
-    const sourceRanges = reviewAudioUnitSourceRanges(units);
     if (!runs.length || runs.length !== sourceIndices.length) return [];
-    if (sourceRanges.total !== Array.from(fullCodepoints || []).length){
-      const semantic = buildReviewSemanticUnitSourceMap(units,fullCodepoints);
-      return semantic.map(sourceIndexes => {
-        const sourceSet = new Set(sourceIndexes);
-        const indexes = sourceIndices.map((sourceIndex,index) => sourceSet.has(sourceIndex) ? index : -1).filter(index => index >= 0);
-        return reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
-      });
-    }
 
-    const wordRanges = new Map();
-    for (const unit of units){
-      const range = sourceRanges.ranges[unit.index];
-      const existing = wordRanges.get(unit.wordIndex);
-      if (!existing) wordRanges.set(unit.wordIndex,{start:range.start,end:range.end});
-      else{
-        existing.start = Math.min(existing.start,range.start);
-        existing.end = Math.max(existing.end,range.end);
-      }
-    }
-
-    const map = [];
-    for (const unit of units){
-      const range = sourceRanges.ranges[unit.index];
-      let indexes = sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}))
-        .filter(({sourceIndex}) => sourceIndex >= range.start && sourceIndex < range.end)
-        .map(({index}) => index);
-
-      if (!indexes.length){
-        const wordRange = wordRanges.get(unit.wordIndex);
-        const wordCandidates = sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}))
-          .filter(({sourceIndex}) => wordRange && sourceIndex >= wordRange.start && sourceIndex < wordRange.end);
-        const candidates = wordCandidates.length
-          ? wordCandidates
-          : sourceIndices.map((sourceIndex,index) => ({sourceIndex,index}));
-        if (candidates.length){
-          const midpoint = (range.start + range.end - 1) / 2;
-          let bestDistance = Number.POSITIVE_INFINITY;
-          for (const candidate of candidates){
-            bestDistance = Math.min(bestDistance,Math.abs(candidate.sourceIndex - midpoint));
-          }
-          indexes = candidates
-            .filter(candidate => Math.abs(candidate.sourceIndex - midpoint) === bestDistance)
-            .map(candidate => candidate.index);
-        }
-      }
-      map[unit.index] = reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
-    }
-    return map;
+    // The abbreviation retains source-glyph indices supplied by the shared
+    // renderer. Apply the same semantic audio-unit map as the full cartouche.
+    const semantic = buildReviewSemanticUnitSourceMap(units,canvas?._reviewFullCodepoints || fullCodepoints);
+    return semantic.map(sourceIndexes => {
+      const sourceSet = new Set(sourceIndexes);
+      const indexes = sourceIndices.map((sourceIndex,index) => sourceSet.has(sourceIndex) ? index : -1)
+        .filter(index => index >= 0);
+      return reviewCartoucheRectsForRunIndexes(layout,runs,indexes);
+    });
   }
 
   function reviewMagnitudeKeCountForWord(word){

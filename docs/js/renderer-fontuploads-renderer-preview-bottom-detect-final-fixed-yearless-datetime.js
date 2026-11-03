@@ -1708,6 +1708,7 @@ const SitelenRenderer = (() => {
       nanpaColonRendering: __nanpaColonRendering,
       numericCartoucheStartGlyph: __numericCartoucheStartGlyph,
       enableGenericNumericStartGlyphSyntax: __enableGenericNumericStartGlyphSyntax,
+      enableTemporalNumericHeads: __enableTemporalNumericHeads,
       enableHexParsing: __enableHexParsing,
       enableBinaryParsing: __enableBinaryParsing,
       enableBinaryRendering: __enableBinaryRendering,
@@ -1752,6 +1753,7 @@ const SitelenRenderer = (() => {
     __nanpaColonRendering = !!state.nanpaColonRendering;
     __numericCartoucheStartGlyph = normalizeNumericCartoucheStartGlyph(state.numericCartoucheStartGlyph);
     __enableGenericNumericStartGlyphSyntax = state.enableGenericNumericStartGlyphSyntax === true;
+    __enableTemporalNumericHeads = state.enableTemporalNumericHeads !== false;
     __enableHexParsing = !!state.enableHexParsing;
     __enableBinaryParsing = !!state.enableBinaryParsing;
     __enableBinaryRendering = !!state.enableBinaryRendering;
@@ -1800,6 +1802,36 @@ const SitelenRenderer = (() => {
   const ALLOWED_NUMERIC_CARTOUCHE_START_GLYPHS = new Set([
     "nanpa", "tenpo", "suno", "toki"
   ]);
+  // Typed time-scale *positions*: ordinary durations keep the Nanpa head.
+  // These are enabled by default whenever nanpa-format parsing is enabled.
+  const TEMPORAL_NUMERIC_POSITION_HEADS = new Set(["sike", "mun", "ilo", "meso", "lili", "sitelen"]);
+  let __enableTemporalNumericHeads = true;
+
+  function temporalNumericHeadEnabled(head, enabled = true) {
+    return enabled !== false && TEMPORAL_NUMERIC_POSITION_HEADS.has(String(head || "").toLowerCase());
+  }
+
+  // #~head~code is an additive head-preserving numeric-code form. Reserved
+  // binary, hexadecimal and coordinate systems retain their own grammars.
+  function numericCodeExplicitHeadIsValid(head, temporalEnabled = true) {
+    const h = String(head || "").toLowerCase();
+    if (temporalNumericHeadEnabled(h, temporalEnabled)) return true;
+    if (TEMPORAL_NUMERIC_POSITION_HEADS.has(h)) return false;
+    if (["ma", "lon", "nasa", "noka"].includes(h)) return false;
+    const cp = _NP_WORD_TO_UCSUR_CP[h];
+    return Number.isInteger(cp) && cp >= 0xF1900 && cp <= 0xF19FF &&
+      !(cp >= 0xF1990 && cp <= 0xF199E);
+  }
+
+  function numericHeadCodeFromLegacy(code, head, semanticKind = null) {
+    const h = String(head || "").toLowerCase();
+    if (!h || h === "nanpa" || !/^#~/.test(String(code || ""))) return code;
+    // Legacy date and time codes have established implicit suno/tenpo heads.
+    if ((h === "suno" && semanticKind === "date") ||
+        (h === "tenpo" && semanticKind === "time")) return code;
+    return `#~${h}~${String(code).slice(2)}`;
+  }
+
   let __numericCartoucheStartGlyph = null;
 
   function normalizeNumericCartoucheStartGlyph(value) {
@@ -2176,6 +2208,7 @@ const SitelenRenderer = (() => {
     if (Object.prototype.hasOwnProperty.call(parser, "numericCartoucheStartGlyph")) {
       setNumericCartoucheStartGlyph(parser.numericCartoucheStartGlyph);
     }
+    if (parser.enableTemporalNumericHeads != null) __enableTemporalNumericHeads = parser.enableTemporalNumericHeads !== false;
     if (parser.enableGenericNumericStartGlyphSyntax != null) {
       setEnableGenericNumericStartGlyphSyntax(parser.enableGenericNumericStartGlyphSyntax === true);
     }
@@ -5986,6 +6019,7 @@ function wireHaloControls() {
       "suno":  0xF1964,
       "tenpo": 0xF196B,
       "toki":  0xF196C,
+    "sike": 0xF195C, "ilo": 0xF190E, "meso": 0xF1982, "lili": 0xF1928,
       "ma":    0xF1930,
       "lon":   0xF192C,
       "kiwen": 0xF191B,
@@ -6114,7 +6148,13 @@ function wireHaloControls() {
     })();
 
     const NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS = new Set([
-      CP_NANPA, CP_NASA, CP_NOKA, CP_TENPO, CP_SUNO, CP_TOKI, CP_MA, CP_LON
+      CP_NANPA, CP_NASA, CP_NOKA, CP_TENPO, CP_SUNO, CP_TOKI, CP_MA, CP_LON,
+      // Recognise new typed heads for the existing leading-positive-sign
+      // rule. Opening-head/colon 1/2-scale treatment is positional for EVERY
+      // verified numeric cartouche (see function below), not limited to this set.
+      NANPA_LINJA_N_WORD_TO_CP.sike, NANPA_LINJA_N_WORD_TO_CP.mun,
+      NANPA_LINJA_N_WORD_TO_CP.ilo, NANPA_LINJA_N_WORD_TO_CP.meso,
+      NANPA_LINJA_N_WORD_TO_CP.lili
     ]);
     const NUMERIC_CARTOUCHE_HALF_SCALE_CLOSER_CPS = new Set([
       CP_NANPA, CP_NASA, CP_NOKA
@@ -6166,25 +6206,17 @@ function wireHaloControls() {
       const cp = canonical[index];
       const firstInnerIndex = 1;
       const lastInnerIndex = canonical.length - 2;
-      const firstInnerCp = canonical[firstInnerIndex];
-      const firstInnerIsHalfScaleHead =
-        NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(firstInnerCp) || allowGenericStartGlyph === true;
-
-      // Existing numeric structural heads keep their established 1/2 scale.
-      // When the new generic start-glyph syntax explicitly supplied this head,
-      // that one opening glyph and its immediately following colon use the same
-      // structural 1/2 scale without broadening the rule for ordinary cartouches.
-      if (
-        index === firstInnerIndex &&
-        (NUMERIC_CARTOUCHE_HALF_SCALE_HEAD_CPS.has(cp) || allowGenericStartGlyph === true)
-      ) {
+      // This helper is called ONLY after a cartouche was verified and
+      // constructed as numeric (isNumericCartouche=true). Thus its opening
+      // glyph is a numeric head regardless of which sitelen pona word it is.
+      // Keep the ordinary nanpa-format structural 1/2 scale for EVERY verified
+      // numeric head and the colon immediately following it. Do not infer
+      // numeric status from the glyph itself: ordinary nonnumeric cartouches
+      // must retain their existing scaling and rendering behaviour.
+      if (index === firstInnerIndex) {
         return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
       }
-      if (
-        index === firstInnerIndex + 1 &&
-        cp === CP_COLON &&
-        firstInnerIsHalfScaleHead
-      ) {
+      if (index === firstInnerIndex + 1 && cp === CP_COLON) {
         return CARTOUCHE_VULGAR_SCALE_MARKERS.half;
       }
       if (index === lastInnerIndex && NUMERIC_CARTOUCHE_HALF_SCALE_CLOSER_CPS.has(cp)) {
@@ -6793,6 +6825,7 @@ function wireHaloControls() {
       NANPA_LINJA_N_WORD_TO_CP["tenpo"],
       NANPA_LINJA_N_WORD_TO_CP["suno"],
       NANPA_LINJA_N_WORD_TO_CP["toki"],
+      ...["sike", "mun", "ilo", "meso", "lili"].map(h => NANPA_LINJA_N_WORD_TO_CP[h]),
       NANPA_LINJA_N_WORD_TO_CP["ma"],
       NANPA_LINJA_N_WORD_TO_CP["lon"]
     ]);
@@ -6948,13 +6981,23 @@ function wireHaloControls() {
       // first word and the complete remainder satisfies the existing Nanpa
       // proper-name numeric grammar. Ordinary Toki Pona text therefore does
       // not become numeric merely because it begins with Toki.
-      if (!source || !/^Toki(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) return null;
+      if (!source || !/^(?:Toki|Sike|Mun|Ilo|Meso|Lili|Sitelen)(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) return null;
+      const temporalHead = source.split(/[ \t]+/)[0].toLowerCase();
+      if (temporalHead !== "toki" && !__enableTemporalNumericHeads) return null;
 
       const words = source.split(/[ \t]+/).filter(Boolean);
       const nanpaEquivalent = `Nanpa ${words.slice(1).join(" ")}`;
       const caps = nanpaColonProperNameToCaps(nanpaEquivalent);
       if (!caps) return null;
-      return { caps, head: "toki", semanticStartGlyph: "toki" };
+      if (temporalHead === "sitelen") {
+        const canonical = _npWithoutSitelenFractionEne(caps);
+        return canonical ? { caps: canonical, head: "sitelen", semanticStartGlyph: "sitelen" } : null;
+      }
+      if (temporalHead === "ilo" && _npDecodeIloOffsetCaps(caps)) {
+        return { caps, head: "ilo", semanticKind: "time", semanticStartGlyph: "ilo" };
+      }
+      if (temporalHead !== "toki" && (nanpaCapsIsValidDate(caps) || nanpaCapsIsValidTime(caps))) return null;
+      return { caps, head: temporalHead, semanticStartGlyph: temporalHead };
     }
 
     function nanpaCapsIsDayOfMonthNumber(caps) {
@@ -7073,6 +7116,15 @@ function wireHaloControls() {
 
       let rawBody = s0.slice(2);
       if (!rawBody) throw new Error("Number code '#~' must have content after it.");
+      let explicitHead = null;
+      const headMatch = /^([a-z]+)~(.+)$/i.exec(rawBody);
+      if (headMatch) {
+        if (!getNanpaColonParsing()) return null;
+        explicitHead = headMatch[1].toLowerCase();
+        if (!numericCodeExplicitHeadIsValid(explicitHead, __enableTemporalNumericHeads)) return null;
+        rawBody = headMatch[2];
+      }
+      if (rawBody.includes("~")) return null;
 
       // A literal lowercase k immediately after #~ is the explicit yearless-date
       // marker. It is detected before case-folding so an uppercase K retains its
@@ -7245,9 +7297,24 @@ function wireHaloControls() {
         if (hasLeadingPlus || hasPercent || nanpaCapsDecodeYearlessDateStrict(caps) == null) {
           throw new Error("A leading lowercase k in number code must encode exactly one valid yearless date as MMkDD.");
         }
-        return { caps, semanticKind: "date", dateKind: "yearless" };
+        // Legacy yearless dates keep their implicit Suno head.
+        // An explicit prefix may only repeat the same date head.
+        if (explicitHead && explicitHead !== "suno") return null;
+        return explicitHead
+          ? { caps, semanticKind: "date", dateKind: "yearless", head: "suno", semanticStartGlyph: "suno" }
+          : { caps, semanticKind: "date", dateKind: "yearless" };
       }
-      return { caps };
+      if (explicitHead) {
+        if (explicitHead === "sitelen") {
+          const canonical = _npWithoutSitelenFractionEne(caps);
+          return canonical ? { caps: canonical, head: explicitHead, semanticStartGlyph: explicitHead } : null;
+        }
+        if (explicitHead === "ilo" && _npDecodeIloOffsetCaps(caps)) {
+          return { caps, head: explicitHead, semanticStartGlyph: explicitHead, semanticKind: "time" };
+        }
+        if (temporalNumericHeadEnabled(explicitHead) && (nanpaCapsIsValidDate(caps) || nanpaCapsIsValidTime(caps))) return null;
+      }
+      return { caps, head: explicitHead, semanticStartGlyph: explicitHead };
     }
 
     const TOKEN_TO_DIGIT_CHAR = {
@@ -7275,7 +7342,9 @@ function wireHaloControls() {
       const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
       const N_WORD_FRACTION = "nena";
       const N_END_WORD = "nanpa";
-      const EXPLICIT_SEMANTIC_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
+      const EXPLICIT_SEMANTIC_HEAD_WORD =
+        numericCodeExplicitHeadIsValid(semanticStartGlyph)
+          ? semanticStartGlyph : normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
       const SEMANTIC_DEFAULT_HEAD_WORD = getNanpaColonRendering()
         ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
         : "nanpa";
@@ -7439,8 +7508,13 @@ function wireHaloControls() {
 
 
       const cps = [];
-      for (const w of tpWordsFinal) {
-        const cp = NANPA_LINJA_N_WORD_TO_CP[w];
+      for (let wordIndex = 0; wordIndex < tpWordsFinal.length; wordIndex++) {
+        const w = tpWordsFinal[wordIndex];
+        // Only the explicitly typed opening glyph may use the general sitelen
+        // dictionary. Numeric body words retain their restricted vocabulary.
+        const cp = NANPA_LINJA_N_WORD_TO_CP[w] ??
+          (wordIndex === 0 && w === semanticStartGlyph && numericCodeExplicitHeadIsValid(w)
+            ? WORD_TO_UCSUR_CP[w] : null);
         if (cp == null) return null;
         cps.push(cp);
       }
@@ -7480,9 +7554,13 @@ function wireHaloControls() {
       try {
         const parsed = tryParseNanpaLinjanNumberCodeToCaps(s);
         if (parsed?.caps) {
-          const semanticKind = parsed.semanticKind || (nanpaCapsIsValidDate(parsed.caps) ? "date" : (nanpaCapsIsValidTime(parsed.caps) ? "time" : null));
+          const semanticKind = parsed.head === "sitelen" ? null :
+            (parsed.semanticKind || (nanpaCapsIsValidDate(parsed.caps) ? "date" : (nanpaCapsIsValidTime(parsed.caps) ? "time" : null)));
           const isTime = semanticKind === "date" || semanticKind === "time";
-          return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, { mode, isTime, semanticKind });
+          return nanpaCapsToNanpaLinjanCodepoints(parsed.caps, {
+            mode, isTime, semanticKind,
+            semanticStartGlyph: parsed.semanticStartGlyph || null
+          });
         }
       } catch {
         return null;
@@ -7490,7 +7568,8 @@ function wireHaloControls() {
 
       const typedNumeric = nanpaTypedNumericProperNameToInfo(s);
       if (typedNumeric?.caps) {
-        const semanticKind = nanpaCapsIsValidDate(typedNumeric.caps) ? "date" : (nanpaCapsIsValidTime(typedNumeric.caps) ? "time" : null);
+        const semanticKind = typedNumeric.head === "sitelen" ? null :
+          (typedNumeric.semanticKind || (nanpaCapsIsValidDate(typedNumeric.caps) ? "date" : (nanpaCapsIsValidTime(typedNumeric.caps) ? "time" : null)));
         const isTime = semanticKind === "date" || semanticKind === "time";
         return nanpaCapsToNanpaLinjanCodepoints(typedNumeric.caps, {
           mode,
@@ -8296,7 +8375,7 @@ function wireHaloControls() {
       // This syntax is a nanpa-format sub-option: even when its explicit flag is
       // enabled, it must remain inactive whenever nanpa-format parsing/rendering
       // is disabled.
-      if (!getNanpaColonParsing() || !getEnableGenericNumericStartGlyphSyntax()) return [];
+      if (!getNanpaColonParsing()) return [];
       const s = String(text ?? "");
       if (!s) return [];
 
@@ -8310,6 +8389,9 @@ function wireHaloControls() {
       let m;
       while ((m = re.exec(s)) !== null) {
         const raw = String(m[0] || "");
+        const candidateHead = raw.slice(0, raw.indexOf(":"));
+        if (!getEnableGenericNumericStartGlyphSyntax() &&
+            !temporalNumericHeadEnabled(candidateHead, __enableTemporalNumericHeads)) continue;
         const start = m.index | 0;
         const end = start + raw.length;
         const before = start > 0 ? s[start - 1] : "";
@@ -8326,7 +8408,8 @@ function wireHaloControls() {
           nanpaColonRendering: getNanpaColonRendering(),
           abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
           numericCartoucheStartGlyph: getNumericCartoucheStartGlyph(),
-          enableGenericNumericStartGlyphSyntax: true,
+          enableGenericNumericStartGlyphSyntax: getEnableGenericNumericStartGlyphSyntax(),
+          enableTemporalNumericHeads: __enableTemporalNumericHeads,
           enableHexParsing: getEnableHexParsing(),
           enableBinaryParsing: getEnableBinaryParsing(),
           enableBinaryRendering: getEnableBinaryRendering()
@@ -8766,7 +8849,7 @@ function wireHaloControls() {
       const s = String(text ?? "");
       if (!s) return [];
 
-      const re = /#~\+?[A-Za-z]+/g;
+      const re = /#~(?:[A-Za-z]+~)?\+?[A-Za-z]+/g;
       const out = [];
       let m;
 
@@ -8776,6 +8859,10 @@ function wireHaloControls() {
 
         const start = m.index | 0;
         const end = start + raw.length;
+        // Require a complete token for the *new* explicit-head form, but
+        // retain legacy prefix-scanning behaviour for ordinary #~ codes.
+        if (/^#~[A-Za-z]+~/.test(raw) && end < s.length &&
+            /[A-Za-z0-9_~]/.test(s[end])) continue;
 
         try {
           const parsed = tryParseNanpaLinjanNumberCodeToCaps(raw);
@@ -8788,7 +8875,8 @@ function wireHaloControls() {
             end,
             caps: parsed.caps,
             semanticKind: parsed.semanticKind || null,
-            dateKind: parsed.dateKind || null
+            dateKind: parsed.dateKind || null,
+            semanticStartGlyph: parsed.semanticStartGlyph || null
           });
         } catch {
           // ignore invalid codes
@@ -8810,6 +8898,7 @@ function wireHaloControls() {
           index: start,
           end: start + String(rawSpan).length,
           caps: typedNumeric.caps,
+          semanticKind: typedNumeric.semanticKind || null,
           semanticStartGlyph: typedNumeric.semanticStartGlyph
         };
       }
@@ -8879,7 +8968,9 @@ function wireHaloControls() {
             (first.raw === "Nanpa" || /^Nanpa[a-z]+$/.test(first.raw));
           const startsTypedDateTimeName = getNanpaColonParsing() &&
             (first.raw === "Tenpo" || first.raw === "Suno");
-          const startsTypedNumericName = getNanpaColonParsing() && first.raw === "Toki";
+          const startsTypedNumericName = getNanpaColonParsing() &&
+            (first.raw === "Toki" || (__enableTemporalNumericHeads &&
+              ["Sike", "Mun", "Ilo", "Meso", "Lili", "Sitelen"].includes(first.raw)));
           if (!startsLegacyNanpaName && !startsNanpaColonName && !startsTypedDateTimeName && !startsTypedNumericName) continue;
 
           let best = null;
@@ -11754,7 +11845,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         const typedColon = _npTryParseTypedNanpaColonCartouche(`[${numericContent}]`, {
           nanpaColonParsing: true,
           relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
-          abbreviateNumericCartouches: getAbbreviateNumericCartouches()
+          abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+          enableTemporalNumericHeads: __enableTemporalNumericHeads
         });
         const renderTypedColonCaps = (typed) => {
           if (!typed?.caps) return null;
@@ -13666,6 +13758,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     "suno":  0xF1964,
     "tenpo": 0xF196B,
     "toki":  0xF196C,
+    "sike": 0xF195C, "ilo": 0xF190E, "meso": 0xF1982, "lili": 0xF1928,
     "ma":    0xF1930,
     "lon":   0xF192C,
     "kiwen": 0xF191B,
@@ -13727,6 +13820,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     _NP_NANPA_LINJA_N_WORD_TO_CP["tenpo"],
     _NP_NANPA_LINJA_N_WORD_TO_CP["suno"],
     _NP_NANPA_LINJA_N_WORD_TO_CP["toki"],
+    ...["sike", "mun", "ilo", "meso", "lili"].map(h => _NP_NANPA_LINJA_N_WORD_TO_CP[h]),
     _NP_NANPA_LINJA_N_WORD_TO_CP["ma"],
     _NP_NANPA_LINJA_N_WORD_TO_CP["lon"]
   ]);
@@ -14008,16 +14102,102 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     } catch { return null; }
   }
 
+  // A Unix-seconds timestamp is an arbitrary-precision *decimal numeric*
+  // expression.  Keep fractional digits contiguous; do not introduce the
+  // ordinary three-digit fractional Ene spacers.  Ingesting a spelling with
+  // existing spacers is allowed, but its canonical rendering omits them.
+  function _npIsPlainSignedDecimalCaps(caps, opts = {}) {
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(caps, opts); } catch { return false; }
+    if (tokens.length < 3 || tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return false;
+    let i = 1, end = tokens.length - 1;
+    if (tokens[i] === "NO" || tokens[i] === "NS") i++;
+    let integerDigits = 0;
+    while (i < end && _NP_DIGIT_TOKENS.has(tokens[i])) { integerDigits++; i++; }
+    if (!integerDigits) return false;
+    if (i === end) return true;
+    if (tokens[i] !== "NO" || tokens[i + 1] !== "NE") return false;
+    i += 2;
+    let fractionDigits = 0;
+    while (i < end) {
+      if (tokens[i] === "NE" && tokens[i + 1] === "NE") { i += 2; continue; }
+      if (!_NP_DIGIT_TOKENS.has(tokens[i])) return false;
+      fractionDigits++; i++;
+    }
+    return fractionDigits > 0;
+  }
+
+  function _npWithoutSitelenFractionEne(caps, opts = {}) {
+    if (!_npIsPlainSignedDecimalCaps(caps, opts)) return null;
+    const tokens = _npTokenizeNanpaCaps(caps, opts);
+    let fractional = false;
+    const result = [];
+    for (let i = 0; i < tokens.length; i++) {
+      if (tokens[i] === "NO" && tokens[i + 1] === "NE" && !fractional) {
+        fractional = true;
+        result.push("NO", "NE");
+        i++;
+        continue;
+      }
+      if (fractional && tokens[i] === "NE" && tokens[i + 1] === "NE") { i++; continue; }
+      result.push(tokens[i]);
+    }
+    return result.join("");
+  }
+
+  // Ilo HH:MM is a *time*-typed UTC-offset component. The optional explicit
+  // sign is preserved, including +00:00 and -00:00. Clock/date parsers for
+  // existing Tenpo and Suno expressions remain untouched.
+  function _npDecodeIloOffsetCaps(caps, opts = {}) {
+    let tokens;
+    try { tokens = _npTokenizeNanpaCaps(caps, opts); } catch { return null; }
+    if (tokens[0] !== "NE" || tokens[tokens.length - 1] !== "N") return null;
+    const end = tokens.length - 1;
+    let i = 1, sign = "";
+    if (tokens[i] === "NO") { sign = "-"; i++; }
+    else if (tokens[i] === "NS") { sign = "+"; i++; }
+    const hours = [];
+    while (i < end && _NP_DIGIT_TOKENS.has(tokens[i])) hours.push(_NP_TOKEN_TO_DIGIT_CHAR[tokens[i++]]);
+    if (tokens[i] !== "NE" || tokens[i + 1] !== "KE") return null;
+    i += 2;
+    const minutes = [];
+    while (i < end && _NP_DIGIT_TOKENS.has(tokens[i])) minutes.push(_NP_TOKEN_TO_DIGIT_CHAR[tokens[i++]]);
+    if (i !== end || hours.length !== 2 || minutes.length !== 2) return null;
+    const hh = hours.join(""), mm = minutes.join("");
+    if (Number(hh) > 23 || Number(mm) > 59) return null;
+    return { sign, hours: hh, minutes: mm, displayValue: `${sign}${hh}:${mm}` };
+  }
+
+  function _npIloOffsetStringToCaps(value, opts = {}) {
+    const s = String(value ?? "").trim();
+    const m = /^([+-]?)(\d{2}):([0-5]\d)$/.exec(s);
+    if (!m || Number(m[2]) > 23) return null;
+    const caps = "NE" + (m[1] === "+" ? "NS" : (m[1] === "-" ? "NO" : "")) +
+      _npEncodeDigitsOnly(m[2], opts) + "NEKE" + _npEncodeDigitsOnly(m[3], opts) + "N";
+    return _npDecodeIloOffsetCaps(caps, opts) ? caps : null;
+  }
+
   function _npTypedNumericProperNameToInfo(raw, opts = {}) {
     if (!_npNanpaColonParsingFromOpts(opts)) return null;
     const source = String(raw ?? "").trim();
-    if (!source || !/^Toki(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) return null;
+    if (!source || !/^(?:Toki|Sike|Mun|Ilo|Meso|Lili|Sitelen)(?:[ \t]+[A-Z][a-z]*)+$/.test(source)) return null;
+    const temporalHead = source.split(/[ \t]+/)[0].toLowerCase();
+    if (temporalHead !== "toki" && opts.enableTemporalNumericHeads === false) return null;
 
     const words = source.split(/[ \t]+/).filter(Boolean);
     const nanpaEquivalent = `Nanpa ${words.slice(1).join(" ")}`;
     const caps = _npNanpaColonProperNameToCaps(nanpaEquivalent, opts);
     if (!caps) return null;
-    return { caps, head: "toki", semanticStartGlyph: "toki" };
+    if (temporalHead === "sitelen") {
+      const canonical = _npWithoutSitelenFractionEne(caps, opts);
+      return canonical ? { caps: canonical, head: "sitelen", semanticStartGlyph: "sitelen" } : null;
+    }
+    if (temporalHead === "ilo") {
+      const offset = _npDecodeIloOffsetCaps(caps, opts);
+      if (offset) return { caps, head: "ilo", semanticStartGlyph: "ilo", semanticKind: "time", iloOffset: offset };
+    }
+    if (temporalHead !== "toki" && (_npNanpaCapsIsValidDate(caps, opts) || _npNanpaCapsIsValidTime(caps, opts))) return null;
+    return { caps, head: temporalHead, semanticStartGlyph: temporalHead };
   }
 
   function _npNanpaCapsIsDayOfMonthNumber(caps, opts = {}) {
@@ -14179,13 +14359,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     return String(raw ?? "").trim().replace(/\s+/g, "");
   }
 
-  function _npTryParseNanpaLinjanNumberCodeToCaps(raw) {
+  function _npTryParseNanpaLinjanNumberCodeToCaps(raw, opts = {}) {
     const s0 = _npNormalizeNumberCodeInput(raw);
     if (!s0) return null;
     if (!s0.toUpperCase().startsWith("#~")) return null;
 
     let rawBody = s0.slice(2);
     if (!rawBody) throw new Error("Number code '#~' must have content after it.");
+    let explicitHead = null;
+    const headMatch = /^([a-z]+)~(.+)$/i.exec(rawBody);
+    if (headMatch) {
+      if (!_npNanpaColonParsingFromOpts(opts)) return null;
+      explicitHead = headMatch[1].toLowerCase();
+      if (!numericCodeExplicitHeadIsValid(explicitHead, opts.enableTemporalNumericHeads !== false)) return null;
+      rawBody = headMatch[2];
+    }
+    if (rawBody.includes("~")) return null;
 
     const explicitYearlessDate = rawBody.startsWith("k");
     if (explicitYearlessDate) {
@@ -14343,9 +14532,24 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (hasLeadingPlus || hasPercent || _npNanpaCapsDecodeYearlessDateStrict(caps) == null) {
         throw new Error("A leading lowercase k in number code must encode exactly one valid yearless date as MMkDD.");
       }
-      return { caps, semanticKind: "date", dateKind: "yearless" };
+      // Legacy yearless dates keep their implicit Suno head.
+        // An explicit prefix may only repeat the same date head.
+        if (explicitHead && explicitHead !== "suno") return null;
+        return explicitHead
+          ? { caps, semanticKind: "date", dateKind: "yearless", head: "suno", semanticStartGlyph: "suno" }
+          : { caps, semanticKind: "date", dateKind: "yearless" };
     }
-    return { caps };
+    if (explicitHead) {
+      if (explicitHead === "sitelen") {
+        const canonical = _npWithoutSitelenFractionEne(caps, opts);
+        return canonical ? { caps: canonical, head: explicitHead, semanticStartGlyph: explicitHead } : null;
+      }
+      if (explicitHead === "ilo" && _npDecodeIloOffsetCaps(caps, opts)) {
+        return { caps, head: explicitHead, semanticStartGlyph: explicitHead, semanticKind: "time" };
+      }
+      if (temporalNumericHeadEnabled(explicitHead) && (_npNanpaCapsIsValidDate(caps, opts) || _npNanpaCapsIsValidTime(caps, opts))) return null;
+    }
+    return { caps, head: explicitHead, semanticStartGlyph: explicitHead };
   }
 
   function _npNanpaCapsTokensToTpWords(tokens, { mode = "traditional", relaxedRendering = false, nanpaColonRendering = false, semanticKind = null, semanticStartGlyph = null, numericCartoucheStartGlyph = null } = {}) {
@@ -14360,7 +14564,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const N_WORD_DECIMAL_POINT = uniform ? "nena" : "ni";
     const N_END_WORD = "nanpa";
-    const EXPLICIT_SEMANTIC_HEAD_WORD = normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
+    const EXPLICIT_SEMANTIC_HEAD_WORD =
+        numericCodeExplicitHeadIsValid(semanticStartGlyph)
+          ? semanticStartGlyph : normalizeNumericCartoucheStartGlyph(semanticStartGlyph);
     const SEMANTIC_DEFAULT_HEAD_WORD = nanpaColonRendering
       ? (semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa"))
       : "nanpa";
@@ -14550,7 +14756,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     try {
       const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
       if (parsed?.caps) {
-        const semanticKind = parsed.semanticKind || (_npNanpaCapsIsValidDate(parsed.caps) ? "date" : (_npNanpaCapsIsValidTime(parsed.caps) ? "time" : null));
+        const semanticKind = parsed.head === "sitelen" ? null :
+            (parsed.semanticKind || (_npNanpaCapsIsValidDate(parsed.caps) ? "date" : (_npNanpaCapsIsValidTime(parsed.caps) ? "time" : null)));
         const isTime = semanticKind === "date" || semanticKind === "time";
         return _npNanpaCapsToNanpaLinjanCodepoints(parsed.caps, {
           mode,
@@ -14559,6 +14766,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           relaxedRendering,
           nanpaColonRendering,
           semanticKind,
+          semanticStartGlyph: parsed.semanticStartGlyph || null,
           numericCartoucheStartGlyph
         });
       }
@@ -14569,7 +14777,8 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const properOpts = { relaxedNanpaLinjanParsing: relaxedParsing, nanpaColonParsing, nanpaColonRendering };
     const typedNumeric = _npTypedNumericProperNameToInfo(s, properOpts);
     if (typedNumeric?.caps) {
-      const semanticKind = _npNanpaCapsIsValidDate(typedNumeric.caps, properOpts) ? "date" : (_npNanpaCapsIsValidTime(typedNumeric.caps, properOpts) ? "time" : null);
+      const semanticKind = typedNumeric.head === "sitelen" ? null :
+          (typedNumeric.semanticKind || (_npNanpaCapsIsValidDate(typedNumeric.caps, properOpts) ? "date" : (_npNanpaCapsIsValidTime(typedNumeric.caps, properOpts) ? "time" : null)));
       const isTime = semanticKind === "date" || semanticKind === "time";
       return _npNanpaCapsToNanpaLinjanCodepoints(typedNumeric.caps, {
         mode,
@@ -15495,7 +15704,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
   function _npTryParseTypedNanpaColonCartouche(raw, opts = {}) {
     if (!_npNanpaColonParsingFromOpts(opts)) return null;
     const tokens = _npTokenizeNanpaColonCartoucheSource(raw);
-    if (!tokens || tokens.length < 3 || !["nanpa", "tenpo", "suno", "toki"].includes(tokens[0]) ||
+    if (!tokens || tokens.length < 3 ||
+        !(["nanpa", "tenpo", "suno", "toki"].includes(tokens[0]) ||
+          (opts.enableTemporalNumericHeads !== false && TEMPORAL_NUMERIC_POSITION_HEADS.has(tokens[0]))) ||
         tokens[tokens.length - 1] !== "nanpa") return null;
     const head = tokens[0];
     const hasColon = tokens[1] === ":";
@@ -15550,7 +15761,9 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (value) parsedForm = "full";
       return value;
     };
-    let caps = preferAbbreviated ? (parseAbbreviated() || parseFull()) : (parseFull() || parseAbbreviated());
+    let caps = head === "sitelen" && preferAbbreviated
+      ? parseAbbreviated()
+      : (preferAbbreviated ? (parseAbbreviated() || parseFull()) : (parseFull() || parseAbbreviated()));
     if (!caps) return null;
 
     if (head === "suno") {
@@ -15584,13 +15797,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       if (!_npNanpaCapsIsValidTime(caps, opts)) return null;
       return { caps, semanticKind: "time", dateKind: null, head, form: parsedForm };
     }
+    if (head === "sitelen") {
+      const canonical = _npWithoutSitelenFractionEne(caps, opts);
+      return canonical ? { caps: canonical, semanticKind: null, head, form: parsedForm, semanticStartGlyph: head } : null;
+    }
+    if (head === "ilo" && _npDecodeIloOffsetCaps(caps, opts)) {
+      return { caps, semanticKind: "time", head, form: parsedForm, semanticStartGlyph: "ilo" };
+    }
+    if (TEMPORAL_NUMERIC_POSITION_HEADS.has(head) &&
+        (_npNanpaCapsIsValidDate(caps, opts) || _npNanpaCapsIsValidTime(caps, opts))) return null;
     return {
       caps,
       semanticKind: null,
       dateKind: null,
       head,
       form: parsedForm,
-      semanticStartGlyph: head === "toki" ? "toki" : null
+      semanticStartGlyph: head === "toki" || TEMPORAL_NUMERIC_POSITION_HEADS.has(head) ? head : null
     };
   }
 
@@ -16059,9 +16281,13 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       ...parsed,
       input: wrapper.source,
       wrappedNumericInput: wrapper.inner,
-      // Preserve the wrapped expression's semanticStartGlyph (for example a
-      // typed Toki numeric form). The generic wrapper changes presentation only.
-      semanticStartGlyph: parsed.semanticStartGlyph || null,
+      // Explicitly headed numeric wrappers retain their head in the
+      // semantic result and head-prefixed #~ output. Legacy value/type rules
+      // for the wrapped expression remain unchanged.
+      semanticStartGlyph: wrapper.head,
+      headGlyph: wrapper.head,
+      uniqueCode: numericHeadCodeFromLegacy(parsed.uniqueCode, wrapper.head, parsed.semanticKind),
+      properName: String(parsed.properName || "").replace(/^Nanpa\b/, wrapper.head[0].toUpperCase() + wrapper.head.slice(1)),
       renderStartGlyph: wrapper.head,
       genericNumericStartGlyph: wrapper.head,
       ucsurCodepoints: innerCodepoints.slice(),
@@ -16148,15 +16374,33 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       };
     }
 
-    const genericStartGlyphWrapper =
-      _npNanpaColonParsingFromOpts(opts) && opts.enableGenericNumericStartGlyphSyntax === true
-        ? _npTryParseGenericNumericStartGlyphWrapper(s)
-        : null;
+    const candidateGenericWrapper = _npNanpaColonParsingFromOpts(opts)
+      ? _npTryParseGenericNumericStartGlyphWrapper(s) : null;
+    const genericStartGlyphWrapper = candidateGenericWrapper &&
+      (opts.enableGenericNumericStartGlyphSyntax === true ||
+       temporalNumericHeadEnabled(candidateGenericWrapper.head, opts.enableTemporalNumericHeads !== false))
+        ? candidateGenericWrapper : null;
     if (genericStartGlyphWrapper) {
       // Parse the interior as a complete ordinary numeric expression. The
       // wrapper is presentation-only: date/time/number semantics and the
       // numeric value remain exactly those of the inner expression.
-      const innerParsed = this.parseNumber(genericStartGlyphWrapper.inner, opts);
+      const wrapperHead = genericStartGlyphWrapper.head;
+      const wrapperValue = genericStartGlyphWrapper.inner.trim();
+      if (wrapperHead === "sitelen" && !/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(wrapperValue)) return null;
+      if (wrapperHead === "ilo" && /^[-+]?\d{2}:\d{2}$/.test(wrapperValue)) {
+        const offsetCaps = _npIloOffsetStringToCaps(wrapperValue, opts);
+        if (!offsetCaps) return null;
+        const plain = this.parseNumber(offsetCaps, opts);
+        if (!plain?.properName) return null;
+        const typed = this.parseNumber(plain.properName.replace(/^Nanpa /, "Ilo "), opts);
+        if (!typed || typed.semanticKind !== "time") return null;
+        return { ...typed, input: s, wrappedNumericInput: wrapperValue,
+          renderStartGlyph: "ilo", genericNumericStartGlyph: "ilo" };
+      }
+      const innerParsed = this.parseNumber(wrapperValue,
+        wrapperHead === "sitelen" ? { ...opts, groupFractionTriplets: false } : opts);
+      if (temporalNumericHeadEnabled(wrapperHead) &&
+          (innerParsed?.isDate || innerParsed?.isTime)) return null;
       const wrapped = _npApplyGenericNumericStartGlyph(innerParsed, genericStartGlyphWrapper);
       if (wrapped) return wrapped;
       return null;
@@ -16565,6 +16809,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     let caps = null;
     let structuredKind = null;
     let semanticStartGlyph = null;
+    let explicitHead = null;
     try {
       const typedColonCartouche = _npTryParseTypedNanpaColonCartouche(s, opts);
       const colonCartoucheCaps = typedColonCartouche?.caps || null;
@@ -16578,6 +16823,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       });
       if (!caps && colonCartoucheCaps) {
         caps = colonCartoucheCaps;
+        explicitHead = typedColonCartouche?.head || null;
         semanticStartGlyph = typedColonCartouche?.semanticStartGlyph || null;
         if (typedColonCartouche?.semanticKind === "date") structuredKind = typedColonCartouche.dateKind === "yearless" ? "date-yearless" : "date";
         else if (typedColonCartouche?.semanticKind === "time") structuredKind = "time";
@@ -16600,9 +16846,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         // already parsed from a structured source form
       } else if (typedNumericProperName?.caps) {
         caps = typedNumericProperName.caps;
+        explicitHead = typedNumericProperName.head;
         semanticStartGlyph = typedNumericProperName.semanticStartGlyph;
+        if (typedNumericProperName.semanticKind === "time") structuredKind = "time";
       } else if (typedDateTimeProperName?.caps) {
         caps = typedDateTimeProperName.caps;
+        explicitHead = typedDateTimeProperName.head;
         semanticStartGlyph = typedDateTimeProperName.semanticStartGlyph || null;
         structuredKind = typedDateTimeProperName.semanticKind === "date"
           ? (typedDateTimeProperName.dateKind === "yearless" ? "date-yearless" : "date")
@@ -16622,9 +16871,11 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
         caps = _npProperNameToCaps(s, { ...opts, relaxedNanpaLinjanParsing: relaxedParsing });
         if (!caps) return null;
       } else {
-        const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s);
+        const parsed = _npTryParseNanpaLinjanNumberCodeToCaps(s, opts);
         if (parsed?.caps) {
           caps = parsed.caps;
+          explicitHead = parsed.head || null;
+          semanticStartGlyph = parsed.semanticStartGlyph || null;
           if (parsed.semanticKind === "date") structuredKind = parsed.dateKind === "yearless" ? "date-yearless" : "date";
           else if (parsed.semanticKind === "time") structuredKind = "time";
         }
@@ -16649,12 +16900,12 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const capsIsDate = _npNanpaCapsIsValidDate(caps, opts);
       const capsIsTime = _npNanpaCapsIsValidTime(caps, opts);
       const isExplicitDate = structuredKind === "date" || structuredKind === "date-yearless";
-      const isDate = isExplicitDate
+      const isDate = explicitHead === "sitelen" ? false : isExplicitDate
         ? true
         : structuredKind === "time"
           ? false
           : capsIsDate;
-      const isTime = structuredKind === "time"
+      const isTime = explicitHead === "sitelen" ? false : structuredKind === "time"
         ? true
         : isExplicitDate
           ? false
@@ -16698,22 +16949,32 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       const legacyProperNameRaw = _npSplitFinalHundredIninWords(splitCapsLetters(properNameCaps), {
         relaxedNanpaLinjanParsing: relaxedParsing || relaxedRendering
       });
-      const properName = (semanticStartGlyph === "toki" || _npNanpaColonRenderingFromOpts(opts))
+      let properName = (semanticStartGlyph === "toki" || _npNanpaColonRenderingFromOpts(opts))
         ? _npNanpaColonProperNameFromLegacy(legacyProperNameRaw, { semanticStartGlyph })
         : titleCaseCapsLabel(legacyProperNameRaw);
-      const uniqueCode = capsToCanonicalUniqueCode(caps, opts, structuredKind);
+      // New typed scalar proper names retain their opening head in output.
+      if (explicitHead && explicitHead !== "nanpa" &&
+          !(explicitHead === "suno" && semanticKind === "date") &&
+          !(explicitHead === "tenpo" && semanticKind === "time")) {
+        properName = properName.replace(/^Nanpa\b/, explicitHead[0].toUpperCase() + explicitHead.slice(1));
+      }
+      const inferredHead = semanticKind === "date" ? "suno" : (semanticKind === "time" ? "tenpo" : "nanpa");
+      const headGlyph = explicitHead || semanticStartGlyph || inferredHead;
+      const uniqueCode = numericHeadCodeFromLegacy(capsToCanonicalUniqueCode(caps, opts, structuredKind), headGlyph, semanticKind);
       const hexCodepoints = codepointsToHexString(ucsurCodepoints);
       const hexWithCartouche = codepointsToHexString(withCartoucheMarkers(ucsurCodepoints));
       const yearlessParts = structuredKind === "date-yearless" ? _npNanpaCapsDecodeYearlessDateStrict(caps, opts) : null;
+      const iloOffset = explicitHead === "ilo" && isTime ? _npDecodeIloOffsetCaps(caps, opts) : null;
       const displayValue = yearlessParts
         ? `--${yearlessParts.mmStr}-${yearlessParts.ddStr}`
-        : decodeCapsToDisplayValue(caps, opts);
+        : iloOffset ? iloOffset.displayValue : decodeCapsToDisplayValue(caps, opts);
 
       return {
         input: s,
         caps,
         properName,
         uniqueCode,
+        headGlyph,
         ucsurCodepoints,
         hexCodepoints,
         hexWithCartouche,

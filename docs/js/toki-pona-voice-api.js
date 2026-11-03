@@ -1,5 +1,5 @@
-import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285';
-import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=35';
+import { NanpaParser } from './renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=290';
+import { REFERENCE_AUDIO_MANIFEST } from './audio-manifest.js?v=37';
 
 export { NanpaParser, REFERENCE_AUDIO_MANIFEST };
 
@@ -472,10 +472,10 @@ function nanpaUnitsForWord(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   const bank = manifest.nanpa_units || {};
   const key = nanpaUnitKey(word);
 
-  // Suno/Tenpo/Toki have dedicated numeric-head recordings, but they remain
-  // ordinary Toki Pona words everywhere else. The typed numeric-head path
-  // selects those recordings explicitly via typedNumericHeadReferenceUnits().
-  if (key === 'suno' || key === 'tenpo' || key === 'toki') return null;
+  // Numeric-head recordings must only be selected for a confirmed typed
+  // cartouche, not for ordinary Toki Pona or unrelated proper-name speech.
+  // The typed-head path explicitly selects them when appropriate.
+  if (['suno', 'tenpo', 'toki', 'sike', 'ilo', 'meso', 'lili', 'sitelen'].includes(key)) return null;
 
   if (bank[key]) return [key];
   const syls = syllabifyTpWord(key);
@@ -490,7 +490,7 @@ function nanpaUnitsForWord(word, manifest = REFERENCE_AUDIO_MANIFEST) {
 // words/toki.wav behavior unchanged outside the typed numeric-head path.
 function typedNumericHeadReferenceUnits(word, manifest = REFERENCE_AUDIO_MANIFEST) {
   const key = nanpaUnitKey(word);
-  if (key !== 'suno' && key !== 'tenpo' && key !== 'toki') return null;
+  if (!['suno', 'tenpo', 'toki', 'sike', 'mun', 'ilo', 'meso', 'lili', 'sitelen'].includes(key)) return null;
 
   const unit = (manifest.nanpa_units || {})[key];
   if (!unit?.file) return null;
@@ -709,7 +709,7 @@ export class TokiPonaVoice {
       warnings.push({
         kind: 'nanpa_audio',
         source: word,
-        message: 'missing typed date/time head numeric reference audio'
+        message: 'missing typed numeric-head reference audio'
       });
       return null;
     }
@@ -819,7 +819,7 @@ export class TokiPonaVoice {
             opts.numericTypedHeadSyllableAudio === true &&
             isProperStart &&
             wi === 0 &&
-            (normalizedTpWord(word) === 'suno' || normalizedTpWord(word) === 'tenpo' || normalizedTpWord(word) === 'toki') &&
+            ['suno', 'tenpo', 'toki', 'sike', 'mun', 'ilo', 'meso', 'lili', 'sitelen'].includes(normalizedTpWord(word)) &&
             opts.synthesis_mode !== 'reference_words_only';
           const typedHeadAudio = useTypedNumericHeadAudio
             ? await this.chunksForTypedNumericHead(word, warnings)

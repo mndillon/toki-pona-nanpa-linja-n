@@ -832,6 +832,103 @@
     .printRichDay .numericCartouche { font-size: 16pt; max-width: 94%; }
     .printRichDay .dayLatin { font-size: 5.8pt; color: var(--calendar-latin-print); line-height: 1.05; }
 
+
+    /* Date and Time glossary: independent of the calendar and PDF renderer. */
+    .dateTimeGlossary {
+      margin-top: 16px;
+      border: 1px solid var(--calendar-grid);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.025);
+      overflow: hidden;
+      scroll-margin-top: 12px;
+      min-width: 0;
+    }
+    .dateTimeGlossaryHeader {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--calendar-grid);
+      background: var(--calendar-header);
+    }
+    .dateTimeGlossaryHeaderRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .dateTimeGlossaryTitle { margin: 0; font-size: 15px; font-weight: 700; }
+    .dateTimeGlossaryToggle { flex: 0 0 auto; padding: 6px 9px; font-size: 12px; }
+    .dateTimeGlossaryContent[hidden] { display: none !important; }
+    .dateTimeGlossaryBody { padding: 12px; min-width: 0; }
+    .dateTimeGlossaryIntro { margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: var(--muted); }
+    .dateTimeGlossarySection { margin-top: 16px; min-width: 0; }
+    .dateTimeGlossarySection:first-of-type { margin-top: 0; }
+    .dateTimeGlossarySection h3 { font-size: 14px; margin: 0 0 5px; }
+    .dateTimeGlossarySection > p { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 0 0 10px; }
+    .dateTimeExampleGrid { min-width: 0; border: 1px solid var(--calendar-grid); border-radius: 7px; overflow: hidden; }
+    .dateTimeExampleHeader,
+    .dateTimeExampleRow {
+      display: grid;
+      grid-template-columns: minmax(125px, .9fr) minmax(0, 1.4fr) minmax(0, 1.5fr);
+      gap: 0;
+      min-width: 0;
+    }
+    .dateTimeExampleHeader { background: var(--calendar-weekday); font-weight: 650; font-size: 11px; }
+    .dateTimeExampleHeader > *,
+    .dateTimeExampleRow > * { min-width: 0; padding: 9px 10px; }
+    .dateTimeExampleHeader > * + *,
+    .dateTimeExampleRow > * + * { border-left: 1px solid rgba(91,80,65,.18); }
+    .dateTimeExampleRow { border-top: 1px solid rgba(91,80,65,.18); align-items: center; font-size: 12px; }
+    .dateTimeExampleMeaning { color: var(--muted); }
+    .dateTimeExampleLatin { overflow-wrap: anywhere; line-height: 1.45; }
+    .dateTimeExampleSitelen {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: center;
+      gap: 3px 7px;
+      font-size: 23px;
+      line-height: 1.18;
+      min-height: 38px;
+      overflow-wrap: anywhere;
+    }
+    .dateTimeExampleSitelen .dateTimeWordGlyphs { white-space: nowrap; }
+    .dateTimeExampleSitelen .dateTimeCartouche { font-size: 22px; max-width: 100%; white-space: nowrap; }
+    .dateTimeExampleSitelen .dateTimeZoneLiteral { font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+    /* Only the two local timestamp examples share the Latin and sitelen columns. */
+    .dateTimeExampleRow--localTimestamp .dateTimeExampleCombined {
+      grid-column: 2 / 4;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .dateTimeExampleRow--localTimestamp .dateTimeExampleLatin {
+      padding: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      font-size: clamp(10px, .85vw, 12px);
+    }
+    .dateTimeExampleRow--localTimestamp .dateTimeExampleSitelen {
+      padding: 0;
+      min-height: 0;
+      flex-wrap: wrap;
+      white-space: normal;
+      overflow: visible;
+    }
+    @media (max-width: 640px) {
+      .dateTimeExampleRow--localTimestamp .dateTimeExampleSitelen,
+      .dateTimeExampleRow--localTimestamp .dateTimeExampleSitelen .dateTimeCartouche {
+        font-size: clamp(14px, 4.3vw, 20px);
+      }
+      .dateTimeGlossaryBody { padding: 10px; }
+      .dateTimeExampleHeader { display: none; }
+      .dateTimeExampleRow { display: flex; flex-direction: column; align-items: stretch; }
+      .dateTimeExampleRow > * { padding: 6px 8px; min-width: 0; }
+      .dateTimeExampleRow > * + * { border-left: 0; }
+      .dateTimeExampleMeaning { font-weight: 650; padding-bottom: 0; }
+      .dateTimeExampleLatin { padding-top: 3px; padding-bottom: 3px; }
+      .dateTimeExampleSitelen { padding-top: 1px; padding-bottom: 10px; font-size: 20px; }
+      .dateTimeExampleSitelen .dateTimeCartouche { font-size: 20px; }
+    }
+
     @media (max-width: 980px) {
       .yearGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .buttonGroup { width: 100%; margin-left: 0; }
@@ -995,6 +1092,303 @@
 
       <div class="help" id="pdfHelp" data-ui="pdfHelp">ilo ni li pana e lipu PDF A4 lon nasin supa. lipu PDF pi tenpo sike li jo e lukin 4 × 3 lon lipu nanpa wan, li jo e lipu wan pi tenpo mun lon lipu 12 ante.</div>
 
+      <section id="dateandtime" class="dateTimeGlossary" aria-labelledby="dateTimeGlossaryTitle">
+        <div class="dateTimeGlossaryHeader">
+          <div class="dateTimeGlossaryHeaderRow">
+            <h2 id="dateTimeGlossaryTitle" class="dateTimeGlossaryTitle" data-dt-en="Date and Time Glossary" data-dt-tok="lipu sona pi tenpo en nanpa">lipu sona pi tenpo en nanpa</h2>
+            <button id="dateTimeGlossaryToggleBtn" class="nationalDaysToggle dateTimeGlossaryToggle" type="button" aria-controls="dateTimeGlossaryContent" aria-expanded="false">o lukin e lipu sona</button>
+          </div>
+        </div>
+        <div id="dateTimeGlossaryContent" class="dateTimeGlossaryContent" hidden>
+          <div class="dateTimeGlossaryBody">
+          <p class="dateTimeGlossaryIntro" data-dt-en="How nanpa-linja-n expresses calendar dates, weekdays, durations and clock times. Each example appears in Latin Toki Pona and sitelen pona with abbreviated numeric cartouches." data-dt-tok="nasin nanpa-linja-n li pana e sona pi tenpo sike, tenpo mun, tenpo suno, tenpo mute, tenpo ilo. sitelen ale li lon toki Lasin li lon sitelen pona kin.">nasin nanpa-linja-n li pana e sona pi tenpo sike, tenpo mun, tenpo suno, tenpo mute, tenpo ilo. sitelen ale li lon toki Lasin li lon sitelen pona kin.</p>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-dates-heading">
+            <h3 id="dt-dates-heading" data-dt-en="Calendar dates" data-dt-tok="tenpo suno pi lipu tenpo">tenpo suno pi lipu tenpo</h3>
+            <p data-dt-en="A numeric cartouche identifies a calendar position. In these examples the head glyph identifies the unit; the closing glyph remains nanpa." data-dt-tok="sitelen poki nanpa li toki e lon tenpo lon lipu tenpo. sitelen open li pana e sona pi kulupu tenpo. sitelen pini li nanpa.">sitelen poki nanpa li toki e lon tenpo lon lipu tenpo. sitelen open li pana e sona pi kulupu tenpo. sitelen pini li nanpa.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Calendar dates">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Full Gregorian date · 2026-11-02" data-dt-tok="tenpo suno pi tenpo sike 2026 lon tenpo mun 11 lon tenpo suno 2">tenpo suno pi tenpo sike 2026 lon tenpo mun 11 lon tenpo suno 2</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Suno Tunitunun Eke Wawan Eke Nitun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="full-date" aria-label="tenpo Suno Tunitunun Eke Wawan Eke Nitun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Yearless date · November 5 (any year)" data-dt-tok="tenpo suno pi mun 11 lon suno 5 (sike ale)">tenpo suno pi mun 11 lon suno 5 (sike ale)</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Suno Wawan Eke Nilun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="yearless-date" aria-label="tenpo Suno Wawan Eke Nilun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Year (absolute) · 2026" data-dt-tok="tenpo sike nanpa 2026">tenpo sike nanpa 2026</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Sike Tunitunun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="year-index" aria-label="tenpo Sike Tunitunun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Month (absolute) · November (11)" data-dt-tok="tenpo mun nanpa 11">tenpo mun nanpa 11</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Mun Wawan</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="month-index" aria-label="tenpo Mun Wawan"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Day of month (absolute) · 5th" data-dt-tok="tenpo suno nanpa 5">tenpo suno nanpa 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Suno Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="day-index" aria-label="tenpo Suno Lun"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-weekdays-heading">
+            <h3 id="dt-weekdays-heading" data-dt-en="Weekdays (Monday first)" data-dt-tok="tenpo suno lon esun mun">tenpo suno lon esun mun</h3>
+            <p data-dt-en="Weekday names are ordinary Toki Pona glyphs, not quantities. The calendar starts its week on Monday." data-dt-tok="nimi pi tenpo suno li nanpa ala. tenpo suno mun li open e esun mun.">nimi pi tenpo suno li nanpa ala. tenpo suno mun li open e esun mun.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Weekdays (Monday first)">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Monday" data-dt-tok="tenpo suno mun">tenpo suno mun</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno mun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="monday" aria-label="tenpo suno mun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Tuesday" data-dt-tok="tenpo suno seli">tenpo suno seli</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno seli</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="tuesday" aria-label="tenpo suno seli"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Wednesday" data-dt-tok="tenpo suno telo">tenpo suno telo</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno telo</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="wednesday" aria-label="tenpo suno telo"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Thursday" data-dt-tok="tenpo suno kasi">tenpo suno kasi</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno kasi</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="thursday" aria-label="tenpo suno kasi"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Friday" data-dt-tok="tenpo suno kiwen">tenpo suno kiwen</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno kiwen</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="friday" aria-label="tenpo suno kiwen"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Saturday" data-dt-tok="tenpo suno ma">tenpo suno ma</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno ma</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="saturday" aria-label="tenpo suno ma"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Sunday" data-dt-tok="tenpo suno suno">tenpo suno suno</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno suno</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="sunday" aria-label="tenpo suno suno"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-durations-heading">
+            <h3 id="dt-durations-heading" data-dt-en="Years, months and days: ordinals and durations" data-dt-tok="tenpo sike en mun en suno: nanpa pini en tenpo mute">tenpo mute pi sike en mun en suno</h3>
+            <p data-dt-en="An ordinal specifies the numbered year, month or day (for example, the 5th year). A duration specifies an amount of time (for example, 5 years)." data-dt-tok="nanpa pi tenpo sike anu mun anu suno li ken toki e nanpa pi tenpo ni. tenpo mute li toki e suli pi tenpo ni.">tenpo mute li jo ala e tenpo open lon lipu tenpo. o kepeken nimi pi kulupu tenpo en sitelen poki Nanpa.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Years, months and days: ordinals and durations">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5 years (duration)" data-dt-tok="tenpo sike 5">tenpo sike 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo sike Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="five-years" aria-label="tenpo sike Nanpa Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5th year (after/before)" data-dt-tok="tenpo sike nanpa 5">tenpo sike nanpa 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo sike nanpa Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="fifth-year" aria-label="tenpo sike nanpa Nanpa Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="3 months (duration)" data-dt-tok="tenpo mun 3">tenpo mun 3</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo mun Nanpa Sen</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="three-months" aria-label="tenpo mun Nanpa Sen"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="3rd month (after/before)" data-dt-tok="tenpo mun nanpa 3">tenpo mun nanpa 3</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo mun nanpa Nanpa Sen</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="third-month" aria-label="tenpo mun nanpa Nanpa Sen"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5 days (duration)" data-dt-tok="tenpo suno 5">tenpo suno 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="five-days" aria-label="tenpo suno Nanpa Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5th day (after/before)" data-dt-tok="tenpo suno nanpa 5">tenpo suno nanpa 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno nanpa Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="fifth-day" aria-label="tenpo suno nanpa Nanpa Lun"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-smallunits-heading">
+            <h3 id="dt-smallunits-heading" data-dt-en="Hours, minutes and seconds" data-dt-tok="tenpo ilo en tenpo meso en tenpo lili">tenpo ilo en tenpo meso en tenpo lili</h3>
+            <p data-dt-en="Ilo denotes hours, Meso minutes and Lili seconds (including fractional seconds). A unit-headed cartouche gives a clock position; an ordinal identifies a numbered hour, minute or second; a duration gives an amount of elapsed time." data-dt-tok="Ilo li toki e tenpo pi ilo; Meso li toki e tenpo lili; Lili li toki e tenpo pi lili mute. sitelen open pi kulupu tenpo li toki e nanpa lon tenpo; nimi kulupu en Nanpa li toki e tenpo mute.">Ilo li toki e tenpo pi ilo; Meso li toki e tenpo lili; Lili li toki e tenpo pi lili mute. sitelen open pi kulupu tenpo li toki e nanpa lon tenpo; nimi kulupu en Nanpa li toki e tenpo mute.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Hours, minutes and seconds">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Hour of day (absolute) · 2" data-dt-tok="tenpo ilo nanpa 2">tenpo ilo nanpa 2</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Ilo Tun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="hour-position" aria-label="tenpo Ilo Tun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="2 hours (duration)" data-dt-tok="tenpo ilo 2">tenpo ilo 2</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo ilo Nanpa Tun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="hour-duration" aria-label="tenpo ilo Nanpa Tun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="2nd hour (after/before)" data-dt-tok="tenpo ilo nanpa 2">tenpo ilo nanpa 2</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo ilo nanpa Nanpa Tun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="second-hour-ordinal" aria-label="tenpo ilo nanpa Nanpa Tun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Minute of hour (absolute) · 5" data-dt-tok="tenpo meso nanpa 5">tenpo meso nanpa 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Meso Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="minute-position" aria-label="tenpo Meso Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5 minutes (duration)" data-dt-tok="tenpo meso 5">tenpo meso 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo meso Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="minute-duration" aria-label="tenpo meso Nanpa Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="5th minute (after/before)" data-dt-tok="tenpo meso nanpa 5">tenpo meso nanpa 5</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo meso nanpa Nanpa Lun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="fifth-minute-ordinal" aria-label="tenpo meso nanpa Nanpa Lun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Second of minute (absolute) · 12" data-dt-tok="tenpo lili nanpa 12">tenpo lili nanpa 12</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Lili Watun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="second-position" aria-label="tenpo Lili Watun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="12 seconds (duration)" data-dt-tok="tenpo lili 12">tenpo lili 12</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Watun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="second-duration" aria-label="tenpo lili Nanpa Watun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="12th second (after/before)" data-dt-tok="tenpo lili nanpa 12">tenpo lili nanpa 12</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili nanpa Nanpa Watun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="twelfth-second-ordinal" aria-label="tenpo lili nanpa Nanpa Watun"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-clock-heading">
+            <h3 id="dt-clock-heading" data-dt-en="Exact clock times" data-dt-tok="tenpo nanpa pi ilo tenpo">tenpo nanpa pi ilo tenpo</h3>
+            <p data-dt-en="Use the Tenpo head for a complete 24-hour clock time. The separator between hours, minutes and seconds is kept inside the abbreviated cartouche." data-dt-tok="o kepeken sitelen open Tenpo tawa tenpo pi ilo tenpo. ilo tenpo li jo e tenpo ilo en tenpo meso en tenpo lili.">o kepeken sitelen open Tenpo tawa tenpo pi ilo tenpo. ilo tenpo li jo e tenpo ilo en tenpo meso en tenpo lili.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Exact clock times">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="09:30" data-dt-tok="tenpo 09:30">tenpo 09:30</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Tenpo Nijon Eke Senin</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="time-0930" aria-label="tenpo Tenpo Nijon Eke Senin"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="14:45" data-dt-tok="tenpo 14:45">tenpo 14:45</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Tenpo Wanan Eke Nalun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="time-1445" aria-label="tenpo Tenpo Wanan Eke Nalun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="14:45:32" data-dt-tok="tenpo 14:45:32">tenpo 14:45:32</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Tenpo Wanan Eke Nalun Eke Setun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="time-144532" aria-label="tenpo Tenpo Wanan Eke Nalun Eke Setun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="14:45:32.345" data-dt-tok="tenpo 14:45:32.345">tenpo 14:45:32.345</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Tenpo Wanan Eke Nalun Eke Setun One Senalun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="time-144532345" aria-label="tenpo Tenpo Wanan Eke Nalun Eke Setun One Senalun"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-timestamps-heading">
+            <h3 id="dt-timestamps-heading" data-dt-en="Complete timestamps" data-dt-tok="sitelen tenpo pi sona ale">sitelen tenpo pi sona ale</h3>
+            <p data-dt-en="A local timestamp combines a full calendar date, local clock time, signed UTC offset and IANA time zone. New York and India show the same instant. A Sitelen-headed Unix timestamp counts seconds since 1970-01-01 00:00:00 UTC." data-dt-tok="sitelen tenpo pi ma li jo e tenpo suno, e tenpo pi ilo tenpo, e ante tenpo tan UTC, e nimi ma pi nasin IANA. tenpo pi ma New York en ma India li sama. nanpa pi open Sitelen li nanpa e tenpo lili tan 1970-01-01 00:00:00 lon UTC.">sitelen tenpo pi ma li jo e tenpo suno, e tenpo pi ilo tenpo, e ante tenpo tan UTC, e nimi ma pi nasin IANA. tenpo pi ma New York en ma India li sama. nanpa pi open Sitelen li nanpa e tenpo lili tan 1970-01-01 00:00:00 lon UTC.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Complete timestamps">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Meaning" data-dt-tok="kon">kon</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="Unix timestamp · 2024-01-01 00:00:00.678 UTC" data-dt-tok="nanpa tenpo Unix · 2024-01-01 00:00:00.678 UTC">nanpa tenpo Unix · 2024-01-01 00:00:00.678 UTC</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo sitelen:(1704067200.678)</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="timestamp-unix" aria-label="tenpo sitelen:(1704067200.678)"></span>
+              </div>
+              <div class="dateTimeExampleRow dateTimeExampleRow--localTimestamp" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="New York · 2026-07-15 09:45:00 · UTC−04:00" data-dt-tok="tenpo pi ma New York · 2026-07-15 09:45:00 · UTC−04:00">tenpo pi ma New York · 2026-07-15 09:45:00 · UTC−04:00</span>
+                <div class="dateTimeExampleCombined" role="cell" aria-colspan="2">
+                  <span class="dateTimeExampleLatin" lang="tok">tenpo suno:(2026-07-15) en tenpo:(09:45:00) en ilo:(-04:00) ["America/New_York"]</span>
+                  <span class="dateTimeExampleLatin" lang="tok">tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Nijon Eke Nalun Eke Ninin en Ilo Noninan Eke Ninin  ["America/New_York"]</span>
+                  <span class="dateTimeExampleSitelen sitelen" lang="tok" data-dt-example="timestamp-new-york" aria-label="tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Nijon Eke Nalun Eke Ninin en Ilo Noninan Eke Ninin  [&quot;America/New_York&quot;]"></span>
+                </div>
+              </div>
+              <div class="dateTimeExampleRow dateTimeExampleRow--localTimestamp" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="India · 2026-07-15 19:15:00 · UTC+05:30" data-dt-tok="tenpo pi ma India · 2026-07-15 19:15:00 · UTC+05:30">tenpo pi ma India · 2026-07-15 19:15:00 · UTC+05:30</span>
+                <div class="dateTimeExampleCombined" role="cell" aria-colspan="2">
+                  <span class="dateTimeExampleLatin" lang="tok">tenpo suno:(2026-07-15) en tenpo:(19:15:00) en ilo:(+05:30) ["Asia/Kolkata"]</span>
+                  <span class="dateTimeExampleLatin" lang="tok">tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Wajon Eke Walun Eke Ninin en Ilo Nenilun Eke Senin  ["Asia/Kolkata"]</span>
+                  <span class="dateTimeExampleSitelen sitelen" lang="tok" data-dt-example="timestamp-india" aria-label="tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Wajon Eke Walun Eke Ninin en Ilo Nenilun Eke Senin  [&quot;Asia/Kolkata&quot;]"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-fractions-heading">
+            <h3 id="dt-fractions-heading" data-dt-en="Fractional-second durations and scientific notation" data-dt-tok="tenpo lili pi nanpa kipisi">tenpo lili pi nanpa kipisi</h3>
+            <p data-dt-en="Fractions of a second express durations in milliseconds (ms), microseconds (µs) and nanoseconds (ns). One millisecond is 1 × 10⁻³ seconds (0.001 s); one microsecond is 1 × 10⁻⁶ seconds (0.000001 s); and one nanosecond is 1 × 10⁻⁹ seconds (0.000000001 s). For elapsed time, the ordinary word lili identifies seconds and a Nanpa-headed cartouche gives the quantity. Both 0.345 seconds and 345 units of 0.001 seconds describe 345 ms. The second form is a glossary convention combining two independently parsed Nanpa numbers, not a new numeric operation in the parser." data-dt-tok="kipisi pi tenpo lili li ken toki e millisecond (ms), microsecond (µs) en nanosecond (ns). 1 ms = 1 × 10⁻³ s (0.001 s); 1 µs = 1 × 10⁻⁶ s (0.000001 s); 1 ns = 1 × 10⁻⁹ s (0.000000001 s). tenpo mute la nimi lili li toki e tenpo pi lili mute; sitelen poki Nanpa li pana e nanpa. 0.345 tenpo lili en 345 × 0.001 tenpo lili li sama 345 ms. nasin nanpa tu ni li jo e sitelen poki Nanpa tu; ilo nanpa li lukin e ona tu lon poka ala e ona tu kepeken nasin pali sin.">kipisi pi tenpo lili li ken toki e millisecond (ms), microsecond (µs) en nanosecond (ns). 1 ms = 1 × 10⁻³ s (0.001 s); 1 µs = 1 × 10⁻⁶ s (0.000001 s); 1 ns = 1 × 10⁻⁹ s (0.000000001 s). tenpo mute la nimi lili li toki e tenpo pi lili mute; sitelen poki Nanpa li pana e nanpa. 0.345 tenpo lili en 345 × 0.001 tenpo lili li sama 345 ms. nasin nanpa tu ni li jo e sitelen poki Nanpa tu; ilo nanpa li lukin e ona tu lon poka ala e ona tu kepeken nasin pali sin.</p>
+            <div class="dateTimeExampleGrid" role="table" aria-label="Fractional seconds and scientific notation">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader" data-dt-en="Duration" data-dt-tok="suli pi tenpo">suli pi tenpo</span>
+                <span role="columnheader">Latin Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="1 millisecond · 1 × 10⁻³ s = 0.001 s" data-dt-tok="millisecond wan · 1 × 10⁻³ s = 0.001 s">millisecond wan · 1 × 10⁻³ s = 0.001 s</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Wan Eko Nosen</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="millisecond" aria-label="tenpo lili Nanpa Wan Eko Nosen"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="1 microsecond · 1 × 10⁻⁶ s = 0.000001 s" data-dt-tok="microsecond wan · 1 × 10⁻⁶ s = 0.000001 s">microsecond wan · 1 × 10⁻⁶ s = 0.000001 s</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Wan Eko Nonun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="microsecond" aria-label="tenpo lili Nanpa Wan Eko Nonun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="1 nanosecond · 1 × 10⁻⁹ s = 0.000000001 s" data-dt-tok="nanosecond wan · 1 × 10⁻⁹ s = 0.000000001 s">nanosecond wan · 1 × 10⁻⁹ s = 0.000000001 s</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Wan Eko Nojon</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="nanosecond" aria-label="tenpo lili Nanpa Wan Eko Nojon"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="3.45 seconds" data-dt-tok="tenpo lili 3.45">tenpo lili 3.45</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Sen One Nalun</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="second-fraction" aria-label="tenpo lili Nanpa Sen One Nalun"></span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="345 milliseconds · 3.45 × 10⁻¹ s = 0.345 s" data-dt-tok="345 millisecond · 3.45 × 10⁻¹ s = 0.345 s">345 millisecond · 3.45 × 10⁻¹ s = 0.345 s</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo lili Nanpa Sen One Nalun Eko Nowan</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="scientific" aria-label="tenpo lili Nanpa Sen One Nalun Eko Nowan"></span>
+              </div>
+               <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell" data-dt-en="345 milliseconds · 345 × 0.001 s = 0.345 s" data-dt-tok="345 millisecond · 345 × 0.001 s = 0.345 s">345 millisecond · 345 × 0.001 s = 0.345 s</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Nanpa Senalun lili Nanpa Wan Eko Nosen</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="milliseconds-345" aria-label="tenpo Nanpa Senalun lili Nanpa Wan Eko Nosen"></span>
+              </div>
+            </div>
+          </section>
+          </div>
+        </div>
+      </section>
+
       <section class="nationalDaysPanel" id="nationalDaysPanel" aria-labelledby="nationalDaysTitle">
         <div class="nationalDaysHeader">
           <div class="nationalDaysHeaderRow">
@@ -1042,7 +1436,7 @@
   <script type="module">
     "use strict";
 
-    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=285";
+    import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=290";
 
     const FONT_FAMILY = "TP-Numeric-Cartouche-Font";
     const FONT_URL = "./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf";
@@ -1499,8 +1893,8 @@
         calendarAria: "lipu tenpo",
         disclaimer: '<strong>sona:</strong> ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.',
         rendering: "mi pali e lipu tenpo…",
-        fullYearStatus: year => `tenpo sike ${properName(year, "Nanpa")} — tenpo sike ale`,
-        monthStatus: (year, month) => `tenpo sike ${properName(year, "Nanpa")} — tenpo mun ${properName(month, "Nanpa")}`,
+        fullYearStatus: year => `tenpo ${properName(year, "Sike")} — tenpo sike ale`,
+        monthStatus: (year, month) => `tenpo ${properName(year, "Sike")} — tenpo ${properName(month, "Mun")}`,
         renderError: message => `pakala lon pali lipu tenpo: ${message}`,
         ready: "lipu tenpo li pona.",
         generatingMonthPdf: "mi pali e lipu PDF pi tenpo mun…",
@@ -2433,6 +2827,7 @@
       if (holidayPublicOption) holidayPublicOption.textContent = uiText("holidayPublicOption");
       if (holidayOthersOption) holidayOthersOption.textContent = uiText("holidayOthersOption");
       if (nationalDaysTitle) nationalDaysTitle.textContent = uiText("nationalDaysHeading");
+      applyDateTimeGlossaryLanguage();
       if (nationalDaysHelp) nationalDaysHelp.textContent = uiText("nationalDaysHelp");
       if (worldMapSvg) worldMapSvg.setAttribute("aria-label", uiText("nationalDayMapAria"));
       if (worldMapToolbar) worldMapToolbar.setAttribute("aria-label", uiText("worldMapToolbarAria"));
@@ -2685,10 +3080,10 @@
       if (!countryStatisticCartoucheIsPrepared(text)) return null;
       const group = el("div", "countryStatAsOf");
       const top = el("div", "countryStatTopLine");
-      top.append(sitelen("lon tenpo sike", "countryStatGlyph"));
-      top.append(makeCartouche(text, "nanpa", "numericCartouche countryStatCartouche"));
+      top.append(sitelen("lon tenpo", "countryStatGlyph"));
+      top.append(makeCartouche(text, "sike", "numericCartouche countryStatCartouche"));
       group.append(top);
-      group.append(el("div", "countryStatLatin soft", `lon tenpo sike ${properName(text, "Nanpa")} (${text})`));
+      group.append(el("div", "countryStatLatin soft", `lon tenpo ${properName(text, "Sike")} (${text})`));
       return group;
     }
 
@@ -3316,13 +3711,35 @@
       return parsed;
     }
 
+    // For calendar year/month positions, ask the shared NanpaParser to parse
+    // the explicitly headed numeric expression. Its result owns both the
+    // proper name and the complete Sike/Mun-headed numeric cartouche.
+    function parseCalendarPosition(value, head) {
+      const normalizedHead = String(head).toLowerCase();
+      if (normalizedHead !== "sike" && normalizedHead !== "mun") {
+        throw new Error(`Invalid calendar position head: ${head}`);
+      }
+      const parsed = NanpaParser.parseNumber(`${normalizedHead}:(${value})`,
+        parserOptions({ enableGenericNumericStartGlyphSyntax: true }));
+      if (!parsed || parsed.headGlyph !== normalizedHead ||
+          !Array.isArray(parsed.codepoints) || !parsed.codepoints.length) {
+        throw new Error(`Could not parse ${normalizedHead} calendar position ${value}.`);
+      }
+      return parsed;
+    }
+
     function properName(value, head = "Nanpa") {
       const key = `${value}|${head}`;
       if (properNameCache.has(key)) return properNameCache.get(key);
-      const parsed = parseNumeric(value);
+      const isCalendarPosition = head === "Sike" || head === "Mun";
+      const parsed = isCalendarPosition
+        ? parseCalendarPosition(value, head)
+        : parseNumeric(value);
       let name = String(parsed.properName || "").trim();
       if (!name) throw new Error(`No nanpa-linja-n proper name for ${value}.`);
-      if (head !== "Nanpa") {
+      // Preserve the existing other numeric-head naming behaviour. Sike and
+      // Mun names are never constructed here: they come straight from parser.
+      if (!isCalendarPosition && head !== "Nanpa") {
         if (/^Nanpa\b/i.test(name)) name = name.replace(/^Nanpa\b/i, head);
         else name = `${head} ${name}`;
       }
@@ -3383,6 +3800,45 @@
 
       await buildCalendarCartoucheBatch(nanpaValues, "nanpa");
       await buildCalendarCartoucheBatch(sunoValues, "suno");
+      await buildCalendarPositionCartouches(Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => START_YEAR + i), "sike");
+      await buildCalendarPositionCartouches(Array.from({ length: 12 }, (_, i) => i + 1), "mun");
+    }
+
+    // Build Sike/Mun-headed cartouches from actual headed parser expressions.
+    // The shared renderer applies the same abbreviation/font adaptation used
+    // elsewhere on this page. Never replace glyphs in a Nanpa cartouche by hand.
+    async function buildCalendarPositionCartouches(values, startGlyph) {
+      const head = String(startGlyph).toLowerCase();
+      if (head !== "sike" && head !== "mun") {
+        throw new Error(`Invalid calendar-position head: ${head}`);
+      }
+      const pendingValues = Array.from(new Set(Array.from(values, value => String(value))))
+        .filter(value => !cartoucheTextCache.has(cartoucheCacheKey(value, head)));
+      if (!pendingValues.length) return;
+      const parsedValues = pendingValues.map(value => parseCalendarPosition(value, head));
+      const renderer = await getCalendarRenderer();
+      const plan = await renderer.buildRenderPlan({
+        input: pendingValues.map(value => `${head}:(${value})`).join("\n"),
+        parser: parserOptions({ enableGenericNumericStartGlyphSyntax: true }),
+        layout: { fontPx: 32, paddingPx: 0, align: "left" },
+        fonts: calendarRendererFonts()
+      });
+      if (!Array.isArray(plan?.lines) || plan.lines.length !== pendingValues.length) {
+        throw new Error(`Shared renderer returned the wrong number of ${head} cartouches.`);
+      }
+      for (let index = 0; index < pendingValues.length; index += 1) {
+        const value = pendingValues[index];
+        const run = Array.from(plan.lines[index]?.runs || [])
+          .find(candidate => candidate?.kind === "cartouche");
+        const cps = Array.isArray(run?.renderFullCps) ? run.renderFullCps : null;
+        const parserCps = parsedValues[index].codepoints;
+        const expectedHead = parserCps[1];
+        if (!cps?.length || cps[0] !== CARTOUCHE_START_CP ||
+            cps[1] !== expectedHead || cps[cps.length - 1] !== CARTOUCHE_END_CP) {
+          throw new Error(`Shared renderer failed to preserve the ${head} numeric head for ${value}.`);
+        }
+        cartoucheTextCache.set(cartoucheCacheKey(value, head), String.fromCodePoint(...cps));
+      }
     }
 
     function cartoucheText(value, startGlyph = "nanpa") {
@@ -3396,7 +3852,9 @@
     function makeCartouche(value, startGlyph = "nanpa", className = "numericCartouche") {
       const node = el("span", `sitelen ${className}`.trim(), cartoucheText(value, startGlyph));
       node.setAttribute("role", "img");
-      node.setAttribute("aria-label", properName(value, String(startGlyph).toLowerCase() === "suno" ? "Suno" : "Nanpa"));
+      const head = String(startGlyph).toLowerCase();
+      node.setAttribute("aria-label", properName(value,
+        head === "sike" ? "Sike" : head === "mun" ? "Mun" : head === "suno" ? "Suno" : "Nanpa"));
       return node;
     }
 
@@ -3682,10 +4140,10 @@
     function makeHolidayMonthHeading(month) {
       const heading = el("div", "holidayMonthHeading");
       const glyphLine = el("div", "holidayMonthGlyphLine");
-      glyphLine.append(sitelen("tenpo mun"));
-      glyphLine.append(makeCartouche(month, "nanpa", "numericCartouche"));
+      glyphLine.append(sitelen("tenpo"));
+      glyphLine.append(makeCartouche(month, "mun", "numericCartouche"));
       heading.append(glyphLine);
-      heading.append(el("div", "holidayMonthLatin", `tenpo mun ${properName(month)}`));
+      heading.append(el("div", "holidayMonthLatin", `tenpo ${properName(month, "Mun")}`));
       return heading;
     }
 
@@ -3780,14 +4238,14 @@
 
       const heading = el("div", print ? "printMiniHeading" : "monthCardHeading");
       if (print) {
-        heading.append(sitelen("tenpo mun"));
-        heading.append(makeCartouche(month, "nanpa", "numericCartouche"));
+        heading.append(sitelen("tenpo"));
+        heading.append(makeCartouche(month, "mun", "numericCartouche"));
       } else {
         const glyphLine = el("div", "glyphHeading");
-        glyphLine.append(sitelen("tenpo mun"));
-        glyphLine.append(makeCartouche(month, "nanpa", "numericCartouche compactMonthCartouche"));
+        glyphLine.append(sitelen("tenpo"));
+        glyphLine.append(makeCartouche(month, "mun", "numericCartouche compactMonthCartouche"));
         heading.append(glyphLine);
-        heading.append(el("div", "latinHeading", `tenpo mun ${properName(month)}`));
+        heading.append(el("div", "latinHeading", `tenpo ${properName(month, "Mun")}`));
       }
       root.append(heading);
 
@@ -3835,18 +4293,18 @@
 
       const yearGroup = el("div", print ? "printRichHeadingGroup" : "richHeadingGroup");
       const yearGlyph = el("div", print ? "printRichGlyphHeading" : "richGlyphHeading");
-      yearGlyph.append(sitelen("tenpo sike"));
-      yearGlyph.append(makeCartouche(year, "nanpa", "numericCartouche headingCartouche"));
+      yearGlyph.append(sitelen("tenpo"));
+      yearGlyph.append(makeCartouche(year, "sike", "numericCartouche headingCartouche"));
       yearGroup.append(yearGlyph);
-      yearGroup.append(el("div", print ? "printRichLatinHeading" : "richLatinHeading", `tenpo sike ${properName(year)}`));
+      yearGroup.append(el("div", print ? "printRichLatinHeading" : "richLatinHeading", `tenpo ${properName(year, "Sike")}`));
       header.append(yearGroup);
 
       const monthGroup = el("div", print ? "printRichHeadingGroup" : "richHeadingGroup");
       const monthGlyph = el("div", print ? "printRichGlyphHeading" : "richGlyphHeading");
-      monthGlyph.append(sitelen("tenpo mun"));
-      monthGlyph.append(makeCartouche(month, "nanpa", "numericCartouche headingCartouche"));
+      monthGlyph.append(sitelen("tenpo"));
+      monthGlyph.append(makeCartouche(month, "mun", "numericCartouche headingCartouche"));
       monthGroup.append(monthGlyph);
-      monthGroup.append(el("div", print ? "printRichLatinHeading" : "richLatinHeading", `tenpo mun ${properName(month)}`));
+      monthGroup.append(el("div", print ? "printRichLatinHeading" : "richLatinHeading", `tenpo ${properName(month, "Mun")}`));
       header.append(monthGroup);
       root.append(header);
 
@@ -3966,10 +4424,10 @@
       const wrap = el("div", "yearOverview");
       const header = el("div", "yearOverviewHeader");
       const glyph = el("div", "yearOverviewGlyph");
-      glyph.append(sitelen("tenpo sike"));
-      glyph.append(makeCartouche(year, "nanpa", "numericCartouche headingCartouche"));
+      glyph.append(sitelen("tenpo"));
+      glyph.append(makeCartouche(year, "sike", "numericCartouche headingCartouche"));
       header.append(glyph);
-      header.append(el("div", "yearOverviewLatin", `tenpo sike ${properName(year)}`));
+      header.append(el("div", "yearOverviewLatin", `tenpo ${properName(year, "Sike")}`));
       wrap.append(header);
 
       const grid = el("div", "yearGrid");
@@ -4029,10 +4487,10 @@
       const page = el("section", "printPage");
       const heading = el("div", "printOverviewHeading");
       const glyphLine = el("div", "glyphLine");
-      glyphLine.append(sitelen("tenpo sike"));
-      glyphLine.append(makeCartouche(year, "nanpa", "numericCartouche"));
+      glyphLine.append(sitelen("tenpo"));
+      glyphLine.append(makeCartouche(year, "sike", "numericCartouche"));
       heading.append(glyphLine);
-      heading.append(el("div", "latinLine", `tenpo sike ${properName(year)}`));
+      heading.append(el("div", "latinLine", `tenpo ${properName(year, "Sike")}`));
       page.append(heading);
 
       const grid = el("div", "printOverviewGrid");
@@ -4286,9 +4744,9 @@
       drawPdfCountryCode(ctx, countryCode);
       const margin = 20;
       const headingH = 60;
-      const headingText = `${String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo","sike"]))} ${cartoucheText(year,"nanpa")}`;
+      const headingText = `${String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]))} ${cartoucheText(year,"sike")}`;
       drawSitelen(ctx, headingText, margin, 22, PDF_CANVAS_W - 2*margin, 29, "left");
-      drawLatin(ctx, `tenpo sike ${properName(year)}`, margin, 48, PDF_CANVAS_W - 2*margin, 11, "left");
+      drawLatin(ctx, `tenpo ${properName(year, "Sike")}`, margin, 48, PDF_CANVAS_W - 2*margin, 11, "left");
 
       const gap = 8;
       const gridY = margin + headingH;
@@ -4306,7 +4764,7 @@
         drawRect(ctx,x,y,monthW,monthH,PDF_COLORS.bg,PDF_COLORS.border,1);
         const headH = 28, weekH=22;
         drawRect(ctx,x,y,monthW,headH,PDF_COLORS.header,PDF_COLORS.border,1);
-        const monthHead = `${String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo","mun"]))} ${cartoucheText(month,"nanpa")}`;
+        const monthHead = `${String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]))} ${cartoucheText(month,"mun")}`;
         drawSitelen(ctx,monthHead,x+monthW/2,y+headH/2,monthW-8,15,"center");
         const cellW=overviewCellW;
         for (let c=0;c<7;c++) {
@@ -4339,12 +4797,12 @@
       const top=20, headerH=145, weekdayH=86;
       drawRect(ctx,margin,top,contentW,PDF_CANVAS_H-top-margin,PDF_COLORS.bg,PDF_COLORS.border,1.2);
       drawRect(ctx,margin,top,contentW,headerH,PDF_COLORS.header,PDF_COLORS.border,1);
-      const tenpoSike=String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo","sike"]));
-      const tenpoMun=String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo","mun"]));
-      drawSitelen(ctx,`${tenpoSike} ${cartoucheText(year,"nanpa")}`,margin+12,top+35,contentW-24,31,"left");
-      drawLatin(ctx,`tenpo sike ${properName(year)}`,margin+12,top+60,contentW-24,12,"left");
-      drawSitelen(ctx,`${tenpoMun} ${cartoucheText(month,"nanpa")}`,margin+12,top+98,contentW-24,28,"left");
-      drawLatin(ctx,`tenpo mun ${properName(month)}`,margin+12,top+124,contentW-24,12,"left");
+      const tenpoSike=String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]));
+      const tenpoMun=String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]));
+      drawSitelen(ctx,`${tenpoSike} ${cartoucheText(year,"sike")}`,margin+12,top+35,contentW-24,31,"left");
+      drawLatin(ctx,`tenpo ${properName(year, "Sike")}`,margin+12,top+60,contentW-24,12,"left");
+      drawSitelen(ctx,`${tenpoMun} ${cartoucheText(month,"mun")}`,margin+12,top+98,contentW-24,28,"left");
+      drawLatin(ctx,`tenpo ${properName(month, "Mun")}`,margin+12,top+124,contentW-24,12,"left");
 
       const cellW=contentW/7;
       const weekY=top+headerH;
@@ -4566,10 +5024,10 @@
         if (!canvas) newPage();
         if (y + monthHeadingH > bottom) newPage();
         drawRect(ctx, margin, y, contentW, monthHeadingH, PDF_COLORS.header, PDF_COLORS.border, 1);
-        const tpMonth = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo", "mun"]));
-        const heading = `${tpMonth} ${cartoucheText(monthNumber, "nanpa")}`;
+        const tpMonth = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(["tenpo"]));
+        const heading = `${tpMonth} ${cartoucheText(monthNumber, "mun")}`;
         drawSitelen(ctx, heading, margin + 12, y + 21, contentW - 24, 22, "left");
-        drawLatin(ctx, `tenpo mun ${properName(monthNumber)}`, margin + 12, y + 43, contentW - 24, 10, "left");
+        drawLatin(ctx, `tenpo ${properName(monthNumber, "Mun")}`, margin + 12, y + 43, contentW - 24, 10, "left");
         y += monthHeadingH;
       }
 
@@ -4792,6 +5250,158 @@
       applyNationalDaysMapVisibility({ persist: false });
     }, { passive: true });
 
+
+    // Self-contained Date and Time glossary; deliberately does not change
+    // the calendar, its rendering, holiday map, or PDF export behaviour.
+    const DATE_TIME_GLOSSARY_STORAGE_KEY = "nanpaLinjaNCalendarDateTimeGlossaryOpen";
+    const dateTimeGlossary = document.getElementById("dateandtime");
+    const dateTimeGlossaryToggleBtn = document.getElementById("dateTimeGlossaryToggleBtn");
+    const dateTimeGlossaryContent = document.getElementById("dateTimeGlossaryContent");
+    const DATE_TIME_GLOSSARY_EXAMPLES = Object.freeze({"full-date":{"latin":"tenpo Suno Tunitunun Eke Wawan Eke Nitun","parts":[["words",["tenpo"]],["number","suno","2026-11-02"]]},"yearless-date":{"latin":"tenpo Suno Wawan Eke Nilun","parts":[["words",["tenpo"]],["number","suno","--11-05"]]},"year-index":{"latin":"tenpo Sike Tunitunun","parts":[["words",["tenpo"]],["number","sike","2026"]]},"month-index":{"latin":"tenpo Mun Wawan","parts":[["words",["tenpo"]],["number","mun","11"]]},"day-index":{"latin":"tenpo Suno Lun","parts":[["words",["tenpo"]],["number","suno","5"]]},"monday":{"latin":"tenpo suno mun","parts":[["words",["tenpo","suno","mun"]]]},"tuesday":{"latin":"tenpo suno seli","parts":[["words",["tenpo","suno","seli"]]]},"wednesday":{"latin":"tenpo suno telo","parts":[["words",["tenpo","suno","telo"]]]},"thursday":{"latin":"tenpo suno kasi","parts":[["words",["tenpo","suno","kasi"]]]},"friday":{"latin":"tenpo suno kiwen","parts":[["words",["tenpo","suno","kiwen"]]]},"saturday":{"latin":"tenpo suno ma","parts":[["words",["tenpo","suno","ma"]]]},"sunday":{"latin":"tenpo suno suno","parts":[["words",["tenpo","suno","suno"]]]},"five-years":{"latin":"tenpo sike Nanpa Lun","parts":[["words",["tenpo","sike"]],["number","nanpa","5"]]},"fifth-year":{"latin":"tenpo sike nanpa Nanpa Lun","parts":[["words",["tenpo","sike","nanpa"]],["number","nanpa","5"]]},"three-months":{"latin":"tenpo mun Nanpa Sen","parts":[["words",["tenpo","mun"]],["number","nanpa","3"]]},"third-month":{"latin":"tenpo mun nanpa Nanpa Sen","parts":[["words",["tenpo","mun","nanpa"]],["number","nanpa","3"]]},"five-days":{"latin":"tenpo suno Nanpa Lun","parts":[["words",["tenpo","suno"]],["number","nanpa","5"]]},"fifth-day":{"latin":"tenpo suno nanpa Nanpa Lun","parts":[["words",["tenpo","suno","nanpa"]],["number","nanpa","5"]]},"hour-position":{"latin":"tenpo Ilo Tun","parts":[["words",["tenpo"]],["number","ilo","2"]]},"hour-duration":{"latin":"tenpo ilo Nanpa Tun","parts":[["words",["tenpo","ilo"]],["number","nanpa","2"]]},"second-hour-ordinal":{"latin":"tenpo ilo nanpa Nanpa Tun","parts":[["words",["tenpo","ilo","nanpa"]],["number","nanpa","2"]]},"minute-position":{"latin":"tenpo Meso Lun","parts":[["words",["tenpo"]],["number","meso","5"]]},"minute-duration":{"latin":"tenpo meso Nanpa Lun","parts":[["words",["tenpo","meso"]],["number","nanpa","5"]]},"fifth-minute-ordinal":{"latin":"tenpo meso nanpa Nanpa Lun","parts":[["words",["tenpo","meso","nanpa"]],["number","nanpa","5"]]},"second-position":{"latin":"tenpo Lili Watun","parts":[["words",["tenpo"]],["number","lili","12"]]},"second-duration":{"latin":"tenpo lili Nanpa Watun","parts":[["words",["tenpo","lili"]],["number","nanpa","12"]]},"twelfth-second-ordinal":{"latin":"tenpo lili nanpa Nanpa Watun","parts":[["words",["tenpo","lili","nanpa"]],["number","nanpa","12"]]},"time-0930":{"latin":"tenpo Tenpo Nijon Eke Senin","parts":[["words",["tenpo"]],["number","tenpo","09:30"]]},"time-1445":{"latin":"tenpo Tenpo Wanan Eke Nalun","parts":[["words",["tenpo"]],["number","tenpo","14:45"]]},"time-144532":{"latin":"tenpo Tenpo Wanan Eke Nalun Eke Setun","parts":[["words",["tenpo"]],["number","tenpo","14:45:32"]]},"time-144532345":{"latin":"tenpo Tenpo Wanan Eke Nalun Eke Setun One Senalun","parts":[["words",["tenpo"]],["number","tenpo","14:45:32.345"]]},"second-fraction":{"latin":"tenpo lili Nanpa Sen One Nalun","parts":[["words",["tenpo","lili"]],["number","nanpa","3.45"]]},"scientific":{"latin":"tenpo lili Nanpa Sen One Nalun Eko Nowan","parts":[["words",["tenpo","lili"]],["number","nanpa","3.45e-1"]]},"millisecond":{"latin":"tenpo lili Nanpa Wan Eko Nosen","parts":[["words",["tenpo","lili"]],["number","nanpa","1e-3"]]},"microsecond":{"latin":"tenpo lili Nanpa Wan Eko Nonun","parts":[["words",["tenpo","lili"]],["number","nanpa","1e-6"]]},"nanosecond":{"latin":"tenpo lili Nanpa Wan Eko Nojon","parts":[["words",["tenpo","lili"]],["number","nanpa","1e-9"]]},"milliseconds-345":{"latin":"tenpo Nanpa Senalun lili Nanpa Wan Eko Nosen","parts":[["words",["tenpo"]],["number","nanpa","345"],["words",["lili"]],["number","nanpa","1e-3"]]},"timestamp-new-york":{"latin":"tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Nijon Eke Nalun Eke Ninin en Ilo Noninan Eke Ninin  [\"America/New_York\"]","parts":[["words",["tenpo"]],["number","suno","2026-07-15"],["words",["en"]],["number","tenpo","09:45:00"],["words",["en"]],["number","ilo","-04:00"],["literal","[\"America/New_York\"]"]]},"timestamp-india":{"latin":"tenpo Suno Tunitunun Eke Nimun Eke Walun en Tenpo Wajon Eke Walun Eke Ninin en Ilo Nenilun Eke Senin  [\"Asia/Kolkata\"]","parts":[["words",["tenpo"]],["number","suno","2026-07-15"],["words",["en"]],["number","tenpo","19:15:00"],["words",["en"]],["number","ilo","+05:30"],["literal","[\"Asia/Kolkata\"]"]]},"timestamp-unix":{"latin":"tenpo sitelen:(1704067200.678)","parts":[["words",["tenpo"]],["number","sitelen","1704067200.678"]]}});
+
+    function applyDateTimeGlossaryLanguage() {
+      const attr = uiLanguage === "en" ? "data-dt-en" : "data-dt-tok";
+      for (const node of dateTimeGlossary.querySelectorAll("[data-dt-en][data-dt-tok]")) {
+        node.textContent = node.getAttribute(attr) || "";
+      }
+      const expanded = !dateTimeGlossaryContent.hidden;
+      dateTimeGlossaryToggleBtn.textContent = uiLanguage === "en"
+        ? (expanded ? "Hide glossary" : "Show glossary")
+        : (expanded ? "o weka e lipu sona" : "o lukin e lipu sona");
+    }
+
+    function setDateTimeGlossaryVisible(visible, { persist = false } = {}) {
+      dateTimeGlossaryContent.hidden = !visible;
+      dateTimeGlossaryToggleBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+      applyDateTimeGlossaryLanguage();
+      if (persist) {
+        try { localStorage.setItem(DATE_TIME_GLOSSARY_STORAGE_KEY, visible ? "1" : "0"); }
+        catch (_) {}
+      }
+    }
+
+    function openDateTimeGlossaryFromHash() {
+      if (window.location.hash.toLowerCase() !== "#dateandtime") return;
+      setDateTimeGlossaryVisible(true);
+      requestAnimationFrame(() => dateTimeGlossary.scrollIntoView({ block: "start" }));
+    }
+
+    // An external #dateandtime link opens the glossary without changing the
+    // user's saved preference; ordinary button clicks persist their choice.
+    let glossaryWasVisible = false;
+    try { glossaryWasVisible = localStorage.getItem(DATE_TIME_GLOSSARY_STORAGE_KEY) === "1"; }
+    catch (_) {}
+    setDateTimeGlossaryVisible(glossaryWasVisible || window.location.hash.toLowerCase() === "#dateandtime");
+    dateTimeGlossaryToggleBtn.addEventListener("click", () =>
+      setDateTimeGlossaryVisible(dateTimeGlossaryContent.hidden, { persist: true })
+    );
+    window.addEventListener("hashchange", openDateTimeGlossaryFromHash);
+
+    async function renderDateTimeGlossaryExamples() {
+      const examples = Object.values(DATE_TIME_GLOSSARY_EXAMPLES);
+      const plainValues = new Set();
+      const timeValues = new Set();
+      const dateValues = new Set();
+      for (const example of examples) {
+        for (const part of example.parts) {
+          if (part[0] !== "number") continue;
+          const [ , head, value ] = part;
+          if (head === "tenpo") timeValues.add(value);
+          else if (head === "suno" && String(value).includes("-")) dateValues.add(value);
+          else if (head === "sitelen" || (head === "ilo" && String(value).includes(":"))) {
+            // Explicitly headed glossary-only numeric expressions are prepared below.
+          } else plainValues.add(value);
+        }
+      }
+      // A newer numeric form must not suppress otherwise valid examples.
+      for (const [values, head] of [
+        [plainValues, "nanpa"], [timeValues, "tenpo"], [dateValues, "suno"]
+      ]) {
+        try { await buildCalendarCartoucheBatch(values, head); }
+        catch (error) {
+          console.warn(`Date and Time glossary ${head} batch failed; retrying examples separately:`, error);
+          for (const value of values) {
+            try { await buildCalendarCartoucheBatch([value], head); }
+            catch (singleError) { console.warn(`Date and Time glossary could not encode ${head} ${value}:`, singleError); }
+          }
+        }
+      }
+      // Only the new timestamp examples need generic typed heads. Do not
+      // change the calendar's existing date, time, or numeric cartouche paths.
+      const timestampHeadValues = [
+        ["ilo", "-04:00"], ["ilo", "+05:30"], ["sitelen", "1704067200.678"]
+      ];
+      const pendingTimestampHeads = timestampHeadValues.filter(([head, value]) =>
+        !cartoucheTextCache.has(cartoucheCacheKey(value, head)));
+      if (pendingTimestampHeads.length) {
+        const timestampRenderer = await getCalendarRenderer();
+        const timestampPlan = await timestampRenderer.buildRenderPlan({
+          input: pendingTimestampHeads.map(([head, value]) => `${head}:(${value})`).join("\n"),
+          parser: parserOptions({ enableGenericNumericStartGlyphSyntax: true }),
+          layout: { fontPx: 32, paddingPx: 0, align: "left" },
+          fonts: calendarRendererFonts()
+        });
+        if (!Array.isArray(timestampPlan?.lines) ||
+            timestampPlan.lines.length !== pendingTimestampHeads.length) {
+          throw new Error("Shared renderer returned an incorrect timestamp cartouche count.");
+        }
+        for (let index = 0; index < pendingTimestampHeads.length; index += 1) {
+          const [head, value] = pendingTimestampHeads[index];
+          const numericRun = Array.from(timestampPlan.lines[index]?.runs || [])
+            .find(candidate => candidate?.kind === "cartouche");
+          const cps = numericRun?.renderFullCps;
+          const headCp = NanpaParser.tpWordsToUcsurCodepoints([head])[0];
+          if (!Array.isArray(cps) || cps[0] !== CARTOUCHE_START_CP ||
+              cps[1] !== headCp || cps[cps.length - 1] !== CARTOUCHE_END_CP) {
+            throw new Error(`Shared renderer did not preserve ${head} head for ${value}.`);
+          }
+          cartoucheTextCache.set(cartoucheCacheKey(value, head), String.fromCodePoint(...cps));
+        }
+      }
+      const nanpaCp = NanpaParser.tpWordsToUcsurCodepoints(["nanpa"])[0];
+      for (const [id, example] of Object.entries(DATE_TIME_GLOSSARY_EXAMPLES)) {
+        const target = dateTimeGlossary.querySelector(`[data-dt-example="${id}"]`);
+        if (!target) continue;
+        const nodes = [];
+        try {
+        for (const part of example.parts) {
+          if (part[0] === "words") {
+            const words = part[1];
+            const glyphs = String.fromCodePoint(...NanpaParser.tpWordsToUcsurCodepoints(words));
+            nodes.push(el("span", "dateTimeWordGlyphs sitelen", glyphs));
+          } else if (part[0] === "number") {
+            const [, head, value] = part;
+            let glyphs;
+            if (head === "tenpo" || head === "sike" || head === "mun" || head === "sitelen" ||
+                (head === "ilo" && String(value).includes(":")) ||
+                (head === "suno" && String(value).includes("-"))) {
+              glyphs = cartoucheText(value, head);
+            } else {
+              // Retain the existing renderer's abbreviated numeric payload,
+              // changing only the structural opening head for Sike/Mun/Ilo/
+              // Meso/Lili. Older calendar renderers only accept four heads.
+              const cps = Array.from(cartoucheText(value, "nanpa"), ch => ch.codePointAt(0));
+              if (head !== "nanpa") {
+                const firstNanpa = cps.indexOf(nanpaCp, cps.indexOf(CARTOUCHE_START_CP) + 1);
+                if (firstNanpa < 0 || firstNanpa > 3) throw new Error(`Missing numeric cartouche head for ${id}`);
+                cps[firstNanpa] = NanpaParser.tpWordsToUcsurCodepoints([head])[0];
+              }
+              glyphs = String.fromCodePoint(...cps);
+            }
+            nodes.push(el("span", "numericCartouche dateTimeCartouche sitelen", glyphs));
+          } else if (part[0] === "literal") {
+            nodes.push(el("span", "dateTimeZoneLiteral", part[1]));
+          }
+        }
+        target.replaceChildren(...nodes);
+        } catch (error) {
+          console.warn(`Date and Time glossary example ${id} could not render:`, error);
+          target.textContent = "—";
+        }
+      }
+      applyDynamicCartoucheStyles(dateTimeGlossary);
+    }
+
     populateYears();
     setInitialMonth();
     applyUiLanguage(uiLanguage, { persist: false });
@@ -4829,6 +5439,10 @@
       renderWorldMap();
       await renderScreen();
       document.documentElement.classList.remove("fonts-loading");
+      openDateTimeGlossaryFromHash();
+      void renderDateTimeGlossaryExamples().catch(error => {
+        console.warn("Date and Time glossary could not render:", error);
+      });
     }
 
     void startCalendar();

@@ -2424,6 +2424,41 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "source": "uploaded nanpa_v8 numeric WAVs",
       "source_order": 72,
       "duration_ms": 1575.0
+    },
+    "sike": {
+      "unit": "Sike",
+      "file": "nanpa_v9/sike.wav",
+      "source": "uploaded nanpa_v9 temporal numeric-head WAVs",
+      "source_order": 73,
+      "duration_ms": 1675.0
+    },
+    "ilo": {
+      "unit": "Ilo",
+      "file": "nanpa_v9/ilo.wav",
+      "source": "uploaded nanpa_v9 temporal numeric-head WAVs",
+      "source_order": 74,
+      "duration_ms": 1625.0
+    },
+    "meso": {
+      "unit": "Meso",
+      "file": "nanpa_v9/meso.wav",
+      "source": "uploaded nanpa_v9 temporal numeric-head WAVs",
+      "source_order": 75,
+      "duration_ms": 1650.0
+    },
+    "lili": {
+      "unit": "Lili",
+      "file": "nanpa_v9/lili.wav",
+      "source": "uploaded nanpa_v9 temporal numeric-head WAVs",
+      "source_order": 76,
+      "duration_ms": 1600.0
+    },
+    "sitelen": {
+      "unit": "Sitelen",
+      "file": "nanpa_v10/sitelen.wav",
+      "source": "uploaded nanpa_v10 timestamp numeric-head WAV",
+      "source_order": 77,
+      "duration_ms": 1825.0
     }
   },
   "nanpa_unit_source": {
@@ -2657,6 +2692,35 @@ export const REFERENCE_AUDIO_MANIFEST = {
       "Lon"
     ],
     "notes": "Current purpose-recorded numeric-cartouche assets supplied in nanpa_v8. Matching nanpa_units entries prefer these files. Kiwen and Lon are newly available numeric-cartouche units. Ordinary words and the general syllable bank are unchanged. Durations are measured directly from WAV frame counts."
+  },
+  "nanpa_v9_unit_source": {
+    "source_file_group": "uploaded nanpa_v9 temporal numeric-head WAVs",
+    "added_units": 4,
+    "reused_units": [
+      "mun"
+    ],
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Sike",
+      "Ilo",
+      "Meso",
+      "Lili"
+    ],
+    "notes": "The new numeric-cartouche head recordings are selected only for renderer-confirmed typed numeric cartouches. Mun retains its existing nanpa_v2/mun.wav recording. Each head and its immediately following numeric colon form one playback/highlight unit. Ordinary nonnumeric word audio remains unchanged."
+  },
+  "nanpa_v10_unit_source": {
+    "source_file_group": "uploaded nanpa_v10 timestamp numeric-head WAV",
+    "added_units": 1,
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Sitelen"
+    ],
+    "duration_ms": 1825.0,
+    "notes": "Sitelen is a typed numeric Unix-seconds timestamp head. Its dedicated WAV is used for renderer-confirmed numeric cartouches, with the opening head and numeric colon treated as a single audio/highlight unit. Ordinary Toki Pona sitelen speech remains unchanged."
   }
 };
 

@@ -54,6 +54,7 @@ const TOKEN_TO_DIGIT_WORD = Object.freeze({
 const AUDIO_NANPA_LINJA_N_WORDS = new Set([
   'ala','ike','uta',
   'nanpa','nasa','nasin','nena','ni','nimi','noka','suno','tenpo','toki',
+  'sike','ilo','meso','lili',
   'esun','en','e',
   'o','ona','ota','open',
   'kulupu','kipisi','kasi','kala','kin',
@@ -373,6 +374,8 @@ function audioInitialTextFromGlyphTokens(tokens) {
 }
 
 const AUDIO_LEGACY_FULL_SCAFFOLD_WORDS = new Set(['e', 'en', 'nena', 'open', 'ala', 'ike', 'uta', 'nanpa']);
+// The renderer enables these five temporal numeric position heads by default.
+const AUDIO_TEMPORAL_POSITION_HEADS = new Set(['sike', 'mun', 'ilo', 'meso', 'lili', 'sitelen']);
 
 function nanpaColonRenderingEnabled(options = {}) {
   return options.nanpaColonRendering === true;
@@ -387,10 +390,10 @@ function isAudioNanpaLinjanTpPhraseTokens(tokens, options = {}) {
   if (words.length < 3) return false;
   const openingHead = words[0];
   const isLegacyNanpaHead = openingHead === 'nanpa';
-  const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo';
+  const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo' || AUDIO_TEMPORAL_POSITION_HEADS.has(openingHead);
   const isTypedNumericHead = openingHead === 'toki';
   if (!isLegacyNanpaHead && !isTypedDateTimeHead && !isTypedNumericHead) return false;
-  const colonHead = words[1] === ':' && nanpaColonParsingEnabled(options);
+  const colonHead = words[1] === ':' && (nanpaColonParsingEnabled(options) || AUDIO_TEMPORAL_POSITION_HEADS.has(openingHead));
   if (isLegacyNanpaHead) {
     if (!(words[1] === 'e' || words[1] === 'en' || words[1] === 'esun' || colonHead)) return false;
   } else if (!colonHead) {
@@ -429,14 +432,14 @@ function tryNanpaLinjanTpPhraseSourceToCaps(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
   if (!isAudioNanpaLinjanTpPhraseTokens(words, options)) return '';
 
-  // nanpa:/suno:/tenpo:/toki: are typed visual heads for the same initial NE
+  // Typed colon heads (including sike/mun/ilo/meso/lili) encode the same initial NE
   // semantic token in the spoken nanpa-linja-n proper name. Toki may also be
   // used as the configured opening marker in the non-colon form. Substitute
   // the historical nanpa opening only for caps reconstruction; the visual head
   // remains unchanged for renderer/highlight alignment.
   const isTypedColonHead =
     words[1] === ':' &&
-    (words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki');
+    (words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki' || AUDIO_TEMPORAL_POSITION_HEADS.has(words[0]));
   const semanticWords = isTypedColonHead
     ? ['nanpa', 'e', ...words.slice(2)]
     : (words[0] === 'toki' ? ['nanpa', ...words.slice(1)] : words);
@@ -499,7 +502,7 @@ const ABBREVIATED_NANPA_DIGIT_WORD_TO_CODE = Object.freeze({
 function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   const words = audioGlyphTokensFromCartoucheSource(text);
   const openingHead = words[0];
-  const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo';
+  const isTypedDateTimeHead = openingHead === 'suno' || openingHead === 'tenpo' || AUDIO_TEMPORAL_POSITION_HEADS.has(openingHead);
   const isTypedNumericHead = openingHead === 'toki';
   if (words.length < 3 ||
       !(openingHead === 'nanpa' || isTypedDateTimeHead || isTypedNumericHead) ||
@@ -512,15 +515,16 @@ function parseAbbreviatedNanpaLinjanCartoucheSource(text, options = {}) {
   // shared parser validate suno:/tenpo: semantics directly so a two-component
   // suno date cannot be mistaken for the legacy untyped HH:MM abbreviation.
   if (isTypedDateTimeHead) {
-    if (words[1] !== ':' || !nanpaColonParsingEnabled(options)) return null;
+    if (words[1] !== ':' || !(nanpaColonParsingEnabled(options) || AUDIO_TEMPORAL_POSITION_HEADS.has(openingHead))) return null;
     try {
       const parsed = NanpaParser.parseNumber(`[${words.join(' ')}]`, {
         mode: options.nanpaLinjanMode || options.mode || 'uniform',
         mixedStyle: options.mixedStyle || 'short',
-        relaxedNanpaLinjanParsing: !!options.relaxedNanpaLinjanParsing,
-        relaxedNanpaLinjanRendering: !!options.relaxedNanpaLinjanRendering,
+        ...(options.relaxedNanpaLinjanParsing === true ? { relaxedNanpaLinjanParsing: true } : {}),
+        ...(options.relaxedNanpaLinjanRendering === true ? { relaxedNanpaLinjanRendering: true } : {}),
         nanpaColonParsing: true,
-        nanpaColonRendering: nanpaColonRenderingEnabled(options),
+        nanpaColonRendering: AUDIO_TEMPORAL_POSITION_HEADS.has(openingHead)
+          ? true : nanpaColonRenderingEnabled(options),
         abbreviateNumericCartouches: true
       });
       if (!parsed) return null;
@@ -616,6 +620,9 @@ export function tryAbbreviatedNanpaLinjanCartoucheSourceToProperName(text, optio
 
   const typedHeadWord = typedDecimalAudioHeadWordFromSourceText(text, options);
   const NanpaParser = getNanpaParserFromOptions(options);
+  if (AUDIO_TEMPORAL_POSITION_HEADS.has(String(decoded.openingHead || '')) && decoded.parsed?.properName) {
+    return decoded.parsed.properName;
+  }
   if (decoded.parsed?.caps) {
     const properName = splitNanpaCapsToAudioProperName(decoded.parsed.caps, NanpaParser, options);
     if (properName) return applyTypedDateTimeAudioHead(properName, typedHeadWord);
@@ -780,6 +787,35 @@ export function trySourceTextToNanpaProperName(text, options = {}) {
 
   const NanpaParser = getNanpaParserFromOptions(options);
   if (!NanpaParser) return '';
+
+  // Temporal position heads are enabled by the renderer without the legacy
+  // nanpaColonParsing switch. Ask the parser for the *headed* name first,
+  // including for bracketed/full and decimal/scientific-notation sources.
+  // Otherwise the legacy NE caps path can discard the typed head (most
+  // noticeably for fractional-second values such as lili:(0.001)).
+  const temporalSourceHead = (
+    /^(?:\[\s*)?(sike|mun|ilo|meso|lili|sitelen)\s*:/i.exec(source)?.[1] ||
+    /^#~(sike|mun|ilo|meso|lili|sitelen)~/i.exec(source)?.[1] ||
+    /^(Sike|Mun|Ilo|Meso|Lili|Sitelen)(?=\s)/.exec(source)?.[1] ||
+    ''
+  ).toLowerCase();
+  if (temporalSourceHead && typeof NanpaParser.parseNumber === 'function') {
+    try {
+      const temporalParsed = NanpaParser.parseNumber(source, {
+        mode: options.nanpaLinjanMode || options.mode || 'uniform',
+        mixedStyle: options.mixedStyle || 'short',
+        nanpaColonParsing: true,
+        nanpaColonRendering: true,
+        abbreviateNumericCartouches: true,
+        ...(options.relaxedNanpaLinjanParsing === true ? { relaxedNanpaLinjanParsing: true } : {}),
+        ...(options.relaxedNanpaLinjanRendering === true ? { relaxedNanpaLinjanRendering: true } : {})
+      });
+      if (temporalParsed?.properName &&
+          temporalParsed.properName.toLowerCase().startsWith(temporalSourceHead + ' ')) {
+        return temporalParsed.properName;
+      }
+    } catch (_) {}
+  }
 
   try {
     const caps = tryNanpaLinjanTpPhraseSourceToCaps(source, options);
@@ -1480,7 +1516,7 @@ const WHOLE_NUMERIC_AUDIO_WORDS = new Set([
   'eke', 'eken', 'ekeke', 'ekeken', 'ekekeke', 'ekekeken',
   'keke', 'keken', 'kekeke', 'kekeken',
   'one', 'ono', 'oko', 'eko', 'oken', 'ene', 'inin',
-  'nanpa', 'nasa', 'noka', 'suno', 'tenpo', 'toki', 'kiwen', 'ma', 'lon'
+  'nanpa', 'nasa', 'noka', 'suno', 'tenpo', 'toki', 'sike', 'mun', 'ilo', 'meso', 'lili', 'sitelen', 'kiwen', 'ma', 'lon'
 ]);
 
 // A compound is one indivisible rendered visual even though its source words
@@ -1532,8 +1568,22 @@ const AUDIO_CP_KIWEN = 0xF191B;
 const AUDIO_CP_SUNO = 0xF1964;
 const AUDIO_CP_TENPO = 0xF196B;
 const AUDIO_CP_TOKI = 0xF196C;
+const AUDIO_CP_SIKE = 0xF195C;
+const AUDIO_CP_MUN = 0xF193A;
+const AUDIO_CP_ILO = 0xF190E;
+const AUDIO_CP_MESO = 0xF1982;
+const AUDIO_CP_LILI = 0xF1928;
+const AUDIO_CP_SITELEN = 0xF1960;
+const AUDIO_TEMPORAL_HEAD_WORD_BY_CP = new Map([
+  [AUDIO_CP_SIKE, 'Sike'],
+  [AUDIO_CP_MUN, 'Mun'],
+  [AUDIO_CP_ILO, 'Ilo'],
+  [AUDIO_CP_MESO, 'Meso'],
+  [AUDIO_CP_LILI, 'Lili'],
+  [AUDIO_CP_SITELEN, 'Sitelen']
+]);
 const AUDIO_CP_COLON = 0xF199D;
-const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_NASA, AUDIO_CP_NOKA, AUDIO_CP_LON, AUDIO_CP_MA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI]);
+const AUDIO_TYPED_DECIMAL_HEAD_CPS = new Set([AUDIO_CP_NANPA, AUDIO_CP_NASA, AUDIO_CP_NOKA, AUDIO_CP_LON, AUDIO_CP_MA, AUDIO_CP_SUNO, AUDIO_CP_TENPO, AUDIO_CP_TOKI, ...AUDIO_TEMPORAL_HEAD_WORD_BY_CP.keys()]);
 
 function spokenWordTokens(text) {
   return String(text ?? '').match(/[A-Za-z']+/g) || [];
@@ -1557,6 +1607,9 @@ function typedDecimalAudioHeadWordFromCodepoints(cps, options = {}) {
     if (source[0] === AUDIO_CP_NOKA) return 'Noka';
     if (source[0] === AUDIO_CP_MA) return 'Ma';
     if (source[0] === AUDIO_CP_LON) return 'Lon';
+    // The renderer accepts these heads without enabling generic colon syntax.
+    const temporalHead = AUDIO_TEMPORAL_HEAD_WORD_BY_CP.get(source[0]);
+    if (temporalHead) return temporalHead;
   }
 
   if (!nanpaColonRenderingEnabled(options)) return '';
@@ -1568,9 +1621,10 @@ function typedDecimalAudioHeadWordFromCodepoints(cps, options = {}) {
 }
 
 function typedDecimalAudioHeadWordFromSourceText(text, options = {}) {
-  if (!nanpaColonParsingEnabled(options)) return '';
   const words = audioGlyphTokensFromCartoucheSource(text);
   if (words.length < 2 || words[1] !== ':') return '';
+  if (AUDIO_TEMPORAL_POSITION_HEADS.has(words[0])) return titleCaseAudioProperNameText(words[0]);
+  if (!nanpaColonParsingEnabled(options)) return '';
   if (words[0] === 'suno') return 'Suno';
   if (words[0] === 'tenpo') return 'Tenpo';
   if (words[0] === 'toki') return 'Toki';
@@ -1583,7 +1637,7 @@ function typedDecimalAudioHeadWordFromSourceText(text, options = {}) {
 function applyTypedDateTimeAudioHead(properName, headWord) {
   const phrase = compactSpeechWhitespace(properName);
   const head = String(headWord || '').trim();
-  if (!phrase || (head !== 'Suno' && head !== 'Tenpo' && head !== 'Toki')) return phrase;
+  if (!phrase || !(['Suno', 'Tenpo', 'Toki', 'Sike', 'Mun', 'Ilo', 'Meso', 'Lili', 'Sitelen'].includes(head))) return phrase;
 
   if (/^Nanpa(?:\s+|$)/.test(phrase)) {
     return phrase.replace(/^Nanpa(?=\s+|$)/, head);
@@ -2421,7 +2475,7 @@ function tryRenderedNumericCartoucheToProperName(run, options = {}) {
       })
       .filter(Boolean);
     if (words.length < 3 ||
-        !(words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki') ||
+        !(words[0] === 'nanpa' || words[0] === 'suno' || words[0] === 'tenpo' || words[0] === 'toki' || AUDIO_TEMPORAL_POSITION_HEADS.has(words[0])) ||
         words[words.length - 1] !== 'nanpa') return '';
 
     // Toki is a visual numeric-head override, not a different numeric grammar.
@@ -2436,6 +2490,8 @@ function tryRenderedNumericCartoucheToProperName(run, options = {}) {
       return applyTypedDateTimeAudioHead(canonicalProperName, 'Toki');
     }
 
+    // For temporal numeric heads, let the new parser interpret the verified
+    // source stream as-is (one typed cartouche, not a separate unit glyph).
     return compactSpeechWhitespace(
       trySourceTextToNanpaProperName(`[${words.join(' ')}]`, options)
     );
@@ -2578,11 +2634,6 @@ function isCartoucheRenderRunForAudio(run) {
   return kind === 'cartouche' || kind === 'cartoucheimg';
 }
 
-function isCartoucheAdjacencyGapRun(run) {
-  const kind = String(run?.kind ?? run?.type ?? run?._element?.type ?? '').toLowerCase();
-  return kind === 'gap';
-}
-
 function isConfirmedNumericCartoucheRun(run, options = {}) {
   if (
     run?.isNumericCartouche === true ||
@@ -2596,58 +2647,64 @@ function isConfirmedNumericCartoucheRun(run, options = {}) {
 }
 
 /**
- * Classify uninterrupted cartouche sequences on one rendered line.
- * Renderer gap runs are layout only and do not break adjacency. Any other run
- * ends the sequence. Numeric reference audio is permitted only when every
- * cartouche in the sequence is numeric; one ordinary cartouche forces the
- * complete adjacent sequence to the ordinary syllable voice.
+ * A cartouche is its own audio section, even when its neighbours are also
+ * cartouches. A renderer can expose multiple visual runs for one *logical*
+ * cartouche; only an explicit shared logical ID or the same complete source
+ * span may associate those runs. Adjacency and intervening layout gap runs
+ * never establish audio identity.
  */
-function classifyAdjacentCartoucheAudioGroups(runs, options = {}) {
-  const classifications = new Map();
-  const input = Array.isArray(runs) ? runs : [];
-  let cursor = 0;
-  let groupOrdinal = 0;
-
-  while (cursor < input.length) {
-    if (!isCartoucheRenderRunForAudio(input[cursor])) {
-      cursor += 1;
-      continue;
-    }
-
-    const cartoucheRunIndices = [];
-    let scan = cursor;
-    while (scan < input.length) {
-      const candidate = input[scan];
-      if (isCartoucheRenderRunForAudio(candidate)) {
-        cartoucheRunIndices.push(scan);
-        scan += 1;
-        continue;
-      }
-      if (isCartoucheAdjacencyGapRun(candidate)) {
-        scan += 1;
-        continue;
-      }
-      break;
-    }
-
-    const allNumeric = cartoucheRunIndices.length > 0 && cartoucheRunIndices.every(index =>
-      isConfirmedNumericCartoucheRun(input[index], options)
-    );
-    const groupId = `L${Number(options?.lineIndex) || 0}C${groupOrdinal}`;
-
-    for (const runIndex of cartoucheRunIndices) {
-      classifications.set(runIndex, {
-        groupId,
-        allNumeric,
-        audioMode: allNumeric ? 'numeric' : 'ordinary',
-        cartoucheRunIndices: cartoucheRunIndices.slice()
-      });
-    }
-
-    groupOrdinal += 1;
-    cursor = Math.max(scan, cursor + 1);
+function cartoucheAudioIdentity(run, fallbackRunIndex, lineIndex) {
+  const logicalId = run?.logicalCartoucheId ?? run?._element?.logicalCartoucheId ?? null;
+  if (logicalId != null && String(logicalId).trim()) {
+    return `logical:${lineIndex}:${String(logicalId)}`;
   }
 
+  const segmentIndex = Number(run?.sourceSegmentIndex);
+  const start = Number(run?.sourceStart);
+  const end = Number(run?.sourceEnd);
+  if (Number.isInteger(segmentIndex) && Number.isInteger(start) &&
+      Number.isInteger(end) && end > start) {
+    return `source:${lineIndex}:${segmentIndex}:${start}:${end}:${String(run?.sourceKind ?? '')}`;
+  }
+  return `run:${lineIndex}:${fallbackRunIndex}`;
+}
+
+/**
+ * Classify each *logical* cartouche independently. A nonnumeric cartouche
+ * never changes a neighbouring numeric cartouche's pronunciation, and two
+ * adjacent numeric cartouches remain separate reference-audio phrases.
+ */
+function classifyIndependentCartoucheAudioGroups(runs, options = {}) {
+  const classifications = new Map();
+  const input = Array.isArray(runs) ? runs : [];
+  const lineIndex = Number(options?.lineIndex) || 0;
+  const groups = new Map();
+
+  for (let runIndex = 0; runIndex < input.length; runIndex++) {
+    const run = input[runIndex];
+    if (!isCartoucheRenderRunForAudio(run)) continue;
+    const identity = cartoucheAudioIdentity(run, runIndex, lineIndex);
+    let group = groups.get(identity);
+    if (!group) {
+      group = { groupId: `L${lineIndex}C${groups.size}`, runIndices: [] };
+      groups.set(identity, group);
+    }
+    group.runIndices.push(runIndex);
+  }
+
+  for (const group of groups.values()) {
+    const numeric = group.runIndices.some(index =>
+      isConfirmedNumericCartoucheRun(input[index], options)
+    );
+    for (const runIndex of group.runIndices) {
+      classifications.set(runIndex, {
+        groupId: group.groupId,
+        allNumeric: numeric,
+        audioMode: numeric ? 'numeric' : 'ordinary',
+        cartoucheRunIndices: group.runIndices.slice()
+      });
+    }
+  }
   return classifications;
 }
 
@@ -3689,7 +3746,7 @@ export function extractSpeechSegmentsFromRenderPlan(plan, options = {}) {
     };
 
     const runs = Array.isArray(line?.runs) ? line.runs : [];
-    const cartoucheAudioGroups = classifyAdjacentCartoucheAudioGroups(runs, {
+    const cartoucheAudioGroups = classifyIndependentCartoucheAudioGroups(runs, {
       ...options,
       lineIndex
     });
@@ -4031,7 +4088,7 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-export const SITELEN_AUDIO_PLAN_BUILD = '20260925-audio-highlight-colon-cursor-v14';
+export const SITELEN_AUDIO_PLAN_BUILD = '20261102-independent-cartouche-audio-v16';
 
 function numericCartoucheUnitOrdinal(unit) {
   const value = Number(unit?.unitIndex);
@@ -4132,8 +4189,8 @@ async function renderExactNumericCartoucheEntries({
     ...(renderOptions || {}),
     synthesis_mode: 'reference_audio',
     alreadyPreprocessed: true,
-    // Typed Suno/Tenpo/Toki numeric heads use their dedicated whole-word
-    // dedicated whole-word nanpa reference units, never the ordinary words/ recordings. The
+    // Typed numeric heads use their dedicated whole-word nanpa reference units,
+    // never the ordinary words/ recordings. The
     // legacy private option name is retained to avoid changing external callers.
     numericTypedHeadSyllableAudio: true
   });
