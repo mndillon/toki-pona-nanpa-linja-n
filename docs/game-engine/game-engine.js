@@ -7449,7 +7449,7 @@
 
   async function ensureLevelRenderer() {
     if (!levelRendererPromise) {
-      levelRendererPromise = import(new URL('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=290', document.baseURI).href)
+      levelRendererPromise = import(new URL('./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=292', document.baseURI).href)
         .then(mod => mod.default || mod)
         .then(async SitelenRenderer => SitelenRenderer.create({
           layout:{fontPx:64,align:'center',spacingPreset:'compact',paddingPx:10},

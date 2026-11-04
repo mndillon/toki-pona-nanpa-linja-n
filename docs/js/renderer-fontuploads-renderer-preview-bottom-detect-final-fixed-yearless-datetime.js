@@ -7855,9 +7855,9 @@ function wireHaloControls() {
 
       Accepted text forms:
       - H:MM / HH:MM
-      - H:MM:SS[.f|.ff|.fff] / HH:MM:SS[.f|.ff|.fff]
+      - H:MM:SS[.fraction] / HH:MM:SS[.fraction]
       - D:HH:MM
-      - D:HH:MM:SS[.f|.ff|.fff]
+      - D:HH:MM:SS[.fraction]
 
       D is any signed or unsigned integer. A leading minus applies to
       the complete duration and is retained for -0 days whenever a later
@@ -7881,7 +7881,7 @@ function wireHaloControls() {
       }
 
       function parseSeconds(value) {
-        const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d{1,3}))?$/);
+        const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d+))?$/);
         if (!m) return null;
         return { ssStr: m[1], fractionStr: m[2] ?? null };
       }
@@ -7944,7 +7944,7 @@ function wireHaloControls() {
         };
       }
 
-      // Expanded form: D:HH:MM:SS[.f|.ff|.fff].
+      // Expanded form: D:HH:MM:SS[.fraction].
       if (!isClockPair(fields[1]) || !isClockPair(fields[2])) return null;
       const seconds = parseSeconds(fields[3]);
       if (!seconds) return null;
@@ -8126,7 +8126,7 @@ function wireHaloControls() {
             fractionStr += ch;
             i += 1;
           }
-          if (fractionStr.length < 1 || fractionStr.length > 3) return null;
+          if (fractionStr.length < 1) return null;
         }
 
         segments.push({ integerStr, fractionStr });
@@ -8146,7 +8146,7 @@ function wireHaloControls() {
 
       function isSecondsInRange(seg) {
         return !!seg && /^[0-5]\d$/.test(seg.integerStr) &&
-          (seg.fractionStr == null || /^\d{1,3}$/.test(seg.fractionStr));
+          (seg.fractionStr == null || /^\d+$/.test(seg.fractionStr));
       }
 
       function normalizedNegative(daySeg, otherSegs) {
@@ -8434,8 +8434,8 @@ function wireHaloControls() {
 
       // No lookbehind: capture a non-digit boundary (or start-of-string) in group 1.
       // Candidate validation is delegated to timeStrToNanpaCaps so malformed
-      // ranges and fractional-second precision are rejected as complete values.
-      const re = /(^|[^0-9])([+-]?\d+(?::\d{2}){1,3}(?:\.\d{1,3})?)(?![0-9.:])/g;
+      // ranges and fractional-second syntax is validated as a complete value.
+      const re = /(^|[^0-9])([+-]?\d+(?::\d{2}){1,3}(?:\.\d+)?)(?![0-9.:])/g;
 
       const out = [];
       let m;
@@ -11214,6 +11214,132 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       }
 
       nanpaDebugEmit("parse-text:start", { segmentText: s, fontPx, mode, sourceBaseStart, sourceKind, sourceSegmentIndex, mixedStyle });
+
+
+      // A complete #~suno~...~tenpo~...~ilo~... code is one timestamp.
+      // Claim it ahead of ordinary standalone #~ scanners, preserving the
+      // three-cartouche output and two ordinary en glyphs of the ISO input.
+      if (s.includes("#~suno~") && s.includes("~tenpo~")) {
+        const timestampCodeRe = /(^|[^A-Za-z0-9_#~])(#~suno~[A-Za-z0-9_+]+~tenpo~[A-Za-z0-9_+~]+)(?=$|[^A-Za-z0-9_])/g;
+        const hits = [];
+        let match;
+        while ((match = timestampCodeRe.exec(s)) !== null) {
+          const start = match.index + (match[1] || "").length;
+          hits.push({ index: start, end: start + match[2].length, text: match[2] });
+        }
+        if (hits.length) {
+          let position = 0;
+          for (const hit of hits) {
+            if (hit.index < position) continue;
+            if (hit.index > position) parseTextSegmentToElements(s.slice(position, hit.index), elements, {
+              fontPx, sourceBaseStart: sourceBaseStart + position, sourceKind,
+              sourceSegmentIndex, mixedStyle, allowRawCodepoints: false
+            });
+            const timestamp = NanpaParser.parseNumber(hit.text, {
+              numericMode: mode, mixedStyle,
+              relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
+              relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanRendering(),
+              nanpaColonParsing: getNanpaColonParsing(),
+              nanpaColonRendering: getNanpaColonRendering(),
+              abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+              enableTemporalNumericHeads: __enableTemporalNumericHeads
+            });
+            if (timestamp?.kind === "iso-timestamp") {
+              for (let index = 0; index < timestamp.components.length; index++) {
+                if (index) renderTpWordsFromText("en", elements, {
+                  fontPx, mode, sourceBaseStart: sourceBaseStart + hit.index,
+                  sourceKind, sourceSegmentIndex, mixedStyle
+                });
+                makeNumericCartoucheElementFromCodepoints(elements, timestamp.components[index].innerCodepoints, {
+                  fontPx, fgCss: getFgHex(), sourceText: hit.text,
+                  sourceStart: sourceBaseStart + hit.index,
+                  sourceEnd: sourceBaseStart + hit.end,
+                  sourceKind, sourceSegmentIndex
+                });
+              }
+            } else {
+              // Malformed composite expressions must not partially render as
+              // independently recognised numeric/date/time components.
+              renderTpWordsFromText(hit.text, elements, {
+                fontPx, mode, sourceBaseStart: sourceBaseStart + hit.index,
+                sourceKind, sourceSegmentIndex, mixedStyle
+              });
+            }
+            position = hit.end;
+          }
+          if (position < s.length) parseTextSegmentToElements(s.slice(position), elements, {
+            fontPx, sourceBaseStart: sourceBaseStart + position, sourceKind,
+            sourceSegmentIndex, mixedStyle, allowRawCodepoints: false
+          });
+          return;
+        }
+      }
+
+      // ISO timestamps are complete inputs, not a sequence of typed wrappers.
+      // Claim the full token before standalone date/time scanners can see its
+      // fragments. No ordinary 'tenpo' is added ahead of the Suno cartouche.
+      if (/\d{4}-\d{2}-\d{2}T/.test(s)) {
+        const isoCandidateRe = /(^|[^A-Za-z0-9_#~])(\d{4}-\d{2}-\d{2}T[0-9:.+\-Z]+)(?=$|[^A-Za-z0-9_])/g;
+        const candidates = [];
+        let isoHit;
+        while ((isoHit = isoCandidateRe.exec(s)) !== null) {
+          const leading = isoHit[1] || "";
+          const start = isoHit.index + leading.length;
+          const captured = isoHit[2];
+          // A sentence-final full stop is punctuation, not part of ISO syntax.
+          const timestampText = captured.replace(/\.+$/, "");
+          if (!timestampText) continue;
+          candidates.push({ index: start, end: start + timestampText.length, text: timestampText });
+        }
+        if (candidates.length) {
+          let isoPos = 0;
+          for (const candidate of candidates) {
+            if (candidate.index < isoPos) continue;
+            if (candidate.index > isoPos) parseTextSegmentToElements(s.slice(isoPos,candidate.index), elements, {
+              fontPx, sourceBaseStart: sourceBaseStart + isoPos, sourceKind, sourceSegmentIndex,
+              mixedStyle, allowRawCodepoints: false
+            });
+            const timestamp = NanpaParser.parseIsoTimestamp(candidate.text, {
+              numericMode: mode, mixedStyle,
+              relaxedNanpaLinjanParsing: getRelaxedNanpaLinjanParsing(),
+              relaxedNanpaLinjanRendering: getRelaxedNanpaLinjanRendering(),
+              nanpaColonParsing: getNanpaColonParsing(),
+              nanpaColonRendering: getNanpaColonRendering(),
+              abbreviateNumericCartouches: getAbbreviateNumericCartouches(),
+              enableTemporalNumericHeads: __enableTemporalNumericHeads
+            });
+            if (timestamp) {
+              for (let partIndex=0; partIndex<timestamp.components.length; partIndex++) {
+                if (partIndex) {
+                  renderTpWordsFromText("en", elements, {
+                    fontPx, mode, sourceBaseStart: sourceBaseStart + candidate.index,
+                    sourceKind, sourceSegmentIndex, mixedStyle
+                  });
+                }
+                makeNumericCartoucheElementFromCodepoints(elements, timestamp.components[partIndex].innerCodepoints, {
+                  fontPx, fgCss: getFgHex(), sourceText: candidate.text,
+                  sourceStart: sourceBaseStart + candidate.index,
+                  sourceEnd: sourceBaseStart + candidate.end,
+                  sourceKind, sourceSegmentIndex
+                });
+              }
+            } else {
+              // Invalid complete ISO-like tokens remain literal rather than
+              // becoming misleading independently parsed date/time fragments.
+              renderTpWordsFromText(candidate.text, elements, {
+                fontPx, mode, sourceBaseStart: sourceBaseStart + candidate.index,
+                sourceKind, sourceSegmentIndex, mixedStyle
+              });
+            }
+            isoPos = candidate.end;
+          }
+          if (isoPos < s.length) parseTextSegmentToElements(s.slice(isoPos), elements, {
+            fontPx, sourceBaseStart: sourceBaseStart + isoPos, sourceKind, sourceSegmentIndex,
+            mixedStyle, allowRawCodepoints: false
+          });
+          return;
+        }
+      }
 
       // Coordinate tuples own their complete parenthesized span. Claim them
       // before the ordinary numeric scanners so commas are tuple delimiters,
@@ -14928,7 +15054,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     }
 
     function parseSeconds(value) {
-      const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d{1,3}))?$/);
+      const m = String(value ?? "").match(/^([0-5]\d)(?:\.(\d+))?$/);
       if (!m) return null;
       return { ssStr: m[1], fractionStr: m[2] ?? null };
     }
@@ -15147,7 +15273,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           fractionStr += ch;
           i += 1;
         }
-        if (fractionStr.length < 1 || fractionStr.length > 3) return null;
+        if (fractionStr.length < 1) return null;
       }
 
       segments.push({ integerStr, fractionStr });
@@ -15167,7 +15293,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     function isSecondsInRange(seg) {
       return !!seg && /^[0-5]\d$/.test(seg.integerStr) &&
-        (seg.fractionStr == null || /^\d{1,3}$/.test(seg.fractionStr));
+        (seg.fractionStr == null || /^\d+$/.test(seg.fractionStr));
     }
 
     function normalizedNegative(daySeg, otherSegs) {
@@ -16300,7 +16426,119 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     };
   }
 
+
+  // RFC 3339 / extended ISO 8601 offset-qualified calendar timestamp input.
+  // Timestamps are composites, never a single numeric cartouche. Fractional
+  // seconds are kept as written, with no floating-point arithmetic or Ene
+  // grouping. This recognizer does not claim three independent typed wrappers.
+  function _npParseIsoTimestampParts(raw) {
+    const source = String(raw ?? "").trim();
+    const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2}(?:\.\d+)?)(Z|[+-]\d{2}:\d{2})$/.exec(source);
+    if (!m) return null;
+    const date = m[1], time = m[2], offset = m[3] === "Z" ? "+00:00" : m[3];
+    const [,month,day] = date.split("-").map(Number);
+    // Project convention: February 29 is always accepted, regardless of year.
+    // Other month/day boundaries remain validated as calendar components.
+    const monthDays = [0,31,29,31,30,31,30,31,31,30,31,30,31];
+    if (month < 1 || month > 12 || day < 1 || day > monthDays[month]) return null;
+    const hour = Number(time.slice(0,2)), minute = Number(time.slice(3,5)), second = Number(time.slice(6,8));
+    if (hour > 23 || minute > 59 || second > 59) return null;
+    const offsetH = Number(offset.slice(1,3)), offsetM = Number(offset.slice(4,6));
+    if (offsetH > 23 || offsetM > 59) return null;
+    return { source, date, time, offset, wasZulu: m[3] === "Z" };
+  }
+
+  function _npBuildIsoTimestampResult(raw, opts = {}) {
+    const iso = _npParseIsoTimestampParts(raw);
+    if (!iso) return null;
+    const components = [
+      {head: "suno", type: "date", value: iso.date, parserInput: iso.date},
+      {head: "tenpo", type: "time", value: iso.time, parserInput: iso.time},
+      {head: "ilo", type: "time", value: iso.offset, parserInput: `ilo:(${iso.offset})`}
+    ];
+    const parsed = [];
+    const componentCodes = [];
+    for (const component of components) {
+      const result = NanpaParser.parseNumber(component.parserInput, opts);
+      if (!result?.innerCodepoints?.length || !result.properName) return null;
+      if (component.head === "suno" && result.isDate !== true) return null;
+      if (component.head === "tenpo" && result.isTime !== true) return null;
+      if (component.head === "ilo" && (result.isTime !== true || result.headGlyph !== "ilo")) return null;
+      const properName = String(result.properName).replace(/^Nanpa\b/, component.head[0].toUpperCase() + component.head.slice(1));
+      const innerCodepoints = result.innerCodepoints.slice();
+      componentCodes.push(result.uniqueCode);
+      parsed.push({
+        ...component, properName,
+        caps: result.caps,
+        innerCodepoints,
+        codepoints: [_NP_CARTOUCHE_START_CP, ...innerCodepoints, _NP_CARTOUCHE_END_CP]
+      });
+    }
+    // One composite abbreviation, with single-tilde component separators.
+    // Preserve each component's established numeric code body unchanged.
+    const codeBody = (componentCode, head) => {
+      const code = String(componentCode || "");
+      const typedPrefix = `#~${head}~`;
+      if (code.startsWith(typedPrefix)) return code.slice(typedPrefix.length);
+      if (code.startsWith("#~") && !code.slice(2).includes("~")) return code.slice(2);
+      return null;
+    };
+    const bodies = componentCodes.map((code, index) => codeBody(code, components[index].head));
+    if (bodies.some(body => !body || !/^[A-Za-z]+$/.test(body))) return null;
+    const uniqueCode = `#~suno~${bodies[0]}~tenpo~${bodies[1]}~ilo~${bodies[2]}`;
+    const enCp = _NP_WORD_TO_UCSUR_CP.en;
+    const codepoints = [];
+    for (let i=0; i<parsed.length; i++) {
+      if (i) codepoints.push(enCp);
+      codepoints.push(...parsed[i].codepoints);
+    }
+    return {
+      input: iso.source,
+      kind: "iso-timestamp", semanticKind: "timestamp", isTimestamp: true,
+      isTime: false, isDate: false, isTimeLike: true,
+      sourceFormat: "iso-8601-offset", date: iso.date, time: iso.time,
+      offset: iso.offset, wasZulu: iso.wasZulu,
+      components: parsed,
+      uniqueCode,
+      properName: parsed.map(x=>x.properName).join(" en "),
+      displayValue: iso.source,
+      // Three individually marked numeric cartouches and two ordinary en glyphs.
+      codepoints,
+      ucsurCodepoints: codepoints.slice(),
+      tpWords: parsed.flatMap((part,i) => i ? ["en", ..._npCodepointsToWords(part.innerCodepoints)] : _npCodepointsToWords(part.innerCodepoints)),
+      numericMode: opts.numericMode === "traditional" || opts.mode === "traditional" ? "traditional" : "uniform"
+    };
+  }
+
+  // The component heads are fixed delimiters, not three independent code
+  // inputs. Decode, validate, then rebuild one timestamp through the ISO path.
+  function _npBuildCompositeTimestampCodeResult(raw, opts = {}) {
+    const source = String(raw ?? "").trim();
+    const m = /^#~suno~([A-Za-z]+)~tenpo~([A-Za-z]+)~ilo~([A-Za-z]+)$/.exec(source);
+    if (!m || !_npNanpaColonParsingFromOpts(opts) || opts.enableTemporalNumericHeads === false) return null;
+    const datePart = NanpaParser.parseNumber(`#~suno~${m[1]}`, opts);
+    const timePart = NanpaParser.parseNumber(`#~tenpo~${m[2]}`, opts);
+    const offsetPart = NanpaParser.parseNumber(`#~ilo~${m[3]}`, opts);
+    if (!datePart?.isDate || datePart.headGlyph !== "suno" ||
+        !timePart?.isTime || timePart.headGlyph !== "tenpo" ||
+        !offsetPart?.isTime || offsetPart.headGlyph !== "ilo") return null;
+    const date = String(datePart.displayValue || "").replace(/,/g, "-");
+    const time = String(timePart.displayValue || "").replace(/,/g, ":");
+    const offset = String(offsetPart.displayValue || "");
+    const iso = _npBuildIsoTimestampResult(`${date}T${time}${offset}`, opts);
+    if (!iso) return null;
+    return {
+      ...iso,
+      input: source,
+      sourceFormat: "timestamp-abbreviation",
+      displayValue: `${date}T${time}${offset}`
+    };
+  }
+
   const NanpaParser = Object.freeze({
+  parseIsoTimestamp(input, opts = {}) {
+    return _npBuildIsoTimestampResult(input, opts);
+  },
   parseNumber(input, opts = {}) {
     const mode = ((opts.mode === "traditional") || (opts.numericMode === "traditional"))
       ? "traditional"
@@ -16311,6 +16549,18 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     if (input == null || String(input).trim() === "") return null;
     const s = String(input).trim();
+
+    // A complete single-tilde code is one timestamp, not three independent
+    // scalar codes. Standalone #~suno~/#~tenpo~/#~ilo~ inputs are unchanged.
+    if (s.startsWith("#~suno~") && s.includes("~tenpo~")) {
+      return _npBuildCompositeTimestampCodeResult(s, opts);
+    }
+
+    // Only a complete, offset-qualified ISO timestamp takes the composite path.
+    // Plain numeric date/time/offset inputs retain their independent grammar.
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+      return _npBuildIsoTimestampResult(s, opts);
+    }
 
     const coordinateSemantic = _npTryParseCoordinateInput(s, {
       ...opts,

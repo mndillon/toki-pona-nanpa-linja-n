@@ -1,6 +1,6 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=290";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=292";
 import { buildSitelenAudioPlan } from "./sitelen-audio-plan.js?v=78";
-import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=87";
+import { createTokiPonaVoice } from "./toki-pona-voice-api.js?v=88";
 import { REFERENCE_AUDIO_MANIFEST } from "./audio-manifest.js?v=37";
 import {
   createSitelenFontPairController,
