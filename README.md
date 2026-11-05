@@ -4,6 +4,8 @@ o weka e nimi ike.
 
 ## TL;DR:
 
+**nanpa-linja-n** represents numbers as proper names. The decimal digits **0, 1, 2, 3, 4, 5, 6, 7, 8, 9** are represented in sitelen pona numeric cartouches by the glyphs **ijo, wan, tu, seli, awen, luka, utala, mun, pipi, jo**, respectively, and pronounced in proper names as the syllables **ni, wa, tu, se, na, lu, nu, mu, pi, jo**. Other glyphs and syllables are used for numeric punctuation.
+
 **nanpa-linja-n** motivation:
 
 <img src="images/Phone Number Conversation v1.png" width="384"/>
@@ -19,7 +21,7 @@ o weka e nimi ike.
 | Lojban                   | (li) re ci xa vo mu (boi)                            | functional, sterile       |
 | Toki Pona (pu)           | mute                                                 | useless                   |
 | Toki Pona (nanpa pona)   | tu ale mute luka luka luka wan ale mute mute luka    | contrived, error prone    |
-| Toki Pona (nanpa-linja-n)| **Netusen Eke Nunalun**                              | natural                   |
+| Toki Pona (nanpa-linja-n)| **Nanpa Tusen Eke Nunalun**                          | natural                   |
 
 ### PDF cheat sheet:
 
