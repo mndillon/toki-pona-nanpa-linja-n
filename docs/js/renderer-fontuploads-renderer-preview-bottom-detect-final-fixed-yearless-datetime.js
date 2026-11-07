@@ -3956,29 +3956,35 @@ const SitelenRenderer = (() => {
     jan: 0xF1911,
     lawa: 0xF1924,
     ma: 0xF1930,
+    mani: 0xF1932,
     pakala: 0xF1948,
+    pan: 0xF194B,
     sike: 0xF195C,
+    sama: 0xF1956,
     tan: 0xF1967
   });
 
   const HEX_STRICT_DIGIT_SYLLABLE = Object.freeze({
     "0":"NI", "1":"WE", "2":"TE", "3":"SE", "4":"NA",
     "5":"LE", "6":"NU", "7":"ME", "8":"PE", "9":"JE",
-    "A":"JA", "B":"LA", "C":"MA", "D":"PA", "E":"SI", "F":"TA"
+    "A":"JA", "B":"LA", "C":"MA", "D":"PA", "E":"SA", "F":"TA"
   });
   const HEX_RELAXED_DIGIT_SYLLABLE = Object.freeze({
     ...HEX_STRICT_DIGIT_SYLLABLE,
     "1":"WA", "2":"TU", "5":"LU", "7":"MU", "8":"PI", "9":"JO"
   });
-  const HEX_SYLLABLE_TO_DIGIT_STRICT = Object.freeze(Object.fromEntries(
-    Object.entries(HEX_STRICT_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])
-  ));
-  const HEX_SYLLABLE_TO_DIGIT_RELAXED = Object.freeze(Object.fromEntries(
-    Object.entries(HEX_RELAXED_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])
-  ));
+  // Keep legacy SI input for hex E, but emit the canonical SA syllable.
+  const HEX_SYLLABLE_TO_DIGIT_STRICT = Object.freeze({
+    ...Object.fromEntries(Object.entries(HEX_STRICT_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])),
+    SI: "E"
+  });
+  const HEX_SYLLABLE_TO_DIGIT_RELAXED = Object.freeze({
+    ...Object.fromEntries(Object.entries(HEX_RELAXED_DIGIT_SYLLABLE).map(([digit, syllable]) => [syllable, digit])),
+    SI: "E"
+  });
   const HEX_ABBREVIATED_WORD_TO_DIGIT = Object.freeze({
     ijo:"0", wan:"1", tu:"2", seli:"3", awen:"4", luka:"5", utala:"6", mun:"7", pipi:"8", jo:"9",
-    jan:"A", lawa:"B", ma:"C", pakala:"D", sike:"E", tan:"F"
+    jan:"A", lawa:"B", ma:"C", mani:"C", pakala:"D", pan:"D", sike:"E", sama:"E", tan:"F"
   });
 
   function isAsciiHexDigit(ch) {
@@ -4130,10 +4136,15 @@ const SitelenRenderer = (() => {
       if (!group.length) return false;
       groups.push(group.join(""));
       const digits = groups.join("");
-      const expected = hexGroupDigitRun(digits);
-      if (!expected || expected.length !== groups.length) return false;
-      for (let i = 0; i < groups.length; i++) {
-        if (groups[i] !== expected[i]) return false;
+      // New canonical form: one uninterrupted digit run, with no implicit Eke.
+      // When legacy generated grouping tokens occur, preserve the historical
+      // two-digit grouping validation rather than accepting arbitrary breaks.
+      if (groups.length > 1) {
+        const expected = hexGroupDigitRun(digits);
+        if (!expected || expected.length !== groups.length) return false;
+        for (let i = 0; i < groups.length; i++) {
+          if (groups[i] !== expected[i]) return false;
+        }
       }
       parts.push({ kind: "digits", digits });
       run = [];
@@ -4274,9 +4285,16 @@ const SitelenRenderer = (() => {
     }
     add("A", "jan", "ala");
     add("B", "lawa", "ala");
+    // Recognize both historical and canonical glyph pairs; output only canonical.
     add("C", "ma", "ala");
+    add("C", "mani", "ala");
     add("D", "pakala", "ala");
+    add("D", "pan", "ala");
+    // Old SI is sike+ike. The short-lived r02 SA form sama+ike is also
+    // accepted as a legacy alias, but only sama+ala is generated from now on.
+    add("E", "sama", "ala");
     add("E", "sike", "ike");
+    add("E", "sama", "ike");
     add("F", "tan", "ala");
     return out;
   }
@@ -4367,9 +4385,9 @@ const SitelenRenderer = (() => {
     const d = String(digit ?? "").toUpperCase();
     if (d === "A") return ["jan", "ala"];
     if (d === "B") return ["lawa", "ala"];
-    if (d === "C") return ["ma", "ala"];
-    if (d === "D") return ["pakala", "ala"];
-    if (d === "E") return ["sike", "ike"];
+    if (d === "C") return ["mani", "ala"];
+    if (d === "D") return ["pan", "ala"];
+    if (d === "E") return ["sama", "ala"];
     if (d === "F") return ["tan", "ala"];
 
     if (relaxedRendering) {
@@ -4400,7 +4418,7 @@ const SitelenRenderer = (() => {
     const d = String(digit ?? "").toUpperCase();
     const map = {
       "0":"ijo", "1":"wan", "2":"tu", "3":"seli", "4":"awen", "5":"luka", "6":"utala", "7":"mun", "8":"pipi", "9":"jo",
-      "A":"jan", "B":"lawa", "C":"ma", "D":"pakala", "E":"sike", "F":"tan"
+      "A":"jan", "B":"lawa", "C":"mani", "D":"pan", "E":"sama", "F":"tan"
     };
     return map[d] || null;
   }
@@ -4416,23 +4434,17 @@ const SitelenRenderer = (() => {
         else words.push("nena", "e", "nena", "e");
         continue;
       }
-      const groups = hexGroupDigitRun(part.digits);
-      if (!groups) return null;
-      for (let gi = 0; gi < groups.length; gi++) {
-        for (const digit of groups[gi]) {
-          if (abbreviated) {
-            const word = hexAbbreviatedWordForDigit(digit);
-            if (!word) return null;
-            words.push(word);
-          } else {
-            const digitWords = hexFullWordsForDigit(digit, { mode, relaxedRendering });
-            if (!digitWords) return null;
-            words.push(...digitWords);
-          }
-        }
-        if (gi < groups.length - 1) {
-          if (abbreviated) words.push("kule");
-          else words.push("nena", "e", "kule", "e");
+      // Canonical hexadecimal output never inserts automatic Eke/kule groups.
+      // Source delimiters above remain explicit Ene separators.
+      for (const digit of part.digits) {
+        if (abbreviated) {
+          const word = hexAbbreviatedWordForDigit(digit);
+          if (!word) return null;
+          words.push(word);
+        } else {
+          const digitWords = hexFullWordsForDigit(digit, { mode, relaxedRendering });
+          if (!digitWords) return null;
+          words.push(...digitWords);
         }
       }
     }
@@ -4477,20 +4489,16 @@ const SitelenRenderer = (() => {
         if (!attachNAndPush("Ene")) return null;
         continue;
       }
-      const groups = hexGroupDigitRun(part.digits);
-      if (!groups) return null;
-      for (let gi = 0; gi < groups.length; gi++) {
-        let groupWord = "";
-        for (const digit of groups[gi]) {
-          const syllable = hexSyllableForDigit(digit, relaxedRendering);
-          if (!syllable) return null;
-          groupWord += syllable.toLowerCase();
-        }
-        words.push(groupWord[0].toUpperCase() + groupWord.slice(1));
-        if (gi < groups.length - 1) {
-          if (!attachNAndPush("Eke")) return null;
-        }
+      // Use one continuous word per explicit digit run. Legacy Eke groups are
+      // accepted on input, but are never generated on output.
+      let digitWord = "";
+      for (const digit of part.digits) {
+        const syllable = hexSyllableForDigit(digit, relaxedRendering);
+        if (!syllable) return null;
+        digitWord += syllable.toLowerCase();
       }
+      if (!digitWord) return null;
+      words.push(digitWord[0].toUpperCase() + digitWord.slice(1));
     }
     if (words.length <= 1) return null;
     words[words.length - 1] += "n"; // final numeric terminator N

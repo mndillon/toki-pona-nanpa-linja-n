@@ -1,5 +1,5 @@
 {
-  "version": "1.3",
+  "version": "1.4",
   "sample_rate": 48000,
   "license_note": "Toki_Pona_audio_by_jan_Lakuse.zip contains _licence.txt: \"You can redistribute these files or use them in your project, but please mention audio provided by jan Lakuse.\" ku.zip did not include a licence file in the uploaded archive; treat those two files as local-project assets unless separately licensed.",
   "words": {
@@ -2343,15 +2343,15 @@
     },
     "sa": {
       "unit": "Sa",
-      "file": "nanpa_v8/sa.wav",
-      "source": "uploaded nanpa_v8 numeric WAVs",
+      "file": "nanpa_v11/sa.wav",
+      "source": "uploaded nanpa_v11 numeric WAVs",
       "source_order": 61,
       "duration_ms": 1500.0
     },
     "san": {
       "unit": "San",
-      "file": "nanpa_v8/san.wav",
-      "source": "uploaded nanpa_v8 numeric WAVs",
+      "file": "nanpa_v11/san.wav",
+      "source": "uploaded nanpa_v11 numeric WAVs",
       "source_order": 62,
       "duration_ms": 1575.0
     },
@@ -2534,7 +2534,7 @@
     "notes": "Additional purpose-recorded nanpa-linja-n units added to nanpa_units so capitalized nanpa-linja-n proper-name words can prefer these assets before syllable assembly."
   },
   "nanpa_hex_unit_source": {
-    "source_file_group": "uploaded nanpa_v8 numeric WAVs",
+    "source_file_group": "uploaded nanpa_v8 and v11 numeric WAVs",
     "added_units": 14,
     "asset_sample_rates": [
       24000
@@ -2601,19 +2601,19 @@
         "nanpa_v8/lan.wav"
       ],
       "Sa": [
-        "uploaded nanpa_v8 numeric WAV",
-        "nanpa_v8/sa.wav"
+        "uploaded nanpa_v11 numeric WAV",
+        "nanpa_v11/sa.wav"
       ],
       "San": [
-        "uploaded nanpa_v8 numeric WAV",
-        "nanpa_v8/san.wav"
+        "uploaded nanpa_v11 numeric WAV",
+        "nanpa_v11/san.wav"
       ],
       "Enen": [
         "uploaded nanpa_v8 numeric WAV",
         "nanpa_v8/enen.wav"
       ]
     },
-    "notes": "Hex-support nanpa units use the supplied nanpa_v8 numeric WAV assets for the labels listed here. These current assets are mono 16-bit PCM at 24000 Hz, and manifest durations are measured directly from the WAV frame counts. Earlier nanpa_v4/nanpa_v6/nanpa_v7 assets are superseded for matching numeric-unit labels by nanpa_v8."
+    "notes": "Hex-support nanpa units use the supplied nanpa_v8 numeric WAV assets for the labels listed here. These current assets are mono 16-bit PCM at 24000 Hz, and manifest durations are measured directly from the WAV frame counts. Earlier nanpa_v4/nanpa_v6/nanpa_v7 assets are superseded for matching numeric-unit labels by nanpa_v8. Sa and San are overridden by the supplied nanpa_v11 recordings; all other units keep their existing paths. Sa and San are overridden by the supplied nanpa_v11 recordings; all other units keep their existing paths."
   },
   "nanpa_binary_unit_source": {
     "source_file_group": "uploaded nanpa_v8 numeric WAVs",
@@ -2691,7 +2691,7 @@
       "Kiwen",
       "Lon"
     ],
-    "notes": "Current purpose-recorded numeric-cartouche assets supplied in nanpa_v8. Matching nanpa_units entries prefer these files. Kiwen and Lon are newly available numeric-cartouche units. Ordinary words and the general syllable bank are unchanged. Durations are measured directly from WAV frame counts."
+    "notes": "Current purpose-recorded numeric-cartouche assets supplied in nanpa_v8. Matching nanpa_units entries prefer these files except for Sa and San, which now use nanpa_v11. Kiwen and Lon are newly available numeric-cartouche units. Ordinary words and the general syllable bank are unchanged. Durations are measured directly from WAV frame counts."
   },
   "nanpa_v9_unit_source": {
     "source_file_group": "uploaded nanpa_v9 temporal numeric-head WAVs",
@@ -2721,5 +2721,27 @@
     ],
     "duration_ms": 1825.0,
     "notes": "Sitelen is a typed numeric Unix-seconds timestamp head. Its dedicated WAV is used for renderer-confirmed numeric cartouches, with the opening head and numeric colon treated as a single audio/highlight unit. Ordinary Toki Pona sitelen speech remains unchanged."
+  },
+  "nanpa_v11_unit_source": {
+    "source_file_group": "uploaded nanpa_v11 hexadecimal numeric WAVs",
+    "overridden_units": 2,
+    "asset_sample_rates": [
+      24000
+    ],
+    "labels_in_order": [
+      "Sa",
+      "San"
+    ],
+    "notes": "Canonical hex E now speaks sa inside a run and san at a word/phrase end or before an explicit separator. These numeric audio units override nanpa_v8 only for the numeric-unit bank; ordinary Toki Pona word and general syllable recordings remain unchanged.",
+    "derivations": {
+      "Sa": [
+        "uploaded WAV sa(3).wav",
+        "nanpa_v11/sa.wav"
+      ],
+      "San": [
+        "uploaded WAV san(1).wav",
+        "nanpa_v11/san.wav"
+      ]
+    }
   }
 }

@@ -241,6 +241,9 @@ Example:
 - Nenin
 - [nanpa e nena ijo nanpa]
 - [nanpa ijo nanpa]
+- Nanpa Nin
+- [nanpa: e nena ijo nanpa]
+- [nanpa: ijo nanpa]
 - Abbreviation: #~I
 
 ---
@@ -261,6 +264,9 @@ Example:
 - Newan
 - [nanpa e wan ala nanpa]
 - [nanpa wan nanpa]
+- Nanpa Wan
+- [nanpa: wan ala nanpa]
+- [nanpa: wan nanpa]
 - Abbreviation: #~W
 
 ---
@@ -281,6 +287,9 @@ Example:
 - Netun
 - [nanpa e tu uta nanpa]
 - [nanpa tu nanpa]
+- Nanpa Tun
+- [nanpa: tu uta nanpa]
+- [nanpa: tu nanpa]
 - Abbreviation: #~T
 
 ---
@@ -301,6 +310,9 @@ Example:
 - Nesen
 - [nanpa e seli e nanpa]
 - [nanpa seli nanpa]
+- Nanpa Sen
+- [nanpa: seli e nanpa]
+- [nanpa: seli nanpa]
 - Abbreviation: #~S
 
 ---
@@ -321,6 +333,9 @@ Example:
 - Nenan
 - [nanpa e nena awen nanpa]
 - [nanpa awen nanpa]
+- Nanpa Nan
+- [nanpa: nena awen nanpa]
+- [nanpa: awen nanpa]
 - Abbreviation: #~A
 
 ---
@@ -341,6 +356,9 @@ Example:
 - Nelun
 - [nanpa e luka uta nanpa]
 - [nanpa luka nanpa]
+- Nanpa Lun
+- [nanpa: luka uta nanpa]
+- [nanpa: luka nanpa]
 - Abbreviation: #~L
 
 ---
@@ -361,6 +379,9 @@ Example:
 - Nenun
 - [nanpa e nena utala nanpa]
 - [nanpa utala nanpa]
+- Nanpa Nun
+- [nanpa: nena utala nanpa]
+- [nanpa: utala nanpa]
 - Abbreviation: #~U
 
 ---
@@ -381,6 +402,9 @@ Example:
 - Nemun
 - [nanpa e mun uta nanpa]
 - [nanpa mun nanpa]
+- Nanpa Mun
+- [nanpa: mun uta nanpa]
+- [nanpa: mun nanpa]
 - Abbreviation: #~M
 
 ---
@@ -401,6 +425,9 @@ Example:
 - Nepin
 - [nanpa e pipi ike nanpa]
 - [nanpa pipi nanpa]
+- Nanpa Pin
+- [nanpa: pipi ike nanpa]
+- [nanpa: pipi nanpa]
 - Abbreviation: #~P
 
 ---
@@ -421,6 +448,9 @@ Example:
 - Nejon
 - [nanpa e jo open nanpa]
 - [nanpa jo nanpa]
+- Nanpa Jon
+- [nanpa: jo open nanpa]
+- [nanpa: jo nanpa]
 - Abbreviation: #~J
 
 ---

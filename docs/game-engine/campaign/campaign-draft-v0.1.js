@@ -121,7 +121,7 @@
             requirements:{glyphs:['nanpa','wan','tu','seli']}, inputSequence:['nanpa',':','wan','tu','seli','nanpa'],
             rewards:{glyphs:['ona'],setStates:{maintenanceAccess:true}}, skipIfRewardsOwned:true, skipSafe:true,
             alreadyOwnedEffects:{setStates:{maintenanceAccess:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'First numeric cartouche',instructions:'Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=14',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'}}
+            ui:{presentation:'fullscreen',canExit:true,title:'First numeric cartouche',instructions:'Construct the abbreviated nanpa-format cartouche for the digit sequence 123. The nanpa glyph is reusable.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=15',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'}}
           },
           {
             id:'l1-maintenance-sequence', chain:'power', type:'glyph-key-code', area:'maintenance', sourceClass:'required-state',
@@ -930,7 +930,7 @@
             ],
             rewards:{glyphs:['lete','ko'],setStates:{l10ColdRecorded:true,l10UpperLift:true}},skipIfRewardsOwned:true,skipSafe:true,
             alreadyOwnedEffects:{setStates:{l10ColdStable:true,l10ColdRecorded:true,l10UpperLift:true}},
-            ui:{presentation:'fullscreen',canExit:true,title:'Cold-chain scientific record',objective:'Normalize three instrument readings and record them as abbreviated scientific-notation cartouches.',instructions:'The stabilized recorder exposes three raw calibration readings: 0.0042, 0.00075 and 125. Convert each to normalized scientific notation, then construct all three abbreviated nanpa-format scientific-notation cartouches. The service lift unlocks only when the complete record is correct.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=14',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'},payload:{
+            ui:{presentation:'fullscreen',canExit:true,title:'Cold-chain scientific record',objective:'Normalize three instrument readings and record them as abbreviated scientific-notation cartouches.',instructions:'The stabilized recorder exposes three raw calibration readings: 0.0042, 0.00075 and 125. Convert each to normalized scientific notation, then construct all three abbreviated nanpa-format scientific-notation cartouches. The service lift unlocks only when the complete record is correct.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=15',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'},payload:{
               answerGroups:[
                 {label:'Sensor A',clue:'raw reading 0.0042',length:9},
                 {label:'Sensor B',clue:'raw reading 0.00075',length:9},
@@ -948,7 +948,7 @@
               'nanpa',':','pipi','kin','wan','o','o','awen','nanpa'
             ],
             rewards:{setStates:{l10DyeReady:true}},skipIfRewardsOwned:false,skipSafe:false,
-            ui:{presentation:'fullscreen',canExit:true,title:'Dye-batch reconciliation',objective:'Add the marked measures and record three mixed-fraction totals before routing the cloth.',instructions:'The loft has three batch records. A combines 1 1/2 + 1 1/4 measures. B combines 2 3/4 + 2 3/4. C combines 3 1/2 + 4 3/4. Calculate each total and construct all three abbreviated mixed-fraction cartouches.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=14',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'},payload:{
+            ui:{presentation:'fullscreen',canExit:true,title:'Dye-batch reconciliation',objective:'Add the marked measures and record three mixed-fraction totals before routing the cloth.',instructions:'The loft has three batch records. A combines 1 1/2 + 1 1/4 measures. B combines 2 3/4 + 2 3/4. C combines 3 1/2 + 4 3/4. Calculate each total and construct all three abbreviated mixed-fraction cartouches.',helpLink:{href:'./pdfs/nanpa-linja-n-cheat-sheet.pdf?v=15',label:'nanpa-linja-n PDF cheat sheet',target:'_blank',downloadTrackType:'pdf',downloadTrackName:'nanpa-linja-n-cheat-sheet.pdf'},payload:{
               answerGroups:[
                 {label:'Batch A',clue:'1 1/2 + 1 1/4 measures',length:9},
                 {label:'Batch B',clue:'2 3/4 + 2 3/4 measures',length:9},

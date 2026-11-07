@@ -2710,21 +2710,13 @@ function classifyIndependentCartoucheAudioGroups(runs, options = {}) {
 
 const HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
   '0':'ni','1':'we','2':'te','3':'se','4':'na','5':'le','6':'nu','7':'me','8':'pe','9':'je',
-  'A':'ja','B':'la','C':'ma','D':'pa','E':'si','F':'ta'
+  'A':'ja','B':'la','C':'ma','D':'pa','E':'sa','F':'ta'
 });
 
 const HEX_RELAXED_DIGIT_SYLLABLE_FOR_AUDIO = Object.freeze({
   ...HEX_STRICT_DIGIT_SYLLABLE_FOR_AUDIO,
   '1':'wa','2':'tu','5':'lu','7':'mu','8':'pi','9':'jo'
 });
-
-function hexGroupingSizesForAudio(length) {
-  const n = Math.max(0, Number(length) | 0);
-  if (n <= 0) return [];
-  if (n === 1) return [1];
-  if ((n % 2) === 0) return Array.from({ length: n / 2 }, () => 2);
-  return [...Array.from({ length: Math.max(0, (n - 3) / 2) }, () => 2), 3];
-}
 
 function hexDisplayedInnerCodepointsForAudio(run) {
   const cps = runCodepointsForAudio(run);
@@ -2775,7 +2767,7 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
   // nanpa-linja-n cartouches. Keep the complete Nasa proper-name phrase
   // together so the voice API resolves every syllable through nanpa_units
   // before considering ordinary Toki Pona word recordings. This is especially
-  // important for collisions such as Jan/jan, Lawa/lawa, Ma/ma, Pan/pan, Sike/sike and Tawa/tawa.
+  // important for collisions such as Jan/jan, Lawa/lawa, Mani/mani, Pan/pan, Sama/sama and Tan/tan.
   const forceOrdinaryCartoucheAudio = options?.cartoucheAudioMode === 'ordinary';
   const numericCartouche = !forceOrdinaryCartoucheAudio;
   const numericCartoucheRunId = numericCartouche
@@ -2796,7 +2788,7 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
   else if (!sameAudioWordSequence(displayedWords, fullWords)) return [];
 
   // Use the dedicated mapping for both full and abbreviated hex cartouches.
-  // In abbreviated hex, each digit and each visible Eke/Ene separator is one
+  // In abbreviated hex, each digit and each explicit Ene separator is one
   // glyph, so each spoken unit must target exactly that one glyph. The only
   // intentional multi-glyph targets are the opening nasa+colon pair and the
   // final digit together with the closing nasa.
@@ -2832,44 +2824,21 @@ function buildHexCartoucheSpeechUnits(run, parsed, fallbackRunIndex, lineIndex, 
     const part = parsed.hexParts[partIndex];
     if (part?.kind === 'digits') {
       const digits = String(part.digits || '').toUpperCase();
-      const sizes = hexGroupingSizesForAudio(digits.length);
-      let digitCursor = 0;
-      for (let groupIndex = 0; groupIndex < sizes.length; groupIndex++) {
-        const size = sizes[groupIndex];
-        const groupDigits = digits.slice(digitCursor, digitCursor + size);
-        digitCursor += size;
-        const units = [];
-        for (const digit of groupDigits) {
-          const syllable = syllableMap[digit];
-          if (!syllable) return [];
-          const componentIndices = abbreviated
-            ? [withOffset(cursor)]
-            : [withOffset(cursor), withOffset(cursor + 1)];
-          cursor += abbreviated ? 1 : 2;
-          units.push({ baseText: syllable, componentIndices });
-        }
-        const groupNode = addNode('digits', units);
-
-        if (groupIndex < sizes.length - 1) {
-          if (abbreviated) {
-            attachCodaN(groupNode);
-            addNode('eke', [{ baseText: 'eke', componentIndices: [withOffset(cursor)] }]);
-            cursor += 1;
-          } else {
-            // Full hex grouping is rendered as: nena e kule e. The terminal
-            // -n belongs to the spoken digit group only; it does not own a
-            // separate visual glyph. Highlight only the visible kule separator
-            // while Eke is spoken, leaving the surrounding nena/e scaffolding
-            // unclaimed by active audio highlighting.
-            attachCodaN(groupNode);
-            addNode('eke', [{
-              baseText: 'eke',
-              componentIndices: [withOffset(cursor + 2)]
-            }]);
-            cursor += 4;
-          }
-        }
+      // Hex digits are now a single continuous spoken word unless the source
+      // contains an explicit separator. The renderer canonicalizes any legacy
+      // Eke/kule grouping before creating this run; never synthesize Eke here.
+      const units = [];
+      for (const digit of digits) {
+        const syllable = syllableMap[digit];
+        if (!syllable) return [];
+        const componentIndices = abbreviated
+          ? [withOffset(cursor)]
+          : [withOffset(cursor), withOffset(cursor + 1)];
+        cursor += abbreviated ? 1 : 2;
+        units.push({ baseText: syllable, componentIndices });
       }
+      if (!units.length) return [];
+      addNode('digits', units);
       continue;
     }
 
@@ -4088,7 +4057,7 @@ function isNumericCartoucheAudioUnit(unit) {
   return !!unit?.numericCartouche && !!unit?.numericCartoucheRunId;
 }
 
-export const SITELEN_AUDIO_PLAN_BUILD = '20261102-independent-cartouche-audio-v16';
+export const SITELEN_AUDIO_PLAN_BUILD = '20261104-hex-v11-sa-syllable-v17';
 
 function numericCartoucheUnitOrdinal(unit) {
   const value = Number(unit?.unitIndex);
