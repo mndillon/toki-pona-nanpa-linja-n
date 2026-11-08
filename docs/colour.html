@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#F3DFC0">
+  <title>Colour Picker — Toki Pona nanpa-linja-n</title>
+  <link rel="icon" href="./icons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/favicon-180x180.png">
+  <link rel="preload" as="font" href="./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf" type="font/ttf" crossorigin>
+  <style>
+    :root { --pad:14px; --gap:12px; --border:#d0d7de; --bg:#F3DFC0; --muted:#3f4750; --rule:rgba(63,71,80,.17); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--bg); color:#182028; margin:24px; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+    .card { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:16px; max-width:1160px; margin:0 auto; }
+    .pageHeadingRow { display:flex; align-items:flex-start; gap:7px; }
+    .pageHomeLink { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:28px; height:28px; margin-top:-4px; color:#111; opacity:.58; text-decoration:none; border-radius:5px; }
+    .pageHomeLink:hover { opacity:.9; background:rgba(17,17,17,.06); }
+    .pageHomeIcon { width:16px; height:16px; display:block; }
+    h1 { margin:0 0 6px; font-size:18px; line-height:1.4; }
+    h2 { margin:0 0 9px; font-size:17px; }
+    h3 { margin:0 0 6px; font-size:14px; }
+    .tpLine { display:block; margin-top:2px; font-size:10pt; color:var(--muted); line-height:1.25; font-weight:400; }
+    .help { color:var(--muted); font-size:12px; line-height:1.45; margin-top:6px; }
+    .intro { margin:14px 0 16px; }
+    .section { margin-top:16px; padding-top:16px; border-top:1px solid var(--rule); }
+    .panel { background:rgba(255,255,255,.17); border:1px solid var(--border); border-radius:10px; padding:14px; min-width:0; }
+    .mainGrid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(285px,0.85fr); gap:14px; align-items:start; }
+    .pickerWrap { display:grid; grid-template-columns:minmax(0,1fr) minmax(155px,.33fr); gap:12px; align-items:stretch; }
+    .squareWrap { position:relative; min-width:0; width:100%; aspect-ratio:1.2/1; touch-action:none; cursor:crosshair; user-select:none; -webkit-user-select:none; border-radius:8px; overflow:hidden; border:1px solid rgba(0,0,0,.35); background:#fff; }
+    #svCanvas { display:block; width:100%; height:100%; border:0; border-radius:0; }
+    #svMarker { position:absolute; left:53.33%; top:0%; width:16px; height:16px; transform:translate(-50%,-50%); border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1.5px #141414,0 1px 5px #0008; pointer-events:none; }
+    .previewStack { display:flex; flex-direction:column; gap:8px; min-width:0; }
+    .preview { flex:1; min-height:110px; position:relative; border:1px solid rgba(0,0,0,.25); border-radius:8px; background:#FFFF77; }
+    .previewText { position:absolute; bottom:9px; left:9px; right:9px; font:700 14px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overflow-wrap:anywhere; }
+    .miniLabel { font-size:12px; color:var(--muted); font-weight:700; }
+    .hueLine { display:grid; grid-template-columns:42px 1fr 34px; gap:8px; align-items:center; margin-top:11px; }
+    #hueSlider { background:linear-gradient(to right,#f00 0%,#ff0 16.67%,#0f0 33.33%,#0ff 50%,#00f 66.67%,#f0f 83.33%,#f00 100%); }
+    input[type="range"] { display:block; width:100%; margin:0; height:26px; appearance:none; -webkit-appearance:none; border:0; background:transparent; cursor:pointer; touch-action:pan-y; }
+    input[type="range"]::-webkit-slider-runnable-track { height:12px; border-radius:999px; border:1px solid #777; background:var(--track,#ddd); }
+    input[type="range"]::-moz-range-track { height:12px; border-radius:999px; border:1px solid #777; background:var(--track,#ddd); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; margin-top:-5px; width:22px; height:22px; border:2px solid #333; border-radius:50%; background:#fff; box-shadow:0 1px 2px #0003; }
+    input[type="range"]::-moz-range-thumb { width:19px; height:19px; border:2px solid #333; border-radius:50%; background:#fff; }
+    .channels { display:grid; gap:8px; margin-top:12px; }
+    .channel { display:grid; grid-template-columns:54px minmax(0,1fr) 72px; align-items:center; gap:8px; }
+    .channel label { font-size:13px; font-weight:700; }
+    .channel label small { display:block; color:var(--muted); font-size:11px; font-weight:400; }
+    .channel input[type=number] { width:100%; text-align:center; }
+    .channel-red { --track:linear-gradient(to right,#000,#f00); }
+    .channel-green { --track:linear-gradient(to right,#000,#0f0); }
+    .channel-blue { --track:linear-gradient(to right,#000,#00f); }
+    input[type="number"],input[type="text"],textarea { width:100%; min-width:0; min-height:42px; border:1px solid var(--border); background:var(--bg); border-radius:8px; padding:9px 10px; font:inherit; color:#182028; }
+    input[type="number"] { padding:8px 4px; font-size:15px; }
+    button { min-height:40px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:inherit; cursor:pointer; padding:9px 12px; font:600 13px system-ui,-apple-system,Segoe UI,sans-serif; }
+    button:hover { background:rgba(255,255,255,.45); }
+    button:active { transform:translateY(1px); }
+    button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,.squareWrap:focus-visible { outline:3px solid #111; outline-offset:3px; }
+    .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; }
+    .vennPanel { text-align:center; }
+    .vennSvg { display:block; width:min(100%,295px); height:auto; margin:8px auto 6px; background:#101014; border-radius:8px; border:1px solid rgba(0,0,0,.22); }
+    .vennSvg .mixCircle { mix-blend-mode:screen; }
+    .vennLegend { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; font-size:11px; text-align:center; margin-top:8px; }
+    .vennLegend strong { display:block; font-size:12px; }
+    .vennLegend span { display:block; color:var(--muted); font-size:11px; }
+    .presetsTitle { margin-top:17px; margin-bottom:7px; font-weight:700; font-size:12px; text-align:left; }
+    .swatches { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+    .swatch { padding:6px 3px; min-width:0; min-height:74px; border-radius:7px; font-weight:600; font-size:11px; }
+    .swatchMark { display:block; height:22px; width:100%; border-radius:5px; margin-bottom:4px; border:1px solid #7776; }
+    .swatch .tpLine { font-size:10px; line-height:1.15; margin-top:2px; overflow-wrap:anywhere; }
+    .swatch[aria-pressed="true"] { outline:2px solid #222; outline-offset:0; }
+    .inputForm { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-top:9px; }
+    .inputForm input { font-size:15px; }
+    .inputForm button { padding:8px 16px; }
+    .exampleRow { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; }
+    .exampleRow button { min-height:32px; padding:5px 9px; font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .error { color:#8b1515; font-size:13px; min-height:20px; margin-top:6px; }
+    .error:empty { min-height:0; }
+    .outputs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .output { min-width:0; padding:12px; border:1px solid var(--border); border-radius:9px; background:rgba(255,255,255,.17); }
+    .outputTitle { color:var(--muted); font-size:12px; font-weight:700; margin-bottom:5px; }
+    .valueRow { display:flex; align-items:flex-start; justify-content:space-between; gap:7px; }
+    .value { overflow-wrap:anywhere; word-break:break-word; font-size:15px; font-weight:600; line-height:1.6; }
+    .value.name { font-size:15px; font-weight:500; }
+    .copyButton { min-height:30px; padding:4px 8px; flex:0 0 auto; font-size:11px; }
+    .output.span2 { grid-column:1/-1; }
+    .canvasWrap { width:100%; min-width:0; min-height:52px; padding:9px; background:rgba(255,255,255,.35); border-radius:7px; overflow:hidden; }
+    #cartoucheCanvas { display:block; height:auto; width:auto; max-width:100%; border:0; background:transparent; }
+    .cartoucheControls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:3px 0 9px; }
+    .toggle { display:inline-flex; gap:6px; align-items:center; font-size:12px; cursor:pointer; }
+    .toggle input { width:17px; height:17px; accent-color:#262626; }
+    .subtle { font-size:12px; color:var(--muted); }
+    .colourNames { margin-top:8px; line-height:1.45; }
+    .srtxt { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    @font-face { font-family:"TP-Cartouche-Font"; src:url("./fonts/nanpa-linja-n-nasin-nanpa-liberation-sans-punctuation-mapping-fixed-ascii-vulgar-cartouche-only.ttf") format("truetype"); font-display:swap; }
+    @media (max-width:900px) { body { margin:12px; } .card { padding:12px; } .mainGrid { grid-template-columns:minmax(0,1.35fr) minmax(230px,.85fr); gap:11px; } .panel { padding:11px; } .pickerWrap { grid-template-columns:minmax(0,1fr) 115px; } }
+    @media (max-width:720px) { body { margin:8px; } .card { padding:11px; } .mainGrid { grid-template-columns:minmax(0,1fr); } .vennPanel { text-align:left; } .vennSvg { width:min(100%,290px); margin-inline:auto; } .vennLegend { max-width:420px; margin-inline:auto; } .swatches { grid-template-columns:repeat(4,minmax(0,1fr)); } .pickerWrap { grid-template-columns:minmax(0,1fr) minmax(88px,.28fr); } .squareWrap { aspect-ratio:1.15 / 1; } }
+    @media (max-width:440px) { .output { padding:9px; } .outputs { gap:7px; } .channel { grid-template-columns:44px minmax(0,1fr) 60px; gap:6px; } .pickerWrap { grid-template-columns:minmax(0,1fr) 94px; gap:8px; } .previewText { font-size:11px; left:6px; bottom:7px; } .inputForm { grid-template-columns:1fr; } .inputForm button { width:100%; } .outputs { grid-template-columns:1fr; } .output.span2 { grid-column:auto; } .swatches { gap:5px; } .swatch { font-size:10px; padding-inline:1px; } .swatch .tpLine { font-size:9px; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+
+    /* Compact two-column workbench: the code, live results and picker stay together. */
+    .card { max-width:1240px; padding:12px 14px; }
+    .headerHint { font-size:12px; color:var(--muted); margin:2px 0 10px 35px; }
+    .workbench { display:grid; grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr); grid-template-areas:"entry visual" "results visual"; gap:9px 12px; align-items:start; }
+    .entryPanel { grid-area:entry; }
+    .resultsPanel { grid-area:results; }
+    .visualPanel { grid-area:visual; min-height:0; }
+    .panel { padding:11px 12px; }
+    .workbench h2 { font-size:15px; margin:0 0 6px; }
+    .entryPanel .help { margin:3px 0 0; line-height:1.35; }
+    .entryPanel .inputForm { margin-top:8px; }
+    .entryPanel .inputForm input { height:39px; min-height:39px; }
+    .entryPanel .inputForm button { min-height:39px; white-space:nowrap; }
+    .entryPanel .inputForm button .tpLine { font-size:10px; }
+    .entryPanel .exampleRow { margin-top:6px; }
+    .entryPanel .exampleRow button { min-height:26px; padding:3px 7px; font-size:11px; }
+    .entryPanel .error { margin-top:3px; }
+    .resultsPanel .outputs { gap:7px; }
+    .resultsPanel .output { padding:8px 9px; }
+    .resultsPanel .outputTitle { font-size:11px; margin-bottom:2px; }
+    .resultsPanel .value { font-size:14px; line-height:1.4; }
+    .resultsPanel .value.name { font-size:14px; }
+    .resultsPanel .output .help { font-size:11px; line-height:1.3; margin-top:3px; }
+    .resultsPanel .copyButton { min-height:26px; padding:3px 6px; }
+    .resultsPanel .canvasWrap { min-height:48px; padding:5px 8px; }
+    .resultsPanel .cartoucheControls { margin:0 0 4px; }
+    .resultsPanel #cartoucheStatus { margin-top:3px; }
+    .toolBar { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .toolTabs { min-width:0; display:flex; align-items:stretch; gap:3px; padding:3px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.18); }
+    .toolTab { flex:1 1 auto; border:0; background:transparent; min-height:33px; font-size:13px; padding:5px 11px; white-space:nowrap; }
+    .toolTab[aria-selected="true"] { background:#fff5e7; box-shadow:0 1px 3px #0002; }
+    .toolTab[aria-selected="false"]:hover { background:rgba(255,255,255,.38); }
+    [role="tabpanel"][hidden] { display:none !important; }
+    .selectedInline { display:inline-flex; align-items:center; gap:6px; min-width:0; font-size:11px; font-weight:700; }
+    /* Real native colour input. Its visible swatch is also the click/tap target. */
+    .inlineSwatch { display:block; appearance:none; -webkit-appearance:none; width:28px; height:28px; min-height:0; flex:0 0 28px; padding:0; border:1px solid #777; border-radius:6px; background:transparent; cursor:pointer; overflow:hidden; }
+    .inlineSwatch::-webkit-color-swatch-wrapper { padding:0; }
+    .inlineSwatch::-webkit-color-swatch { border:0; border-radius:5px; }
+    .inlineSwatch::-moz-color-swatch { border:0; border-radius:5px; }
+    .pickerWrap { grid-template-columns:minmax(0,1fr) minmax(96px,.25fr); gap:9px; }
+    .squareWrap { aspect-ratio:auto; height:clamp(168px,30vh,236px); }
+    .preview { min-height:70px; }
+    .previewStack { gap:5px; }
+    .previewStack .help { font-size:11px; }
+    .hueLine { margin-top:7px; }
+    .channels { margin-top:7px; gap:6px; }
+    .channel { grid-template-columns:57px minmax(0,1fr) 61px; gap:7px; }
+    .channel input[type=number] { height:35px; min-height:35px; padding:4px; }
+    .channel label { font-size:12px; }
+    .channel label small { font-size:10px; }
+    .vennSvg { width:min(100%,260px); }
+    #mixingPanel { text-align:center; }
+    #mixingPanel .help { margin-top:6px; }
+    #mixingPanel .presetsTitle { margin-top:11px; }
+    #mixingPanel .swatch { min-height:60px; }
+    #mixingPanel .swatchMark { height:17px; }
+    .pageNotes { margin-top:15px; padding-top:8px; border-top:1px solid var(--rule); }
+    .pageNotes > .help { margin-top:7px; }
+    @media(min-width:801px) and (max-height:800px) {
+      .squareWrap { height:clamp(156px,27vh,204px); }
+      body { margin:11px; }
+      .card { padding:10px 12px; }
+      .panel { padding:9px 11px; }
+      .headerHint { margin-bottom:7px; }
+      .hueLine { margin-top:5px; }
+      .channels { gap:4px; margin-top:5px; }
+      .channel input[type=number] { height:32px; min-height:32px; }
+      .toolBar { margin-bottom:5px; }
+    }
+    @media(max-width:800px) {
+      body { margin:9px; }
+      .card { padding:10px; }
+      .workbench { grid-template-columns:minmax(0,1fr); grid-template-areas:"entry" "visual" "results"; gap:8px; }
+      .squareWrap { height:clamp(175px,42vw,270px); }
+      .visualPanel { min-height:0; }
+      .panel { padding:10px; }
+      .headerHint { margin:3px 0 8px 35px; }
+      .resultsPanel .outputs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .resultsPanel .output.span2 { grid-column:1/-1; }
+      .selectedInline { margin-left:auto; }
+    }
+    @media(max-width:440px) {
+      .toolTab { min-height:36px; font-size:12px; padding:5px 7px; }
+      .selectedInline { font-size:10px; }
+      .inlineSwatch { width:26px; height:26px; flex-basis:26px; }
+      .pickerWrap { grid-template-columns:minmax(0,1fr) minmax(82px,.28fr); gap:8px; }
+      .previewStack .help { display:none; }
+      .squareWrap { height:clamp(180px,54vw,230px); }
+      .resultsPanel .outputs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .resultsPanel .output { padding:7px; }
+      .resultsPanel .value { font-size:12px; }
+      .resultsPanel .output.span2 { grid-column:1/-1; }
+      .entryPanel .inputForm { grid-template-columns:minmax(0,1fr) auto; gap:5px; }
+      .entryPanel .inputForm button { width:auto; min-width:69px; font-size:12px; padding:6px; }
+      .entryPanel .inputForm button .tpLine { display:none; }
+      .entryPanel .exampleRow button { font-size:10px; }
+      .channel { grid-template-columns:47px minmax(0,1fr) 56px; }
+    }
+  </style>
+</head>
+<body>
+<main class="card" id="main" aria-labelledby="pageTitle">
+  <div class="pageHeadingRow">
+    <a class="pageHomeLink" href="./index.html" title="Home" aria-label="Back to Home">
+      <svg class="pageHomeIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <h1 id="pageTitle">Toki Pona nanpa-linja-n Colour Picker
+      <span class="tpLine">ilo pi kule en nanpa-linja-n</span>
+    </h1>
+  </div>
+  <div class="headerHint">Enter a code on the left or choose a colour on the right. Both stay in sync.</div>
+  <div class="workbench" aria-label="Colour converter and interactive colour tools">
+    <section aria-labelledby="entryHeading" class="panel entryPanel">
+<h2 id="entryHeading">Enter a colour code or proper name</h2>
+<div class="help">Enter <code>#abcdef</code>, RGB decimal <code>123.234,012</code> (or <code>123,234,12</code>), or a nanpa-linja-n name beginning with <code>Nasa</code>. Press Enter or Apply.</div>
+<form class="inputForm" id="colourForm" novalidate="">
+<label class="srtxt" for="colourInput">Hex, RGB or nanpa-linja-n proper name</label>
+<input autocapitalize="none" autocomplete="off" class="mono" enterkeyhint="done" id="colourInput" maxlength="180" placeholder="#abcdef, 123.234,012 or Nasa …" spellcheck="false" type="text" value="#FFFF77"/>
+<button type="submit">Apply colour <span class="tpLine">o kepeken e kule</span></button>
+</form>
+<div aria-live="polite" class="error" id="inputError" role="alert"></div>
+<div class="exampleRow"><span class="subtle">Try:</span><button data-example="#FEDCBA" type="button">#FEDCBA</button><button data-example="123.234,012" type="button">123.234,012</button><button data-example="Nasa Tatapipininin" type="button">Nasa Tatapipininin</button></div>
+</section>
+    <section class="panel visualPanel" aria-label="Interactive colour tools">
+      <div class="toolBar">
+        <div class="toolTabs" role="tablist" aria-label="Colour tool">
+          <button id="tabPicker" class="toolTab" type="button" role="tab" aria-selected="true" aria-controls="pickerPanel" tabindex="0">Colour picker</button>
+          <button id="tabMixing" class="toolTab" type="button" role="tab" aria-selected="false" aria-controls="mixingPanel" tabindex="-1">RGB mixing</button>
+        </div>
+        <div class="selectedInline"><input id="inlineColourPicker" class="inlineSwatch" type="color" value="#FFFF77" aria-label="Choose a colour using the native colour picker" title="Click to open the system colour picker"><span id="inlineHex" class="mono">#FFFF77</span></div>
+      </div>
+      <div id="pickerPanel" role="tabpanel" aria-labelledby="tabPicker" tabindex="0">
+        
+
+<div class="pickerWrap">
+<div>
+<div aria-label="Colour saturation and brightness; use arrow keys to adjust saturation, Shift plus arrow keys to adjust brightness" aria-valuemax="100" aria-valuemin="0" aria-valuenow="100" aria-valuetext="Saturation 100%, brightness 100%" class="squareWrap" id="squareWrap" role="slider" tabindex="0">
+<canvas aria-hidden="true" height="440" id="svCanvas" width="512"></canvas>
+<div aria-hidden="true" id="svMarker"></div>
+</div>
+<div class="hueLine">
+<label class="miniLabel" for="hueSlider">Hue</label>
+<input aria-label="Hue" id="hueSlider" max="360" min="0" style="--track:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" type="range" value="60"/>
+<output class="mono subtle" for="hueSlider" id="hueText">60°</output>
+</div>
+</div>
+<div class="previewStack">
+<div class="miniLabel">Selected <span class="tpLine">kule ni</span></div>
+<div aria-label="Selected colour preview" class="preview" id="preview"><span class="previewText" id="previewHex">#FFFF77</span></div>
+<div class="help" style="margin-top:0">24-bit RGB<br/>16,777,216 colours</div>
+</div>
+</div>
+<div aria-label="RGB colour controls" class="channels">
+<div class="channel channel-red"><label for="rRange">Red<small>loje</small></label><input aria-label="Red intensity" id="rRange" max="255" min="0" type="range" value="255"/><input aria-label="Red value" id="rNumber" max="255" min="0" step="1" type="number" value="255"/></div>
+<div class="channel channel-green"><label for="gRange">Green<small>laso jelo</small></label><input aria-label="Green intensity" id="gRange" max="255" min="0" type="range" value="255"/><input aria-label="Green value" id="gNumber" max="255" min="0" step="1" type="number" value="255"/></div>
+<div class="channel channel-blue"><label for="bRange">Blue<small>laso</small></label><input aria-label="Blue intensity" id="bRange" max="255" min="0" type="range" value="119"/><input aria-label="Blue value" id="bNumber" max="255" min="0" step="1" type="number" value="119"/></div>
+</div>
+
+      </div>
+      <div id="mixingPanel" role="tabpanel" aria-labelledby="tabMixing" tabindex="0" hidden>
+        
+
+<svg aria-label="RGB additive colour mixing. Overlapping red, green and blue light creates yellow, cyan, magenta and white. Circles show the selected channel intensities." class="vennSvg" role="img" viewbox="0 0 300 270">
+<rect fill="#101014" height="270" width="300" x="0" y="0"></rect>
+<circle class="mixCircle" cx="113" cy="100" fill="#ff0000" id="vennRed" r="79"></circle>
+<circle class="mixCircle" cx="188" cy="100" fill="#00ff00" id="vennGreen" r="79"></circle>
+<circle class="mixCircle" cx="151" cy="167" fill="#0000ff" id="vennBlue" r="79"></circle>
+<g fill="#fff" font-family="system-ui,sans-serif" font-size="11" font-weight="650" paint-order="stroke" stroke="#111" stroke-linejoin="round" stroke-width="3">
+<text text-anchor="middle" x="73" y="67">R</text>
+<text text-anchor="middle" x="225" y="67">G</text>
+<text text-anchor="middle" x="151" y="220">B</text>
+</g>
+</svg>
+<div class="help">These overlapping circles show <strong>light</strong> mixing. Their intensities follow your RGB sliders. With all three at 255 the centre is white; with all at 0 it is black.</div>
+<div class="vennLegend">
+<div><strong>R · red</strong><span>loje</span></div>
+<div><strong>G · green</strong><span>laso jelo</span></div>
+<div><strong>B · blue</strong><span>laso</span></div>
+</div>
+<div class="presetsTitle">Explore the main mixtures <span class="tpLine">o lukin e kule suli</span></div>
+<div aria-label="Colour examples; selecting one changes the picker" class="swatches" id="swatches">
+<button aria-pressed="false" class="swatch" data-hex="#FF0000" type="button"><span class="swatchMark" style="background:#FF0000"></span>Red<span class="tpLine">loje</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#00FF00" type="button"><span class="swatchMark" style="background:#00FF00"></span>Green<span class="tpLine">laso jelo</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#0000FF" type="button"><span class="swatchMark" style="background:#0000FF"></span>Blue<span class="tpLine">laso</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#111199" type="button" title="Established Toki Pona logo blue (#111199)"><span class="swatchMark" style="background:#111199"></span>TP blue<span class="tpLine">laso</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#FFFF00" type="button"><span class="swatchMark" style="background:#FFFF00"></span>Yellow<span class="tpLine">jelo</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#FFFF77" type="button" title="Established Toki Pona logo yellow (#FFFF77)"><span class="swatchMark" style="background:#FFFF77"></span>TP yellow<span class="tpLine">jelo</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#00FFFF" type="button"><span class="swatchMark" style="background:#00FFFF"></span>Cyan<span class="tpLine">laso</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#FF00FF" type="button"><span class="swatchMark" style="background:#FF00FF"></span>Magenta<span class="tpLine">loje laso</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#FFFFFF" type="button"><span class="swatchMark" style="background:#FFFFFF"></span>White<span class="tpLine">walo</span></button>
+<button aria-pressed="false" class="swatch" data-hex="#000000" type="button"><span class="swatchMark" style="background:#000000"></span>Black<span class="tpLine">pimeja</span></button>
+</div>
+<div class="help colourNames">The TP yellow (<code>#FFFF77</code>) and TP blue (<code>#111199</code>) presets match the established Toki Pona logo palette; the plain Yellow and Blue presets show pure RGB channel colours. In Toki Pona, <em>laso</em> covers both blue and green. Compound descriptions such as <em>laso jelo</em> may clarify the intended shade; these are approximate descriptions, not exact RGB specifications.</div>
+
+      </div>
+    </section>
+    <section aria-labelledby="outHeading" class="panel resultsPanel">
+<h2 id="outHeading">Colour representations</h2>
+<div class="outputs">
+<div class="output"><div class="outputTitle">RGB decimal (R, G, B)</div><div class="valueRow"><output class="mono value" id="rgbOut">255, 255, 119</output><button aria-label="Copy RGB values" class="copyButton" data-copy="rgbOut" type="button">Copy</button></div></div>
+<div class="output"><div class="outputTitle">Hexadecimal colour (24-bit)</div><div class="valueRow"><output class="mono value" id="hexOut">#FFFF77</output><button aria-label="Copy hex colour" class="copyButton" data-copy="hexOut" type="button">Copy</button></div></div>
+<div class="output span2"><div class="outputTitle">nanpa-linja-n Latin proper name</div><div class="valueRow"><output aria-live="polite" class="mono value name" id="nameOut">Loading…</output><button aria-label="Copy nanpa-linja-n proper name" class="copyButton" data-copy="nameOut" type="button">Copy</button></div><div class="help">This exact, reversible name is hexadecimal numeric notation, not an ordinary Toki Pona colour word.</div></div>
+<div class="output span2"><div class="cartoucheControls"><div class="outputTitle" style="margin:0">nanpa-linja-n sitelen pona hexadecimal cartouche</div><label class="toggle" for="abbrevToggle"><input id="abbrevToggle" type="checkbox" checked/> Abbreviate</label></div>
+<div class="canvasWrap" id="canvasWrap"><canvas aria-hidden="true" height="1" id="cartoucheCanvas" width="1"></canvas></div>
+<div aria-live="polite" class="help" id="cartoucheStatus" role="status">Preparing hexadecimal sitelen pona cartouche…</div>
+<div class="help">Full cartouche uses the <em>nasa</em> head and the current nanpa-linja-n hexadecimal glyph mapping. The abbreviated view encodes the same value.</div>
+</div>
+</div>
+</section>
+  </div>
+  <footer class="pageNotes">
+  <div class="help"><strong>Note:</strong> A nanpa-linja-n proper name is an encoding label for a hexadecimal colour value. It does not introduce any new Toki Pona words.
+    <span class="tpLine">sona: nimi nanpa-linja-n li nimi pi pana nanpa taso. ona li nimi sin pi toki pona ala.</span>
+  </div>
+  <div class="help"><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+    <span class="tpLine">sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.</span>
+  </div>
+
+
+  </footer>
+  <div class="help" style="margin-top:16px">RGB channel values and hexadecimal colours are exact within the standard 8-bit-per-channel RGB model. Apparent colours can vary with your display, brightness and colour calibration.</div>
+</main>
+<script type="module">
+"use strict";
+import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=294";
+
+const $ = (id) => document.getElementById(id);
+const parserOptions = { mode:"uniform", numericMode:"uniform", mixedStyle:"short", enableHexParsing:true, relaxedNanpaLinjanParsing:true, relaxedNanpaLinjanRendering:true, abbreviateNumericCartouches:true, autoCartoucheStandaloneProperNames:true, showUnknownText:false };
+const fontFamily = "TP-Cartouche-Font";
+// Page-specific preferences: do not overwrite settings on other nanpa-linja-n pages.
+const ABBREV_STORAGE_KEY = "tpColourPageAbbreviateNumericCartouches";
+const TOOL_TAB_STORAGE_KEY = "tpColourPageActiveToolTab";
+const COLOUR_STORAGE_KEY = "tpColourPageSelectedColour";
+function readPreference(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function savePreference(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* Storage can be unavailable. */ }
+}
+function restoreUiPreferences() {
+  const abbreviated = readPreference(ABBREV_STORAGE_KEY);
+  // First visit (or an unrecognised stored value) defaults to abbreviated.
+  $("abbrevToggle").checked = abbreviated === "false" || abbreviated === "0" ? false : true;
+  const tab = readPreference(TOOL_TAB_STORAGE_KEY);
+  activateToolTab(tab === "tabMixing" ? "tabMixing" : "tabPicker", {persist:false});
+}
+const clamp = (n,a,b) => Math.max(a, Math.min(b,n));
+const byteHex = (n) => n.toString(16).padStart(2,"0").toUpperCase();
+const hexOf = (rgb) => "#"+rgb.map(byteHex).join("");
+const hsvFromRgb = ([r,g,b]) => {
+  const max=Math.max(r,g,b)/255, min=Math.min(r,g,b)/255, d=max-min;
+  let h=0;
+  if(d>0){if(r/255===max) h=((g-b)/255/d)%6;
+    else if(g/255===max) h=(b-r)/255/d+2;
+    else h=(r-g)/255/d+4;
+    h=(h*60+360)%360;}
+  return { h, s:max===0?0:d/max, v:max };
+};
+const rgbFromHsv = ({h,s,v}) => {
+  const c=v*s, xx=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let p;
+  if(h<60) p=[c,xx,0]; else if(h<120) p=[xx,c,0]; else if(h<180) p=[0,c,xx];
+  else if(h<240) p=[0,xx,c]; else if(h<300) p=[xx,0,c]; else p=[c,0,xx];
+  return p.map(n=>clamp(Math.round((n+m)*255),0,255));
+};
+
+let rgb=[255,255,119];
+let hsv=hsvFromRgb(rgb);
+let activeHue=hsv.h;  // Preserve the previous hue for greys, white and black.
+let sharedRenderer=null;
+let renderSerial=0;
+let pendingRenderTimer=null;
+let canRender=false;
+let rendererError="";
+let fontAvailable=false;
+
+function readInputColour(raw) {
+  const s=String(raw??"").trim();
+  if(/^#[0-9a-fA-F]{6}$/.test(s)) {
+    return [0,2,4].map(i=>parseInt(s.slice(1+i,3+i),16));
+  }
+  let match=s.match(/^(?:rgb\s*\(\s*)?(\d{1,3})\s*([,.])\s*(\d{1,3})\s*([,.])\s*(\d{1,3})\s*\)?$/i);
+  if(match) {
+    const values=[match[1],match[3],match[5]].map(Number);
+    if(values.every(v=>v>=0&&v<=255)) return values;
+    throw new Error("Each RGB channel must be an integer from 0 to 255.");
+  }
+  if(/^Nasa\b/i.test(s)) {
+    const parsed=NanpaParser.parseNumber(s,parserOptions);
+    if(!parsed?.isHex || !/^[0-9A-F]{6}$/.test(String(parsed.hexDigits||""))) {
+      throw new Error("That is not a complete six-digit nanpa-linja-n hexadecimal proper name.");
+    }
+    const text=parsed.hexDigits;
+    return [0,2,4].map(i=>parseInt(text.slice(i,i+2),16));
+  }
+  throw new Error("Enter #abcdef, RGB values such as 123.234,012, or a hexadecimal proper name beginning with Nasa.");
+}
+
+// A saved selection is always an exact, six-digit 24-bit colour.
+// If storage is empty, unavailable or corrupted, retain the initial logo yellow.
+function restoreSelectedColour() {
+  const saved = readPreference(COLOUR_STORAGE_KEY);
+  if (typeof saved !== "string" || !/^#[0-9a-f]{6}$/i.test(saved)) return;
+  rgb = readInputColour(saved);
+  hsv = hsvFromRgb(rgb);
+  if (hsv.s > 0) activeHue = hsv.h;
+}
+
+function refreshVenn() {
+  $("vennRed").setAttribute("fill",`rgb(${rgb[0]},0,0)`);
+  $("vennGreen").setAttribute("fill",`rgb(0,${rgb[1]},0)`);
+  $("vennBlue").setAttribute("fill",`rgb(0,0,${rgb[2]})`);
+}
+function refreshSquare() {
+  const canvas=$("svCanvas"); const ctx=canvas.getContext("2d");
+  const w=canvas.width, h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=`hsl(${hsv.h}, 100%, 50%)`; ctx.fillRect(0,0,w,h);
+  let gradient=ctx.createLinearGradient(0,0,w,0);
+  gradient.addColorStop(0,"rgb(255,255,255)"); gradient.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,w,h);
+  gradient=ctx.createLinearGradient(0,0,0,h);
+  gradient.addColorStop(0,"rgba(0,0,0,0)");gradient.addColorStop(1,"rgb(0,0,0)");
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,w,h);
+  $("svMarker").style.left=`${hsv.s*100}%`;
+  $("svMarker").style.top=`${(1-hsv.v)*100}%`;
+  $("squareWrap").setAttribute("aria-valuenow",String(Math.round(hsv.s*100)));
+  $("squareWrap").setAttribute("aria-valuetext",`Saturation ${Math.round(hsv.s*100)}%, brightness ${Math.round(hsv.v*100)}%`);
+}
+function refreshChannels() {
+  for(const [i,ch] of ["r","g","b"].entries()) {
+    $(ch+"Range").value=String(rgb[i]);
+    $(ch+"Number").value=String(rgb[i]);
+  }
+  $("hueSlider").value=String(Math.round(hsv.h));
+  $("hueText").textContent=Math.round(hsv.h)+"°";
+}
+function refreshPresets() {
+  const hex=hexOf(rgb);
+  document.querySelectorAll(".swatch[data-hex]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.hex===hex)));
+}
+function colourLabelContrast([r,g,b]) {
+  // sRGB luminance approximation adequate to choose legible white or black text.
+  const c=[r,g,b].map(v=>{let x=v/255;return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)});
+  return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.18 ? "#111" : "#fff";
+}
+function syncViews({syncEntry=true}={}) {
+  const hex=hexOf(rgb);
+  $("preview").style.backgroundColor=hex;
+  $("previewHex").textContent=hex;
+  $("previewHex").style.color=colourLabelContrast(rgb);
+  $("preview").setAttribute("aria-label",`Selected colour ${hex}, red ${rgb[0]}, green ${rgb[1]}, blue ${rgb[2]}`);
+  // Setting a colour input's value does not dispatch input/change events.
+  // All controls feed this one state-to-view path, so no event feedback loop.
+  $("inlineColourPicker").value=hex;
+  $("inlineHex").textContent=hex;
+  $("rgbOut").textContent=rgb.join(", ");
+  $("hexOut").textContent=hex;
+  if(syncEntry) $("colourInput").value=hex;
+  refreshChannels();refreshVenn();refreshSquare();refreshPresets();
+  const parsed=NanpaParser.parseNumber(hex,parserOptions);
+  if(!parsed?.isHex || String(parsed.hexDigits)!==hex.slice(1)) {
+    $("nameOut").textContent="Unable to encode this colour";
+  } else {
+    $("nameOut").textContent=parsed.properName;
+  }
+  // Only the canonical, validated selected colour is stored. Incomplete and
+  // invalid text entries never reach this synchronisation path.
+  savePreference(COLOUR_STORAGE_KEY, hex);
+  scheduleCartouche(hex);
+}
+function setRgb(nextRgb, opts={}) {
+  if(!Array.isArray(nextRgb)||nextRgb.length!==3 || !nextRgb.every(n=>Number.isInteger(n)&&n>=0&&n<=255)) throw new Error("RGB values must be integers in the range 0–255.");
+  const priorHue=activeHue;
+  rgb=nextRgb.slice();
+  hsv=hsvFromRgb(rgb);
+  if(hsv.s===0) hsv.h=priorHue; else activeHue=hsv.h;
+  $("inputError").textContent="";
+  syncViews(opts);
+}
+function setFromHsv(nextHsv) {
+  hsv={h:clamp(nextHsv.h,0,360)%360,s:clamp(nextHsv.s,0,1),v:clamp(nextHsv.v,0,1)};
+  activeHue=hsv.h;
+  rgb=rgbFromHsv(hsv);
+  $("inputError").textContent="";
+  syncViews();
+}
+
+function scheduleCartouche(hex) {
+  // Keep the picker responsive on touch devices: render only after input settles.
+  ++renderSerial; // Invalidate any older asynchronous render.
+  if(pendingRenderTimer!==null) clearTimeout(pendingRenderTimer);
+  pendingRenderTimer=setTimeout(()=>{ pendingRenderTimer=null; void renderCartouche(hex); },110);
+}
+
+// Display the canonical hex cartouche produced by the uploaded parser/renderer.
+// Keep the last render only: pointer drags may cause many asynchronous renders.
+async function renderCartouche(hex) {
+  const serial=++renderSerial;
+  const status=$("cartoucheStatus");
+  if(!canRender) {status.textContent=rendererError || "Loading the sitelen pona renderer…";return;}
+  try {
+    const abbreviated=$("abbrevToggle").checked;
+    const plan=await sharedRenderer.buildRenderPlan({
+      input:hex,
+      layout:{fontPx:40,align:"left"},
+      paint:{fillStyle:"#111111",halo:{enabled:false,widthPx:0,color:"#FFFFFF"}},
+      parser:{...parserOptions,cartoucheVulgarFractions:true,abbreviateNumericCartouches:abbreviated,preserveNumericCartoucheBreaksInAbbreviation:true},
+      fonts:{roles:{word:fontFamily,text:fontFamily,cartouche:fontFamily,number:fontFamily}}
+    });
+    if(serial!==renderSerial) return;
+    const runs=Array.from(plan?.lines||[]).flatMap(l=>Array.from(l?.runs||[]));
+    const run=runs.find(r=>r?._element?.isNumericCartouche===true)
+      ?? runs.find(r=>r?._element?.isHexCartouche===true)
+      ?? runs.find(r=>r?._element?.type==="cartouche"||r?.kind==="cartouche");
+    if(!run) throw new Error("No hexadecimal numeric cartouche was produced.");
+    const image=await sharedRenderer.renderRunToNewCanvas({run,supersampleScale:1,downsample:false});
+    if(serial!==renderSerial) return;
+    const target=$("cartoucheCanvas");
+    target.width=Math.max(1,image.width|0);target.height=Math.max(1,image.height|0);
+    const ctx=target.getContext("2d");ctx.clearRect(0,0,target.width,target.height);ctx.drawImage(image,0,0);
+    status.textContent=(abbreviated?"Abbreviated hexadecimal cartouche":"Full hexadecimal cartouche") + (fontAvailable ? "" : " — sitelen pona font not loaded; check the fonts/ directory.");
+  } catch(err) {
+    if(serial!==renderSerial)return;
+    status.textContent="Cartouche rendering failed: "+String(err?.message||err);
+  }
+}
+
+function activateToolTab(tabId, {focus=false, persist=true}={}) {
+  const valid=tabId==="tabMixing"?"tabMixing":"tabPicker";
+  for(const [id,panelId] of [["tabPicker","pickerPanel"],["tabMixing","mixingPanel"]]) {
+    const on=id===valid;
+    $(id).setAttribute("aria-selected",String(on));
+    $(id).tabIndex=on?0:-1;
+    $(panelId).hidden=!on;
+  }
+  if(persist) savePreference(TOOL_TAB_STORAGE_KEY, valid);
+  if(focus) $(valid).focus();
+}
+function setupToolTabs() {
+  for(const tabId of ["tabPicker","tabMixing"]) {
+    $(tabId).addEventListener("click",()=>activateToolTab(tabId));
+    $(tabId).addEventListener("keydown",event=>{
+      if(!["ArrowLeft","ArrowRight","Home","End"].includes(event.key))return;
+      event.preventDefault();
+      const next=event.key==="Home"?"tabPicker":event.key==="End"?"tabMixing":tabId==="tabPicker"?"tabMixing":"tabPicker";
+      activateToolTab(next,{focus:true});
+    });
+  }
+}
+function setupEventHandlers() {
+  setupToolTabs();
+  // Both events are useful: `input` changes live while the native picker moves,
+  // `change` handles browsers that only commit a colour at the end.
+  // Skip identical values because some browsers emit both for one selection.
+  const applyNativeColour = () => {
+    const next=readInputColour($("inlineColourPicker").value);
+    if(hexOf(next)!==hexOf(rgb)) setRgb(next);
+  };
+  $("inlineColourPicker").addEventListener("input",applyNativeColour);
+  $("inlineColourPicker").addEventListener("change",applyNativeColour);
+  $("colourForm").addEventListener("submit",event=>{
+    event.preventDefault();
+    try {setRgb(readInputColour($("colourInput").value));}
+    catch(err) {$("inputError").textContent=String(err?.message||err);$("colourInput").focus();}
+  });
+  for(const [i,ch] of ["r","g","b"].entries()) {
+    $(ch+"Range").addEventListener("input",e=>{const next=rgb.slice();next[i]=Number(e.target.value);setRgb(next);});
+    $(ch+"Number").addEventListener("change",e=>{
+      if(e.target.value.trim()==="") {e.target.value=String(rgb[i]);return;}
+      const v=Number(e.target.value);
+      if(!Number.isInteger(v)||v<0||v>255){$("inputError").textContent="RGB channels must be whole numbers from 0 to 255.";e.target.value=String(rgb[i]);return;}
+      const next=rgb.slice();next[i]=v;setRgb(next);
+    });
+  }
+  $("hueSlider").addEventListener("input",event=>setFromHsv({...hsv,h:Number(event.target.value)}));
+  const square=$("squareWrap");
+  const adjustFromPointer=(event)=>{
+    const r=square.getBoundingClientRect();
+    if(!r.width||!r.height)return;
+    const s=clamp((event.clientX-r.left)/r.width,0,1);
+    const v=1-clamp((event.clientY-r.top)/r.height,0,1);
+    setFromHsv({...hsv,s,v});
+  };
+  square.addEventListener("pointerdown",event=>{if(event.button!==0)return;square.setPointerCapture(event.pointerId);adjustFromPointer(event);event.preventDefault();});
+  square.addEventListener("pointermove",event=>{if(square.hasPointerCapture(event.pointerId)) adjustFromPointer(event);});
+  square.addEventListener("pointerup",event=>{if(square.hasPointerCapture(event.pointerId)){adjustFromPointer(event);square.releasePointerCapture(event.pointerId);}});
+  square.addEventListener("pointercancel",event=>{if(square.hasPointerCapture(event.pointerId))square.releasePointerCapture(event.pointerId);});
+  square.addEventListener("keydown",event=>{
+    if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key))return;
+    event.preventDefault();
+    const step=event.ctrlKey?.05:.01;
+    let {s,v}=hsv;
+    if(event.shiftKey) v=clamp(v+(event.key==="ArrowUp"||event.key==="ArrowRight"?step:-step),0,1);
+    else s=clamp(s+(event.key==="ArrowUp"||event.key==="ArrowRight"?step:-step),0,1);
+    setFromHsv({...hsv,s,v});
+  });
+  document.querySelectorAll(".swatch[data-hex]").forEach(b=>b.addEventListener("click",()=>setRgb(readInputColour(b.dataset.hex))));
+  document.querySelectorAll("[data-example]").forEach(b=>b.addEventListener("click",()=>{
+    $("colourInput").value=b.dataset.example;
+    $("colourForm").requestSubmit();
+  }));
+  $("abbrevToggle").addEventListener("change",()=>{
+    savePreference(ABBREV_STORAGE_KEY, String($("abbrevToggle").checked));
+    if(pendingRenderTimer!==null){clearTimeout(pendingRenderTimer);pendingRenderTimer=null;}
+    void renderCartouche(hexOf(rgb));
+  });
+  document.querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",async()=>{
+    const target=$(b.dataset.copy); const value=target?.textContent||"";
+    if(!value)return;
+    try {
+      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);
+      else {
+        const t=document.createElement("textarea");t.value=value;t.style.position="fixed";t.style.opacity="0";document.body.append(t);t.select();
+        if(!document.execCommand("copy")) throw new Error("Clipboard unavailable");t.remove();
+      }
+      b.textContent="Copied";setTimeout(()=>{b.textContent="Copy"},1000);
+    }catch{b.textContent="Cannot copy";setTimeout(()=>{b.textContent="Copy"},1500);}
+  }));
+}
+async function start() {
+  restoreUiPreferences();
+  restoreSelectedColour();
+  setupEventHandlers();
+  // Colour and proper-name conversions work without loading the rendering font.
+  syncViews();
+  try {
+    if(document.fonts?.load) {
+      try {await document.fonts.load(`40px "${fontFamily}"`,String.fromCodePoint(0xF193D));await document.fonts.ready;}
+      catch { /* Keep the colour converter available and show the missing-font status. */ }
+    }
+    fontAvailable=!!document.fonts?.check?.(`40px "${fontFamily}"`,String.fromCodePoint(0xF193D));
+    sharedRenderer=await SitelenRenderer.create({paint:{fillStyle:"#111111",halo:{enabled:false,widthPx:0,color:"#FFFFFF"}},fonts:{roles:{word:fontFamily,text:fontFamily,cartouche:fontFamily,number:fontFamily}}});
+    canRender=true;
+    void renderCartouche(hexOf(rgb));
+  }catch(error){ rendererError="Unable to initialize the shared renderer: "+String(error?.message||error);$("cartoucheStatus").textContent=rendererError; }
+}
+start();
+</script>
+
+
+  <script>
+  const productionHosts = new Set([
+        'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+   if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
+  }
+</script>
+
+<script
+  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
+  async
+  src="./js/goatcounter-count.js">
+</script>
+
+</body>
+</html>
