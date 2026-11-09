@@ -665,7 +665,7 @@ function restoreSelectedColour() {
   hsv = hsvFromRgb(rgb);
   if (hsv.s > 0) activeHue = hsv.h;
 }
-
+ 
 function refreshVenn() {
   $("vennRed").setAttribute("fill",`rgb(${rgb[0]},0,0)`);
   $("vennGreen").setAttribute("fill",`rgb(0,${rgb[1]},0)`);
