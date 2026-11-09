@@ -86,6 +86,15 @@
     .copyButton { min-height:30px; padding:4px 8px; flex:0 0 auto; font-size:11px; }
     .output.span2 { grid-column:1/-1; }
     .canvasWrap { width:100%; min-width:0; min-height:52px; padding:9px; background:rgba(255,255,255,.35); border-radius:7px; overflow:hidden; }
+    .audioTitleRow { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin-bottom:4px; }
+    .audioTitleRow .outputTitle { margin:0 0 0 2px; }
+    .nameAudioButton { border:0; background:transparent; min-width:28px; min-height:27px; padding:2px 4px; font-size:17px; line-height:1; }
+    .nameAudioButton:hover { background:rgba(255,255,255,.4); }
+    .nameAudioButton:disabled { cursor:default; opacity:.42; }
+    .nameAudioUnit { display:inline; border-radius:3px; padding:1px 0; }
+    .nameAudioUnit.is-speaking { background:#fff4a8; outline:1.5px solid #111; outline-offset:1px; }
+    .audioCanvasLayer { position:relative; display:inline-block; max-width:100%; vertical-align:top; line-height:0; }
+    #cartoucheHighlightCanvas { position:absolute; inset:0; width:100%; height:100%; max-width:100%; pointer-events:none; background:transparent; border:0; }
     #cartoucheCanvas { display:block; height:auto; width:auto; max-width:100%; border:0; background:transparent; }
     .cartoucheControls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin:3px 0 9px; }
     .toggle { display:inline-flex; gap:6px; align-items:center; font-size:12px; cursor:pointer; }
@@ -300,9 +309,9 @@
 <div class="outputs">
 <div class="output"><div class="outputTitle">RGB decimal (R, G, B)</div><div class="valueRow"><output class="mono value" id="rgbOut">255, 255, 119</output><button aria-label="Copy RGB values" class="copyButton" data-copy="rgbOut" type="button">Copy</button></div></div>
 <div class="output"><div class="outputTitle">Hexadecimal colour (24-bit)</div><div class="valueRow"><output class="mono value" id="hexOut">#FFFF77</output><button aria-label="Copy hex colour" class="copyButton" data-copy="hexOut" type="button">Copy</button></div></div>
-<div class="output span2"><div class="outputTitle">nanpa-linja-n Latin proper name</div><div class="valueRow"><output aria-live="polite" class="mono value name" id="nameOut">Loading…</output><button aria-label="Copy nanpa-linja-n proper name" class="copyButton" data-copy="nameOut" type="button">Copy</button></div><div class="help">This exact, reversible name is hexadecimal numeric notation, not an ordinary Toki Pona colour word.</div></div>
+<div class="output span2"><div class="audioTitleRow"><button id="nameAudioPlay" class="nameAudioButton" type="button" aria-label="Play proper-name audio" title="Play proper-name audio" disabled>🤖🔊</button><button id="nameAudioStop" class="nameAudioButton" type="button" aria-label="Stop proper-name audio" title="Stop proper-name audio" disabled>⏹️</button><div class="outputTitle">nanpa-linja-n Latin proper name</div></div><div class="valueRow"><output aria-live="polite" class="mono value name" id="nameOut">Loading…</output><button aria-label="Copy nanpa-linja-n proper name" class="copyButton" data-copy="nameOut" type="button">Copy</button></div><div class="help">This exact, reversible name is hexadecimal numeric notation, not an ordinary Toki Pona colour word.</div></div>
 <div class="output span2"><div class="cartoucheControls"><div class="outputTitle" style="margin:0">nanpa-linja-n sitelen pona hexadecimal cartouche</div><label class="toggle" for="abbrevToggle"><input id="abbrevToggle" type="checkbox" checked/> Abbreviate</label></div>
-<div class="canvasWrap" id="canvasWrap"><canvas aria-hidden="true" height="1" id="cartoucheCanvas" width="1"></canvas></div>
+<div class="canvasWrap" id="canvasWrap"><div class="audioCanvasLayer"><canvas aria-hidden="true" height="1" id="cartoucheCanvas" width="1"></canvas><canvas aria-hidden="true" height="1" id="cartoucheHighlightCanvas" width="1"></canvas></div></div>
 <div aria-live="polite" class="help" id="cartoucheStatus" role="status">Preparing hexadecimal sitelen pona cartouche…</div>
 <div class="help">Full cartouche uses the <em>nasa</em> head and the current nanpa-linja-n hexadecimal glyph mapping. The abbreviated view encodes the same value.</div>
 </div>
@@ -324,6 +333,8 @@
 <script type="module">
 "use strict";
 import SitelenRenderer, { NanpaParser } from "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=294";
+import { createTokiPonaVoice } from "./js/toki-pona-voice-api.js?v=90";
+import { speechUnitsForRenderRun } from "./js/sitelen-audio-plan.js?v=79";
 
 const $ = (id) => document.getElementById(id);
 const parserOptions = { mode:"uniform", numericMode:"uniform", mixedStyle:"short", enableHexParsing:true, relaxedNanpaLinjanParsing:true, relaxedNanpaLinjanRendering:true, abbreviateNumericCartouches:true, autoCartoucheStandaloneProperNames:true, showUnknownText:false };
@@ -374,6 +385,254 @@ let pendingRenderTimer=null;
 let canRender=false;
 let rendererError="";
 let fontAvailable=false;
+
+// One source of truth for sound and highlights: the renderer's actual glyph
+// component positions, the shared speech-unit plan and the reference WAV timeline.
+const AUDIO_PAUSE_SCALE = 1;
+const AUDIO_SYLLABLE_GAP_SECONDS = 0.2;
+let voicePromise = null;
+let audioModel = null;
+let audioSession = null;
+let audioGeneration = 0;
+let audioState = "stopped";
+const audioCache = new Map();
+
+function updateAudioButtons() {
+  const play = $("nameAudioPlay"), stop = $("nameAudioStop");
+  const ready = !!audioModel;
+  const building = audioState === "building";
+  play.disabled = !ready || building;
+  stop.disabled = !ready || audioState === "stopped";
+  play.textContent = building ? "⏳" : audioState === "playing" ? "⏸️" : audioState === "paused" ? "▶️" : "🤖🔊";
+  const desc = building ? "Preparing proper-name audio" : audioState === "playing" ? "Pause proper-name audio" : audioState === "paused" ? "Resume proper-name audio" : "Play proper-name audio";
+  play.title = desc;
+  play.setAttribute("aria-label",desc);
+  if(building) play.setAttribute("aria-busy","true"); else play.removeAttribute("aria-busy");
+}
+function clearAudioHighlight() {
+  $("nameOut").querySelectorAll(".nameAudioUnit.is-speaking").forEach(node => node.classList.remove("is-speaking"));
+  const overlay = $("cartoucheHighlightCanvas");
+  const ctx = overlay.getContext("2d");
+  ctx?.clearRect(0,0,overlay.width,overlay.height);
+}
+function drawAudioHighlight(index) {
+  $("nameOut").querySelectorAll(".nameAudioUnit.is-speaking").forEach(node => node.classList.remove("is-speaking"));
+  $("nameOut").querySelector(`[data-audio-unit="${index}"]`)?.classList.add("is-speaking");
+  const base = $("cartoucheCanvas"), overlay = $("cartoucheHighlightCanvas");
+  const rect = base.getBoundingClientRect();
+  const w=Math.max(1,rect.width), h=Math.max(1,rect.height);
+  const ratio=Math.max(1,window.devicePixelRatio||1);
+  const bw=Math.max(1,Math.round(w*ratio)), bh=Math.max(1,Math.round(h*ratio));
+  if(overlay.width!==bw) overlay.width=bw;
+  if(overlay.height!==bh) overlay.height=bh;
+  const ctx=overlay.getContext("2d");
+  ctx.clearRect(0,0,bw,bh);
+  const regions=audioModel?.rects?.[index] || [];
+  if(!regions.length) return;
+  ctx.save();
+  const sx=bw/Math.max(1,base.width), sy=bh/Math.max(1,base.height);
+  ctx.setTransform(sx,0,0,sy,0,0);
+  ctx.fillStyle="rgba(255,225,70,.48)";
+  ctx.strokeStyle="rgba(17,17,17,.76)";
+  ctx.lineWidth=1.2/Math.max(sx,sy);
+  for(const region of regions) {
+    ctx.beginPath();
+    const x=Math.max(0,region.x),y=Math.max(0,region.y);
+    const rw=Math.max(1,Math.min(base.width-x,region.width));
+    const rh=Math.max(1,Math.min(base.height-y,region.height));
+    if(typeof ctx.roundRect==="function") ctx.roundRect(x,y,rw,rh,Math.min(5,rh*.15));
+    else ctx.rect(x,y,rw,rh);
+    ctx.fill();ctx.stroke();
+  }
+  ctx.restore();
+}
+function cancelAudioSource(session) {
+  if(session?.frame!=null) {cancelAnimationFrame(session.frame);session.frame=null;}
+  if(session?.source) {
+    const source=session.source;
+    session.source=null;
+    source.onended=null;
+    try{source.stop();}catch{}
+    try{source.disconnect();}catch{}
+  }
+}
+function stopColourAudio() {
+  ++audioGeneration;   // Invalidates a pending WAV download or playback callback.
+  cancelAudioSource(audioSession);
+  audioSession=null;
+  audioState="stopped";
+  clearAudioHighlight();
+  updateAudioButtons();
+}
+function buildHexAudioModel(run, properName, hex) {
+  const units = speechUnitsForRenderRun(run,properName,{
+    NanpaParser, mode:"uniform",nanpaLinjanMode:"uniform",mixedStyle:"short",
+    enableHexParsing:true,relaxedNanpaLinjanParsing:true,relaxedNanpaLinjanRendering:true,
+    fallbackRunIndex:Number(run?.runIndex)||0,lineIndex:Number(run?.lineIndex)||0
+  });
+  if(!Array.isArray(units)||!units.length) throw new Error("No hexadecimal audio units returned by the shared audio plan.");
+  // All unit text must exactly reconstruct the parser's proper name.
+  const words=properName.split(/\s+/).filter(Boolean);
+  for(let i=0;i<words.length;i++) {
+    const rebuilt=units.filter(unit=>unit.wordIndex===i).map(unit=>unit.text).join("");
+    if(rebuilt.toLowerCase()!==words[i].toLowerCase()) throw new Error("Audio units do not match the proper name at word "+(i+1));
+  }
+  if(units[0]?.text.toLowerCase()!=="nasa") throw new Error("Expected complete Nasa audio head as one unit.");
+  const geom=Array.from(run?.audioGlyphLayout || run?._element?.audioGlyphLayout || []);
+  if(!geom.length) throw new Error("Renderer supplied no glyph geometry for audio highlighting.");
+  const indexed=new Map();
+  for(let j=0;j<geom.length;j++) {
+    const part=geom[j];
+    const idx=Number.isInteger(Number(part?.componentIndex)) ? Number(part.componentIndex) : j;
+    const x=Number(part.x),y=Number(part.y),w=Number(part.width),h=Number(part.height);
+    if([x,y,w,h].every(Number.isFinite)) indexed.set(idx,{x,y,width:w,height:h});
+  }
+  const rects=units.map(unit=>{
+    const visual=Array.from(unit.visualTargets||[]).find(t=>Array.isArray(t.componentIndices)&&t.componentIndices.length);
+    if(!visual) return [];
+    const spans=Array.from(new Set(visual.componentIndices.map(Number))).map(i=>indexed.get(i)).filter(Boolean);
+    return spans;
+  });
+  if(rects.some((regions,index)=>!regions.length && !units[index].suppressActiveHighlight)) throw new Error("Missing glyph mapping for a hexadecimal audio unit.");
+  return {hex,properName,units,rects};
+}
+function renderAudioProperName(model) {
+  const out=$("nameOut");
+  out.replaceChildren();
+  const words=model.properName.split(/\s+/).filter(Boolean);
+  words.forEach((word,wordIndex)=>{
+    const group=model.units.filter(unit=>unit.wordIndex===wordIndex);
+    for(const unit of group) {
+      const span=document.createElement("span");
+      span.className="nameAudioUnit";
+      span.dataset.audioUnit=String(model.units.indexOf(unit));
+      span.textContent=unit.text;
+      out.appendChild(span);
+    }
+    if(wordIndex<words.length-1) out.appendChild(document.createTextNode(" "));
+  });
+}
+function installColourAudioModel(run,hex) {
+  const parsed=NanpaParser.parseNumber(hex,parserOptions);
+  if(!parsed?.isHex || !parsed.properName) throw new Error("No hexadecimal proper name is available for sound.");
+  const model=buildHexAudioModel(run,parsed.properName,hex);
+  audioModel=model;
+  renderAudioProperName(model);
+  updateAudioButtons();
+}
+function buildAudioTimeline(result,units) {
+  const raw=Array.from(result.timeline||[]);
+  if(!raw.length) throw new Error("No audio timing information was returned.");
+  const speech=raw.filter(t=>t.kind==="speech"&&t.nanpaUnit);
+  if(speech.length!==units.length) throw new Error(`Audio/highlight mismatch: ${speech.length} recordings for ${units.length} glyph units.`);
+  let cursor=0;
+  const timeline=raw.map(rec=>{
+    const entry={startSample:Number(rec.startSample),endSample:Number(rec.endSample),index:null};
+    if(rec.kind==="speech"&&rec.nanpaUnit) {
+      const expected=units[cursor].text.toLowerCase();
+      const actual=String(rec.audioUnitKey||"").toLowerCase();
+      if(actual!==expected) throw new Error(`Audio unit ${cursor+1}: expected ${expected}, received ${actual}`);
+      entry.index=cursor++;
+    }
+    return entry;
+  });
+  if(timeline[0].startSample!==0 || timeline.at(-1).endSample!==result.samples.length || timeline.some((t,i)=>t.endSample<=t.startSample || i>0&&timeline[i-1].endSample!==t.startSample)) throw new Error("Audio timeline samples are not contiguous.");
+  return timeline;
+}
+async function prepareColourAudio(model,gen) {
+  if(audioCache.has(model.properName)) return audioCache.get(model.properName);
+  if(!voicePromise) voicePromise=createTokiPonaVoice();
+  const voice=await voicePromise;
+  // Resume in the browser's user-gesture path before asynchronous WAV loading.
+  const context=voice.getAudioContext();
+  await context.resume();
+  const result=await voice.render(model.properName,{
+    alreadyPreprocessed:true,synthesis_mode:"reference_audio",pauseScale:AUDIO_PAUSE_SCALE,
+    syllableGapSeconds:AUDIO_SYLLABLE_GAP_SECONDS,enableHexParsing:true
+  });
+  if(gen!==audioGeneration || audioModel!==model) return null;
+  if(!(result.samples instanceof Float32Array) || !result.samples.length) throw new Error("No WAV samples were generated.");
+  const prepared={voice,context,samples:result.samples,sampleRate:result.sampleRate,timeline:buildAudioTimeline(result,model.units)};
+  audioCache.set(model.properName,prepared);
+  return prepared;
+}
+function audioAtOffset(session,seconds) {
+  const sample=Math.max(0,Math.min(session.prepared.samples.length-1,Math.floor(seconds*session.prepared.sampleRate)));
+  return session.prepared.timeline.find(item=>sample>=item.startSample&&sample<item.endSample)?.index ?? null;
+}
+function runAudioHighlightLoop(session,source) {
+  const tick=()=>{
+    if(session!==audioSession || source!==session.source || audioState!=="playing") return;
+    const offset=session.startOffset+Math.max(0,session.prepared.context.currentTime-session.startTime);
+    const index=audioAtOffset(session,offset);
+    if(index!==session.activeIndex) {
+      session.activeIndex=index;
+      if(index===null) clearAudioHighlight();else drawAudioHighlight(index);
+    }
+    if(offset<session.buffer.duration)session.frame=requestAnimationFrame(tick);
+  };
+  tick();
+}
+function playColourBuffer(session) {
+  const ctx=session.prepared.context;
+  if(!session.buffer) {
+    const {samples,sampleRate}=session.prepared;
+    session.buffer=ctx.createBuffer(1,samples.length,sampleRate);
+    session.buffer.copyToChannel(samples,0);
+  }
+  const offset=Math.max(0,Math.min(session.offset,Math.max(0,session.buffer.duration-.001)));
+  const source=ctx.createBufferSource();
+  source.buffer=session.buffer;
+  source.connect(ctx.destination);
+  session.source=source;
+  session.startTime=ctx.currentTime;
+  session.startOffset=offset;
+  session.activeIndex=undefined;
+  audioState="playing";
+  updateAudioButtons();
+  runAudioHighlightLoop(session,source);
+  source.onended=()=>{if(session===audioSession&&session.source===source&&audioState==="playing")stopColourAudio();};
+  source.start(0,offset);
+}
+function pauseColourAudio() {
+  const session=audioSession;
+  if(!session||audioState!=="playing")return;
+  session.offset=Math.min(session.buffer.duration,session.startOffset+Math.max(0,session.prepared.context.currentTime-session.startTime));
+  cancelAudioSource(session);
+  audioState="paused";
+  updateAudioButtons();
+  // Retain the current highlight until resumed or stopped.
+}
+async function toggleColourAudio() {
+  if(audioState==="playing") {pauseColourAudio();return;}
+  if(audioState==="paused"&&audioSession) {playColourBuffer(audioSession);return;}
+  const model=audioModel;
+  if(!model)return;
+  const gen=++audioGeneration;
+  audioState="building";
+  clearAudioHighlight();
+  updateAudioButtons();
+  try {
+    const prepared=await prepareColourAudio(model,gen);
+    if(!prepared || gen!==audioGeneration || audioModel!==model)return;
+    audioSession={generation:gen,prepared,offset:0,source:null,frame:null,buffer:null,activeIndex:undefined};
+    playColourBuffer(audioSession);
+  }catch(err) {
+    if(gen!==audioGeneration)return;
+    stopColourAudio();
+    $("cartoucheStatus").textContent="Audio playback unavailable: "+String(err?.message||err);
+  }
+}
+function setupColourAudioHandlers() {
+  $("nameAudioPlay").addEventListener("click",()=>{void toggleColourAudio();});
+  $("nameAudioStop").addEventListener("click",stopColourAudio);
+  window.addEventListener("resize",()=>{
+    if(audioSession?.activeIndex!=null) drawAudioHighlight(audioSession.activeIndex);
+    else clearAudioHighlight();
+  });
+  window.addEventListener("beforeunload",stopColourAudio);
+  updateAudioButtons();
+}
 
 function readInputColour(raw) {
   const s=String(raw??"").trim();
@@ -446,6 +705,9 @@ function colourLabelContrast([r,g,b]) {
   return (.2126*c[0]+.7152*c[1]+.0722*c[2])>.18 ? "#111" : "#fff";
 }
 function syncViews({syncEntry=true}={}) {
+  stopColourAudio();
+  audioModel=null;
+  updateAudioButtons();
   const hex=hexOf(rgb);
   $("preview").style.backgroundColor=hex;
   $("previewHex").textContent=hex;
@@ -497,6 +759,9 @@ function scheduleCartouche(hex) {
 // Display the canonical hex cartouche produced by the uploaded parser/renderer.
 // Keep the last render only: pointer drags may cause many asynchronous renders.
 async function renderCartouche(hex) {
+  stopColourAudio();
+  audioModel=null;
+  updateAudioButtons();
   const serial=++renderSerial;
   const status=$("cartoucheStatus");
   if(!canRender) {status.textContent=rendererError || "Loading the sitelen pona renderer…";return;}
@@ -520,6 +785,9 @@ async function renderCartouche(hex) {
     const target=$("cartoucheCanvas");
     target.width=Math.max(1,image.width|0);target.height=Math.max(1,image.height|0);
     const ctx=target.getContext("2d");ctx.clearRect(0,0,target.width,target.height);ctx.drawImage(image,0,0);
+    $("cartoucheHighlightCanvas").width=target.width;
+    $("cartoucheHighlightCanvas").height=target.height;
+    installColourAudioModel(run,hex);
     status.textContent=(abbreviated?"Abbreviated hexadecimal cartouche":"Full hexadecimal cartouche") + (fontAvailable ? "" : " — sitelen pona font not loaded; check the fonts/ directory.");
   } catch(err) {
     if(serial!==renderSerial)return;
@@ -551,6 +819,7 @@ function setupToolTabs() {
 }
 function setupEventHandlers() {
   setupToolTabs();
+  setupColourAudioHandlers();
   // Both events are useful: `input` changes live while the native picker moves,
   // `change` handles browsers that only commit a colour at the end.
   // Skip identical values because some browsers emit both for one selection.
@@ -602,6 +871,9 @@ function setupEventHandlers() {
     $("colourForm").requestSubmit();
   }));
   $("abbrevToggle").addEventListener("change",()=>{
+    stopColourAudio();
+    audioModel=null;
+    updateAudioButtons();
     savePreference(ABBREV_STORAGE_KEY, String($("abbrevToggle").checked));
     if(pendingRenderTimer!==null){clearTimeout(pendingRenderTimer);pendingRenderTimer=null;}
     void renderCartouche(hexOf(rgb));
