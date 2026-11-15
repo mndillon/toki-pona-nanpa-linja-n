@@ -1144,7 +1144,7 @@
       levelIntroPending: true,
       x: 3.1,
       y: 4.5,
-      angle: 0,
+      angle: Math.atan2(3.0 - 4.5, 3.25 - 3.1),
       carrying: null,
       ballOnTable: false,
       lowerPowerOn: false,
