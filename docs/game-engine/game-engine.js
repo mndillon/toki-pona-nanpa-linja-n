@@ -1,11 +1,21 @@
 (() => {
   'use strict';
 
-  const SAVE_VERSION = 4;
+  const SAVE_VERSION = 5;
+  const LEGACY_SAVE_VERSION = 4;
+  const GAME_ID = 'toki-pona-rooms';
+  const ORIGINAL_CAMPAIGN_ID = 'toki-pona-glyph-quest';
+  const CAMPAIGN_ID = String(window.TOKI_PONA_CAMPAIGN?.id || ORIGINAL_CAMPAIGN_ID);
   const DB_NAME = 'tokiPonaRoomsGame';
   const DB_VERSION = 1;
   const STORE_NAME = 'saves';
-  const SAVE_ID = 'main';
+  const LEGACY_SAVE_ID = 'main'; // Read-only after upgrading; never overwrite this record.
+  const CAMPAIGN_SAVE_ID = `campaign:${CAMPAIGN_ID}:main`;
+  const MANUAL_LANGUAGE_KEY = `toki-pona-rooms-manual-language:${CAMPAIGN_ID}`;
+  let activeSaveKey = CAMPAIGN_SAVE_ID;
+  let savesEnabled = true;
+  let suppressPageSave = false;
+  let saveInFlight = Promise.resolve();
 
   function makeSaveEpoch(prefix) {
     try { return window.TokiPonaGameReset?.makeSaveEpoch?.(prefix || 'game') || `game-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,12)}`; }
@@ -93,6 +103,14 @@
   const soundBtn = document.getElementById('soundBtn');
   const mapBtn = document.getElementById('mapBtn');
   const resetBtn = document.getElementById('resetBtn');
+  const exportGameBtn = document.getElementById('exportGameBtn');
+  const importGameBtn = document.getElementById('importGameBtn');
+  const levelIntroLoadGameBtn = document.getElementById('levelIntroLoadGameBtn');
+  const sentenceExportGameBtn = document.getElementById('sentenceExportGameBtn');
+  const sentenceImportGameBtn = document.getElementById('sentenceImportGameBtn');
+  const puzzleExportGameBtn = document.getElementById('puzzleExportGameBtn');
+  const puzzleImportGameBtn = document.getElementById('puzzleImportGameBtn');
+  const gameImportInput = document.getElementById('gameImportInput');
   const collectionBtn = document.getElementById('collectionBtn');
   const collectionBtnCountEl = document.getElementById('collectionBtnCount');
   const continueCampaignBtn = document.getElementById('continueCampaignBtn');
@@ -175,6 +193,13 @@
     set('localInstructionLabel','hudLocalInstruction');
     set('currentObjectiveLabel','hudCurrentObjective');
     set('controlsTitle','controlsTitle');
+    set('exportGameBtn','saveGame');
+    set('importGameBtn','loadGame');
+    set('puzzleExportGameBtn','saveGame');
+    set('puzzleImportGameBtn','loadGame');
+    set('levelIntroLoadGameBtn','loadGame');
+    set('sentenceExportGameBtn','saveGame');
+    set('sentenceImportGameBtn','loadGame');
     set('mouseHint','mouseHint');
     set('collectionTitleLabel','glyphCollection');
     set('collectionBtnLabel','glyphCollection');
@@ -1104,6 +1129,15 @@
   function freshState() {
     return {
       version: SAVE_VERSION,
+      gameId: GAME_ID,
+      campaignId: CAMPAIGN_ID,
+      saveId: makeSaveEpoch('save'),
+      uiLanguage,
+      manualLanguageChangedAt: 0,
+      puzzleProgress: {},
+      activePuzzleId: null,
+      activeSentencePanelId: null,
+      puzzleCompletionHistory: [],
       saveEpoch: makeSaveEpoch('game'),
       levelId: 'main',
       chapter: 1,
@@ -1294,31 +1328,174 @@
     });
   }
 
-  function dbGet() {
-    return new Promise((resolve) => {
+  function dbGet(key = activeSaveKey) {
+    return new Promise((resolve, reject) => {
       if (!db) { resolve(null); return; }
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const req = tx.objectStore(STORE_NAME).get(SAVE_ID);
-      req.onsuccess = () => resolve(req.result ? req.result.state : null);
-      req.onerror = () => resolve(null);
+      let tx;
+      try { tx = db.transaction(STORE_NAME, 'readonly'); }
+      catch (err) { reject(err); return; }
+      const request = tx.objectStore(STORE_NAME).get(key);
+      request.onsuccess = () => resolve(request.result?.state ?? null);
+      request.onerror = () => reject(request.error || new Error('Save read failed'));
     });
   }
 
-  function dbPut(snapshot) {
-    return new Promise((resolve) => {
-      if (!db) { resolve(); return; }
+  // Compare the save generation in the same transaction as the write; this
+  // prevents an older tab from overwriting progress made in another tab.
+  function dbPut(snapshot, key = activeSaveKey, options = {}) {
+    if (key === LEGACY_SAVE_ID) return Promise.reject(new Error('Legacy saves are read-only'));
+    if (!db) return Promise.reject(new Error('Persistent storage is unavailable'));
+    return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put({ id: SAVE_ID, state: snapshot, updatedAt: Date.now() });
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.get(key);
+      let rejected = false;
+      const abort = message => {
+        rejected = true;
+        try { tx.abort(); } catch (_) {}
+        reject(new Error(message));
+      };
+      request.onsuccess = () => {
+        const existing = request.result?.state;
+        if (options.createOnly && request.result) { abort('The save already exists'); return; }
+        if (!options.replace && existing) {
+          const theirs = String(existing.saveEpoch || '');
+          const ours = String(snapshot.saveEpoch || '');
+          if (theirs && ours && theirs !== ours) {
+            abort('Progress changed in another window'); return;
+          }
+        }
+        store.put({ id:key, state:snapshot, updatedAt:Date.now() });
+      };
+      request.onerror = () => abort('Save read failed');
       tx.oncomplete = () => resolve();
-      tx.onerror = () => resolve();
-      tx.onabort = () => resolve();
+      tx.onerror = () => { if (!rejected) reject(tx.error || new Error('Save write failed')); };
+      tx.onabort = () => { if (!rejected) reject(tx.error || new Error('Save write aborted')); };
     });
+  }
+
+  // An invalid upgraded record is backed up before replacement. The legacy
+  // main record is *never* altered, including on failed migration or import.
+  function dbRepairWithLegacy(snapshot, invalidState) {
+    if (!db) return Promise.reject(new Error('Persistent storage is unavailable'));
+    return new Promise((resolve,reject) => {
+      const tx=db.transaction(STORE_NAME,'readwrite');
+      const store=tx.objectStore(STORE_NAME);
+      const check=store.get(CAMPAIGN_SAVE_ID);
+      check.onsuccess=()=>{
+        // If another window fixed the save meanwhile, do not overwrite it.
+        if (JSON.stringify(check.result?.state)!==JSON.stringify(invalidState)) {
+          try{tx.abort();}catch(_){}
+          return;
+        }
+        const backupId=`recovery:${CAMPAIGN_SAVE_ID}:${makeSaveEpoch('invalid')}`;
+        store.add({id:backupId,state:invalidState,updatedAt:Date.now()});
+        store.put({id:CAMPAIGN_SAVE_ID,state:snapshot,updatedAt:Date.now()});
+      };
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error('Save recovery failed'));
+      tx.onabort=()=>reject(tx.error||new Error('Save recovery aborted'));
+    });
+  }
+
+  // The current valid save is backed up in the SAME transaction as import.
+  // Import failures cannot truncate the previous game or change legacy main.
+  function dbInstallImportedSnapshot(snapshot) {
+    if (!db) return Promise.reject(new Error('Persistent storage is unavailable'));
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE_NAME,'readwrite');
+      const store=tx.objectStore(STORE_NAME);
+      const check=store.get(CAMPAIGN_SAVE_ID);
+      check.onsuccess=()=>{
+        if (check.result?.state) {
+          const id=`backup:${CAMPAIGN_SAVE_ID}:${makeSaveEpoch('import')}`;
+          store.add({id,state:check.result.state,updatedAt:Date.now()});
+        }
+        store.put({id:CAMPAIGN_SAVE_ID,state:snapshot,updatedAt:Date.now()});
+      };
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error('Import failed'));
+      tx.onabort=()=>reject(tx.error||new Error('Import aborted'));
+    });
+  }
+
+  function validateSaveRecord(saved, legacyAllowed = true) {
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return false;
+    if (saved.version !== SAVE_VERSION && !(legacyAllowed && saved.version === LEGACY_SAVE_VERSION)) return false;
+    if (saved.version === SAVE_VERSION && (saved.gameId !== GAME_ID || saved.campaignId !== CAMPAIGN_ID)) return false;
+    if (!Object.prototype.hasOwnProperty.call(levels, saved.levelId)) return false;
+    if (![saved.x,saved.y,saved.angle].every(Number.isFinite)) return false;
+    if (saved.campaign != null) {
+      const campaign=saved.campaign;
+      if (!campaign || typeof campaign !== 'object' || Array.isArray(campaign)) return false;
+      if (!window.TOKI_PONA_CAMPAIGN?.levels?.some(l => l.id === campaign.currentLevelId)) return false;
+      if (!Array.isArray(campaign.globalGlyphs) || !campaign.levelStates || typeof campaign.levelStates !== 'object') return false;
+      if (!campaign.globalGlyphs.every(g => typeof g === 'string' && STANDARD_120.concat(window.TOKI_PONA_CAMPAIGN?.baselineGlyphs||[]).includes(g))) return false;
+      if (campaign.currentArea != null && !window.TOKI_PONA_CAMPAIGN.levels.some(l => l.areas?.some(a => a.id === campaign.currentArea))) return false;
+    }
+    for (const key of ['collected','puzzleVariants','explored','visitedRooms','openDoors']) {
+      if (saved[key] != null && (typeof saved[key] !== 'object' || Array.isArray(saved[key]))) return false;
+    }
+    if (saved.version === SAVE_VERSION) {
+      if (saved.uiLanguage != null && !['tp','en'].includes(saved.uiLanguage)) return false;
+      if (saved.puzzleProgress != null && (typeof saved.puzzleProgress !== 'object' || Array.isArray(saved.puzzleProgress))) return false;
+      if (saved.puzzleCompletionHistory != null && !Array.isArray(saved.puzzleCompletionHistory)) return false;
+      if (saved.activePuzzleId != null && typeof saved.activePuzzleId !== 'string') return false;
+    }
+    return true;
+  }
+
+  async function readOrMigrateSave() {
+    if (!db) { savesEnabled=false; return null; }
+    let current;
+    try { current=await dbGet(CAMPAIGN_SAVE_ID); }
+    catch (err) { savesEnabled=false; console.warn('[game] Cannot read save',err); return null; }
+    if (validateSaveRecord(current, false)) return current;
+    // Only the original campaign owns the historical main record.
+    if (CAMPAIGN_ID !== ORIGINAL_CAMPAIGN_ID) {
+      if (current) savesEnabled=false;
+      return null;
+    }
+    let legacy;
+    try { legacy=await dbGet(LEGACY_SAVE_ID); }
+    catch (err) { savesEnabled=false; console.warn('[game] Cannot read old save',err); return null; }
+    if (validateSaveRecord(legacy)) {
+      const migrated=normalizeSavedState(legacy);
+      try {
+        if (current) await dbRepairWithLegacy(migrated,current);
+        else await dbPut(migrated,CAMPAIGN_SAVE_ID,{createOnly:true});
+        const verified=await dbGet(CAMPAIGN_SAVE_ID);
+        if (!validateSaveRecord(verified,false) || JSON.stringify(verified)!==JSON.stringify(migrated)) throw new Error('Save verification failed');
+        return verified;
+      } catch (err) {
+        // Another tab could have won a create-only race; never replace it.
+        const raced=await dbGet(CAMPAIGN_SAVE_ID).catch(()=>null);
+        if(validateSaveRecord(raced,false)) return raced;
+        savesEnabled=false;
+        console.warn('[game] Save migration unavailable; original save remains intact',err);
+        return legacy;
+      }
+    }
+    if (current) {
+      savesEnabled=false;
+      console.warn('[game] Existing save could not be validated; preserving it without writes');
+    }
+    return null;
   }
 
   function normalizeSavedState(saved) {
-    if (!saved || saved.version !== SAVE_VERSION) return freshState();
+    if (!validateSaveRecord(saved)) return freshState();
     const next = Object.assign(freshState(), saved || {});
     next.version = SAVE_VERSION;
+    next.gameId = GAME_ID;
+    next.campaignId = CAMPAIGN_ID;
+    next.saveId = typeof saved?.saveId === 'string' && saved.saveId ? saved.saveId : makeSaveEpoch('save');
+    next.uiLanguage = ['tp','en'].includes(saved?.uiLanguage) ? saved.uiLanguage : uiLanguage;
+    next.manualLanguageChangedAt = Number.isFinite(saved?.manualLanguageChangedAt) ? saved.manualLanguageChangedAt : 0;
+    next.puzzleProgress = saved?.puzzleProgress && typeof saved.puzzleProgress === 'object' && !Array.isArray(saved.puzzleProgress) ? JSON.parse(JSON.stringify(saved.puzzleProgress)) : {};
+    next.activePuzzleId = typeof saved?.activePuzzleId === 'string' ? saved.activePuzzleId : null;
+    next.activeSentencePanelId = typeof saved?.activeSentencePanelId === 'string' ? saved.activeSentencePanelId : null;
+    next.puzzleCompletionHistory = Array.isArray(saved?.puzzleCompletionHistory) ? saved.puzzleCompletionHistory.slice(0,2000) : [];
     next.saveEpoch = String(saved?.saveEpoch || '').trim() || makeSaveEpoch('legacy');
     next.collected = Object.assign({}, saved?.collected || {});
     next.completedPanels = Object.assign({}, saved?.completedPanels || {});
@@ -1373,37 +1550,236 @@
     return next;
   }
 
+  function recordPuzzleDraft() {
+    if (!activeCampaignPuzzle) return;
+    const id=activeCampaignPuzzle.id;
+    if (!state.puzzleProgress || typeof state.puzzleProgress!=='object') state.puzzleProgress={};
+    state.puzzleProgress[id]={
+      slotValues:Array.isArray(puzzleSlotValues)?puzzleSlotValues.slice():[],
+      mechanismState:puzzleMechanismState ? JSON.parse(JSON.stringify(puzzleMechanismState)) : null,
+      selectedGlyph:selectedPuzzleGlyph,
+      selectedFamily:selectedPuzzleFamily,
+      selectedSlotIndex:selectedPuzzleSlotIndex
+    };
+  }
+
+  function completeSnapshot() {
+    recordPuzzleDraft();
+    state.version=SAVE_VERSION;
+    state.gameId=GAME_ID;
+    state.campaignId=CAMPAIGN_ID;
+    state.uiLanguage=uiLanguage;
+    state.activePuzzleId=activeCampaignPuzzle?.id || null;
+    state.activeSentencePanelId=activePanelId && sentenceOverlay && !sentenceOverlay.hidden ? activePanelId : null;
+    if (campaignAdapter) state.campaign=campaignAdapter.snapshot();
+    return JSON.parse(JSON.stringify(state));
+  }
+
   function saveState() {
-    saveQueued = true;
+    if (suppressPageSave) return;
+    saveQueued=true;
     clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(() => { flushSave(); }, 80);
+    saveTimer=window.setTimeout(() => { flushSave().catch(err => console.warn('[game] Save failed',err)); },80);
   }
 
   async function flushSave(options) {
-    const opts = options || {};
-    if (!saveQueued && !opts.replace) return;
-    saveQueued = false;
-    if (campaignAdapter) state.campaign = campaignAdapter.snapshot();
-    const snapshot = JSON.parse(JSON.stringify(state));
-
-    if (!opts.replace && db) {
-      const existing = await dbGet();
-      const existingEpoch = String(existing?.saveEpoch || '').trim();
-      const ours = String(snapshot.saveEpoch || '').trim();
-      if (existingEpoch && ours && existingEpoch !== ours) {
-        const directive = currentResetDirective();
-        const oursIsActiveReset = directive && directive.epoch === ours;
-        if (!oursIsActiveReset) {
-          if (!externalSaveConflictShown) {
-            externalSaveConflictShown = true;
-            showMessage('Your progress changed in another window. Reload this page to continue.');
-          }
-          return;
-        }
+    if (!savesEnabled || suppressPageSave || !db) return false;
+    const opts=options||{};
+    if (!saveQueued && !opts.replace) return true;
+    saveQueued=false;
+    const snapshot=completeSnapshot();
+    try {
+      const write=saveInFlight.then(()=>dbPut(snapshot,activeSaveKey,{replace:!!opts.replace}));
+      saveInFlight=write.catch(()=>{});
+      await write;
+      return true;
+    } catch(err) {
+      if (!externalSaveConflictShown) {
+        externalSaveConflictShown=true;
+        console.warn('[game] Progress cannot be saved safely',err);
+        showMessage(isTpLanguage()?'musi sina li ken awen ala lon ilo ni. sina ken awen e musi lon lipu.':'Progress cannot be saved on this device. You can still download a game save.');
       }
+      savesEnabled=false;
+      return false;
     }
+  }
 
-    await dbPut(snapshot);
+  function restoreSavedLanguage(saved) {
+    if (!['tp','en'].includes(saved?.uiLanguage)) return;
+    // Prefer a *more recent explicit manual selection* made on this device even
+    // when the browser closed before its IndexedDB autosave finished. An import
+    // explicitly clears this override, so the imported language wins.
+    let language=saved.uiLanguage;
+    try {
+      const manual=JSON.parse(window.localStorage?.getItem(MANUAL_LANGUAGE_KEY)||'null');
+      if(manual?.saveId===saved.saveId &&
+          Number(manual.changedAt)>Number(saved.manualLanguageChangedAt||0) &&
+          ['tp','en'].includes(manual.language)) {
+        language=manual.language;
+        state.manualLanguageChangedAt=Number(manual.changedAt);
+        state.uiLanguage=language;
+      }
+    }catch(_){}
+    // Run on startup only. Never reapply an older saved setting during play.
+    uiLanguage=I18N?.setLanguage?.(language) || language;
+    applyStaticLanguage();
+    const en=document.getElementById('gameDisclaimerEn');
+    const tp=document.getElementById('gameDisclaimerTp');
+    if(en) en.hidden=uiLanguage!=='en';
+    if(tp) tp.hidden=uiLanguage==='en';
+  }
+
+  function portableSaveFilename(date = new Date()) {
+    return `${CAMPAIGN_ID}-${date.toISOString().replace(/[:.]/g,'-')}.json`;
+  }
+
+  function downloadJson(filename,data) {
+    const blob=new Blob([JSON.stringify(data,null,2)+'\n'],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url; link.download=filename;
+    document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }
+
+  // Portable exports intentionally protect their entire *gameState* instead of
+  // maintaining a fragile allowlist of secret puzzle fields. This is only a
+  // deterrent to casual save-file inspection: all key derivation inputs and the
+  // decryption code are public in a client-side game. Browser IndexedDB autosaves
+  // remain plain JSON-compatible snapshots and are not encrypted.
+  const PORTABLE_FORMAT = 'toki-pona-rooms-portable-save';
+  const PORTABLE_FORMAT_VERSION = 2;
+  const PORTABLE_CIPHER = 'AES-256-GCM';
+  const portableTextEncoder = new TextEncoder();
+  const portableTextDecoder = new TextDecoder('utf-8', {fatal:true});
+
+  function portableCrypto() {
+    const c = window.crypto;
+    if (!c?.subtle || typeof c.getRandomValues !== 'function') {
+      throw new Error('Secure browser cryptography is unavailable; use HTTPS or localhost');
+    }
+    return c;
+  }
+
+  function portableBase64(bytes) {
+    let binary = '';
+    for (let start=0;start<bytes.length;start+=0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(start,start+0x8000));
+    }
+    return btoa(binary);
+  }
+
+  function portableUnbase64(value, expectedLength=null) {
+    if (typeof value !== 'string' || !value.length || value.length % 4 !== 0 ||
+        !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) throw new Error('Invalid encoded game data');
+    const binary=atob(value);
+    if (expectedLength !== null && binary.length !== expectedLength) throw new Error('Invalid encoded field length');
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    return bytes;
+  }
+
+  async function portableKey(seed) {
+    // Deterministic, campaign-bound, publicly reproducible key. Never claim this
+    // provides confidentiality against someone who inspects the JavaScript.
+    const c=portableCrypto();
+    const source=`toki-pona-rooms/portable/v2\0${GAME_ID}\0${CAMPAIGN_ID}\0${portableBase64(seed)}`;
+    const digest=await c.subtle.digest('SHA-256',portableTextEncoder.encode(source));
+    return c.subtle.importKey('raw',digest,{name:'AES-GCM'},false,['encrypt','decrypt']);
+  }
+
+  function portableMetadata(file) {
+    return {format:file.format,formatVersion:file.formatVersion,gameId:file.gameId,campaignId:file.campaignId,savedAt:file.savedAt};
+  }
+
+  async function protectPortableSnapshot(snapshot, savedAt=new Date().toISOString()) {
+    const c=portableCrypto();
+    const seed=c.getRandomValues(new Uint8Array(16));
+    const nonce=c.getRandomValues(new Uint8Array(12));
+    const file={format:PORTABLE_FORMAT,formatVersion:PORTABLE_FORMAT_VERSION,gameId:GAME_ID,campaignId:CAMPAIGN_ID,savedAt};
+    const key=await portableKey(seed);
+    const additionalData=portableTextEncoder.encode(JSON.stringify(portableMetadata(file)));
+    const plain=portableTextEncoder.encode(JSON.stringify(snapshot));
+    const sealed=await c.subtle.encrypt({name:'AES-GCM',iv:nonce,additionalData,tagLength:128},key,plain);
+    file.protectedGameState={
+      algorithm:PORTABLE_CIPHER,
+      seed:portableBase64(seed),
+      nonce:portableBase64(nonce),
+      data:portableBase64(new Uint8Array(sealed))
+    };
+    return file;
+  }
+
+  async function unprotectPortableSnapshot(file) {
+    if (!file || file.format!==PORTABLE_FORMAT || file.formatVersion!==PORTABLE_FORMAT_VERSION ||
+        file.gameId!==GAME_ID || file.campaignId!==CAMPAIGN_ID || typeof file.savedAt!=='string') {
+      throw new Error('Wrong game or campaign or unsupported save format');
+    }
+    const sealed=file.protectedGameState;
+    if (!sealed || sealed.algorithm!==PORTABLE_CIPHER || typeof sealed!=='object') {
+      throw new Error('Missing protected game state');
+    }
+    const seed=portableUnbase64(sealed.seed,16);
+    const nonce=portableUnbase64(sealed.nonce,12);
+    const data=portableUnbase64(sealed.data);
+    if (data.length<17 || data.length>8*1024*1024) throw new Error('Invalid protected game size');
+    const key=await portableKey(seed);
+    const additionalData=portableTextEncoder.encode(JSON.stringify(portableMetadata(file)));
+    const raw=await portableCrypto().subtle.decrypt({name:'AES-GCM',iv:nonce,additionalData,tagLength:128},key,data);
+    return JSON.parse(portableTextDecoder.decode(raw),(key,value)=>{
+      if (['__proto__','constructor','prototype'].includes(key)) throw new Error('Invalid game save data');
+      return value;
+    });
+  }
+
+  async function exportGame() {
+    try {
+      const snapshot=completeSnapshot();
+      const exportedAt=new Date();
+      const exportFile=await protectPortableSnapshot(snapshot,exportedAt.toISOString());
+      downloadJson(portableSaveFilename(exportedAt),exportFile);
+      saveState();
+    }catch(err){console.warn('[game] Export failed',err);alert(uiText('saveGameFailed'));}
+  }
+
+  async function importGameFile(file) {
+    if(!file) return;
+    try {
+      if(file.size>8*1024*1024) throw new Error('File exceeds game save size limit');
+      const loaded=JSON.parse(await file.text(), (key,value)=>{
+        if (['__proto__','constructor','prototype'].includes(key)) throw new Error('Invalid save data');
+        return value;
+      });
+      const recovered=await unprotectPortableSnapshot(loaded);
+      if(!validateSaveRecord(recovered,false)) throw new Error('Invalid or incompatible save');
+      const incoming=normalizeSavedState(recovered);
+      const expectedCampaignLevel=window.TOKI_PONA_CAMPAIGN?.levels?.find(l=>l.id===incoming.campaign?.currentLevelId);
+      if(incoming.campaign && expectedCampaignLevel && Number(expectedCampaignLevel.ordinal)!==Number(incoming.chapter)) throw new Error('Inconsistent campaign level');
+      if(!confirm(uiText('loadGameConfirm'))) return;
+      if(!db) throw new Error('This device cannot save imported progress');
+      // Do not let the leaving page overwrite the imported record on pagehide.
+      suppressPageSave=true;
+      clearTimeout(saveTimer);
+      saveQueued=false;
+      await saveInFlight;
+      incoming.saveEpoch=makeSaveEpoch('import');
+      incoming.uiLanguage=['tp','en'].includes(recovered.uiLanguage)?recovered.uiLanguage:uiLanguage;
+      const previous=await dbGet(CAMPAIGN_SAVE_ID);
+      await dbInstallImportedSnapshot(incoming);
+      const verify=await dbGet(CAMPAIGN_SAVE_ID);
+      if(!validateSaveRecord(verify,false) || JSON.stringify(verify)!==JSON.stringify(incoming)) {
+        if(previous) await dbPut(previous,CAMPAIGN_SAVE_ID,{replace:true});
+        throw new Error('Imported save verification failed');
+      }
+      try { window.localStorage?.removeItem(MANUAL_LANGUAGE_KEY); } catch (_) {}
+      window.location.reload();
+    }catch(err){
+      suppressPageSave=false;
+      console.warn('[game] Game import failed',err);
+      alert(uiText('loadGameFailed'));
+    }finally {
+      if(gameImportInput) gameImportInput.value='';
+    }
   }
 
   function level() { return levels[state.levelId]; }
@@ -2972,6 +3348,14 @@
       blockedTone();
       return result;
     }
+    if (!result.alreadySolved) {
+      state.puzzleCompletionHistory=state.puzzleCompletionHistory||[];
+      if (!state.puzzleCompletionHistory.some(entry=>entry.puzzleId===puzzleId)) {
+        state.puzzleCompletionHistory.push({sequence:state.puzzleCompletionHistory.length+1,levelId:campaignRuntime()?.currentLevelId||null,puzzleId,completedAt:new Date().toISOString(),method:'player'});
+      }
+    }
+    if (state.puzzleProgress) delete state.puzzleProgress[puzzleId];
+    if (state.activePuzzleId===puzzleId) state.activePuzzleId=null;
     syncWorldFromCampaign();
     state.campaign = campaignAdapter.snapshot();
     if (result.awarded && result.awarded.length) {
@@ -3414,6 +3798,7 @@
     renderSentencePanel();
     openModal(sentenceOverlay);
     sentenceCloseBtn.focus({ preventScroll: true });
+    saveState();
   }
 
   function renderSentencePanel() {
@@ -3466,6 +3851,12 @@
 
   function puzzleSequence(puzzle) {
     return Array.isArray(puzzle?.inputSequence) ? puzzle.inputSequence.slice() : [];
+  }
+
+  function puzzleInputCount(puzzle) {
+    if (puzzle?.type === 'country-cartouche') return String(puzzle.ui?.payload?.answer||'').toUpperCase().replace(/[^AEIJKLMNOPSTUW]/g,'').length;
+    if (puzzle?.type === 'country-crossword') return countryCrosswordModel(puzzle).cells.length;
+    return puzzleSequence(puzzle).length;
   }
 
   function puzzleRewardGlyphs(puzzle) {
@@ -7232,15 +7623,24 @@
   function openCampaignPuzzleHost(puzzle) {
     activeCampaignPuzzle = puzzle;
     clearTutorialSubmissionFeedback();
-    puzzleSlotValues = Array(puzzleSequence(puzzle).length).fill(null);
-    selectedPuzzleGlyph = null;
-    selectedPuzzleFamily = null;
-    selectedPuzzleSlotIndex = puzzleSequence(puzzle).length ? 0 : null;
+    const prior=state.puzzleProgress?.[puzzle.id];
+    const inputCount=puzzleInputCount(puzzle);
+    puzzleSlotValues = Array.isArray(prior?.slotValues) && prior.slotValues.length===inputCount
+      ? prior.slotValues.slice() : Array(inputCount).fill(null);
+    selectedPuzzleGlyph = typeof prior?.selectedGlyph==='string' ? prior.selectedGlyph : null;
+    selectedPuzzleFamily = typeof prior?.selectedFamily==='string' ? prior.selectedFamily : null;
+    selectedPuzzleSlotIndex = Number.isInteger(prior?.selectedSlotIndex) && prior.selectedSlotIndex>=0 && prior.selectedSlotIndex<inputCount
+      ? prior.selectedSlotIndex : (inputCount ? 0 : null);
     if(isMechanismPuzzle(puzzle)){
-      const savedMechanism=String(puzzle.id||'').startsWith('l10-')?state.l10MechanismStates?.[puzzle.id]:String(puzzle.id||'').startsWith('l11-')?state.l11MechanismStates?.[puzzle.id]:String(puzzle.id||'').startsWith('l12-')?state.l12MechanismStates?.[puzzle.id]:null;
-      puzzleMechanismState=savedMechanism?JSON.parse(JSON.stringify(savedMechanism)):freshMechanismState(puzzle);
+      const legacyMechanism=String(puzzle.id||'').startsWith('l10-')?state.l10MechanismStates?.[puzzle.id]:String(puzzle.id||'').startsWith('l11-')?state.l11MechanismStates?.[puzzle.id]:String(puzzle.id||'').startsWith('l12-')?state.l12MechanismStates?.[puzzle.id]:null;
+      const savedMechanism=prior?.mechanismState || legacyMechanism;
+      puzzleMechanismState=savedMechanism && typeof savedMechanism==='object'
+        ? JSON.parse(JSON.stringify(savedMechanism)) : freshMechanismState(puzzle);
+      if (puzzle.type==='tone-sequence') puzzleMechanismState.playing=false;
     }else puzzleMechanismState=null;
+    state.activePuzzleId=puzzle.id;
     renderCampaignPuzzle();
+    saveState();
     openModal(puzzleOverlay);
     scheduleMobileLandscapePuzzleFit();
     const firstControl = puzzleSlots.querySelector('.puzzleSlot.fillable') || puzzleTray.querySelector('.puzzleFamilyKey');
@@ -7250,11 +7650,12 @@
   function clearCampaignPuzzleSlots() {
     if (!activeCampaignPuzzle) return;
     clearTutorialSubmissionFeedback();
-    if (isMechanismPuzzle(activeCampaignPuzzle)) { resetMechanismState(activeCampaignPuzzle); renderCampaignPuzzle(); return; }
-    puzzleSlotValues = Array(puzzleSequence(activeCampaignPuzzle).length).fill(null);
+    if (isMechanismPuzzle(activeCampaignPuzzle)) { resetMechanismState(activeCampaignPuzzle); renderCampaignPuzzle(); saveState(); return; }
+    puzzleSlotValues = Array(puzzleInputCount(activeCampaignPuzzle)).fill(null);
     selectedPuzzleGlyph = null;
     selectedPuzzleSlotIndex = puzzleSlotValues.length ? 0 : null;
     renderCampaignPuzzle();
+    saveState();
   }
 
   function validateCampaignPuzzleSlots() {
@@ -7305,6 +7706,7 @@
     puzzleCard?.classList.remove('puzzleCard--keys','puzzleCard--map','puzzleCard--mechanism');
     if (puzzleCard) delete puzzleCard.dataset.puzzleType;
     activeCampaignPuzzle = null;
+    state.activePuzzleId=null;
     puzzleMechanismState = null;
     selectedPuzzleSlotIndex = null;
     const result = completeCampaignPuzzle(id, `Earned by completing ${title}.`);
@@ -7313,6 +7715,8 @@
 
   function closeCampaignPuzzleHost() {
     if (activeCampaignPuzzle?.ui?.canExit === false) return;
+    recordPuzzleDraft();
+    state.activePuzzleId=null;
     clearTutorialSubmissionFeedback();
     activeCampaignPuzzle = null;
     puzzleSlotValues = [];
@@ -7324,6 +7728,7 @@
     puzzleMechanismState = null;
     endPuzzleGlyphDrag();
     closeModal(puzzleOverlay);
+    saveState();
   }
 
   function findGenerousPuzzleDropSlot(clientX, clientY) {
@@ -7816,12 +8221,13 @@
     if (resetConfirmOverlay && !resetConfirmOverlay.hidden) closeModal(resetConfirmOverlay);
     try { window.TokiPonaGameReset?.clearResetDirective?.(window.localStorage); } catch (_) {}
     state = freshState();
+    state.uiLanguage=uiLanguage;
     resetWorldObjects();
     campaignAdapter = window.TokiPonaCampaignEngineAdapter.createAdapter({ campaign: window.TOKI_PONA_CAMPAIGN, persisted:null });
     state.campaign = campaignAdapter.snapshot();
     syncWorldFromCampaign();
-    spriteCache.clear(); saveState(); await flushSave({replace:true});
     state.levelIntroPending = true;
+    spriteCache.clear(); saveState(); await flushSave({replace:true});
     renderLog(); renderCollection(); updateHUD(); showMessage('New campaign started.');
     window.setTimeout(() => showLevelIntro(), 40);
   }
@@ -9481,6 +9887,14 @@
   mapBtn.addEventListener('click', () => { cancelMapSteering(true); state.mapVisible = !state.mapVisible; saveState(); updateHUD(); });
   mazeQuickExitBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); leaveSolvedMazeQuickly(); });
   resetBtn.addEventListener('click', openResetConfirm);
+  exportGameBtn?.addEventListener('click',exportGame);
+  puzzleExportGameBtn?.addEventListener('click',exportGame);
+  sentenceExportGameBtn?.addEventListener('click',exportGame);
+  importGameBtn?.addEventListener('click',()=>gameImportInput?.click());
+  puzzleImportGameBtn?.addEventListener('click',()=>gameImportInput?.click());
+  sentenceImportGameBtn?.addEventListener('click',()=>gameImportInput?.click());
+  levelIntroLoadGameBtn?.addEventListener('click',()=>gameImportInput?.click());
+  gameImportInput?.addEventListener('change',()=>{const f=gameImportInput.files?.[0];if(f) importGameFile(f);});
   collectionBtn.addEventListener('click', openCollection);
   continueCampaignBtn?.addEventListener('click', () => {
     const next = campaignAdapter?.nextLevel?.();
@@ -9502,6 +9916,15 @@
   puzzleResetBtn.addEventListener('click', clearCampaignPuzzleSlots);
   puzzleCompleteBtn.addEventListener('click', completeActiveCampaignPuzzle);
   puzzleCloseBtn.addEventListener('click', closeCampaignPuzzleHost);
+  // Persist after each puzzle interaction, not just the periodic autosave.
+  // Schedule after event propagation so the snapshot sees the modified state.
+  for (const type of ['click','input','change','pointerup','keyup']) {
+    puzzleOverlay?.addEventListener(type, () => {
+      if (!activeCampaignPuzzle || suppressPageSave) return;
+      window.setTimeout(() => { if (activeCampaignPuzzle) saveState(); },0);
+    }, {capture:true});
+  }
+
   window.addEventListener('toki-campaign-open-puzzle', (event) => {
     const puzzle = event.detail && event.detail.puzzle;
     if (puzzle) {
@@ -9510,13 +9933,19 @@
     }
   });
   levelIntroStartBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); startLevelFromIntro(); });
-  levelIntroOverlay?.addEventListener('pointerup', (e) => { if (e.target === levelIntroStartBtn) return; e.preventDefault(); startLevelFromIntro(); }, {passive:false});
+  levelIntroOverlay?.addEventListener('pointerup', (e) => { if (e.target.closest?.('button')) return; e.preventDefault(); startLevelFromIntro(); }, {passive:false});
   continueLevelBtn.addEventListener('click', goToNextCampaignLevel);
   stayLevelBtn.addEventListener('click', () => closeModal(levelCompleteOverlay));
   resetConfirmCancelBtn?.addEventListener('click', () => closeModal(resetConfirmOverlay));
   resetConfirmStartBtn?.addEventListener('click', (e) => { e.preventDefault(); resetGame(); });
   languageSelect?.addEventListener('change', () => {
     uiLanguage = I18N?.setLanguage?.(languageSelect.value) || (languageSelect.value === 'en' ? 'en' : 'tp');
+    state.uiLanguage=uiLanguage;
+    state.manualLanguageChangedAt=Date.now();
+    try { window.localStorage?.setItem(MANUAL_LANGUAGE_KEY,JSON.stringify({
+      saveId:state.saveId, changedAt:state.manualLanguageChangedAt, language:uiLanguage
+    })); } catch (_) {}
+    saveState();
     applyStaticLanguage();
     renderLog();
     renderCollection();
@@ -9559,26 +9988,13 @@
     }
     installTPQA();
     try { db = await openDb(); } catch (err) { console.warn('[game] IndexedDB unavailable', err); db = null; }
-    let saved = await dbGet();
-
     if (!window.TOKI_PONA_CAMPAIGN || !window.TokiPonaCampaignEngineAdapter) throw new Error('Campaign layer failed to load.');
-    let recoveredTestReset = false;
-    try {
-      const recovery = window.TokiPonaGameReset?.recoverPendingReset?.(window.TOKI_PONA_CAMPAIGN, saved, window.localStorage);
-      if (recovery?.recovered && recovery.state) {
-        saved = recovery.state;
-        await dbPut(saved);
-        recoveredTestReset = true;
-      }
-      // The reset directive is a one-shot recovery guard. Once the matching reset
-      // state is safely present in IndexedDB, consume it so later legitimate
-      // progression cannot be mistaken for stale data and rewound on reload.
-      window.TokiPonaGameReset?.consumeAppliedResetDirective?.(saved, window.localStorage);
-    } catch (err) {
-      console.warn('[game] test reset recovery failed', err);
-    }
-
+    const saved = await readOrMigrateSave();
+    // Migration never rewrites main. A failed migration can still recover the
+    // old game's progress in memory; it remains read-only until safely copied.
     state = normalizeSavedState(saved);
+    restoreSavedLanguage(state);
+    const recoveredTestReset = false;
     const validation = window.TokiPonaCampaignValidator?.validateCampaign(window.TOKI_PONA_CAMPAIGN);
     if (validation && !validation.ok) throw new Error(window.TokiPonaCampaignValidator.formatReport(validation));
     campaignAdapter = window.TokiPonaCampaignEngineAdapter.createAdapter({ campaign:window.TOKI_PONA_CAMPAIGN, persisted:state.campaign || null });
@@ -9598,7 +10014,7 @@
 
     renderLog(); renderCollection(); updateHUD(); bindMobileControls(); bindMiniMapSteering();
     scheduleMobileLandscapeGameCenter();
-    const restored = saved && saved.version === SAVE_VERSION;
+    const restored = validateSaveRecord(saved);
     const restoredLevelNo = campaignAdapter.currentLevel()?.ordinal || state.chapter;
     if (campaignAdapter.isLevelComplete() && campaignAdapter.nextLevel?.()) {
       showMessage(`Level ${restoredLevelNo} complete. Use Continue to Level ${campaignAdapter.nextLevel().ordinal}.`);
@@ -9610,9 +10026,18 @@
     } else {
       showMessage(restored ? `Welcome back. Your Level ${restoredLevelNo} progress has been restored.` : 'Campaign ready.');
     }
-    if (state.levelIntroPending) window.setTimeout(() => showLevelIntro(), 80);
-    window.setInterval(() => { saveState(); flushSave(); }, 1200);
-    window.addEventListener('pagehide', () => { saveState(); flushSave(); });
+    if (!savesEnabled) window.setTimeout(()=>showMessage(isTpLanguage()
+      ? 'musi sina li ken awen ala lon ilo ni. o awen e musi lon lipu.'
+      : 'Progress cannot be saved on this device. You can still download a game save.'),250);
+    const puzzleToRestore=state.activePuzzleId && campaignPuzzle(state.activePuzzleId);
+    if (puzzleToRestore && !campaignSolved(puzzleToRestore.id)) {
+      syncCampaignArea(puzzleToRestore.area);
+      openCampaignPuzzleHost(puzzleToRestore);
+    } else if (state.activeSentencePanelId && PANELS[state.activeSentencePanelId] && !state.completedPanels?.[state.activeSentencePanelId]) {
+      openSentencePanel(state.activeSentencePanelId);
+    } else if (state.levelIntroPending) window.setTimeout(() => { if (!modalOpen) showLevelIntro(); }, 80);
+    window.setInterval(() => { if (!suppressPageSave) saveState(); }, 1200);
+    window.addEventListener('pagehide', () => { if (!suppressPageSave) { saveQueued=true; flushSave().catch(()=>{}); } });
     requestAnimationFrame(frame);
   }
 

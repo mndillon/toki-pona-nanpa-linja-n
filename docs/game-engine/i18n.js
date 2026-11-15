@@ -52,6 +52,11 @@
     mapOn: { en: 'Map on', tp: 'sitelen ma lon' },
     mapOff: { en: 'Map off', tp: 'sitelen ma ala' },
     newGame: { en: 'New game', tp: 'musi sin' },
+    saveGame: { en: 'Save game', tp: 'o awen e musi' },
+    loadGame: { en: 'Load game', tp: 'o kama jo e musi' },
+    loadGameConfirm: { en: 'Load this saved game? Your current progress on this device will be replaced.', tp: 'sina wile kama jo e musi tan lipu ni anu seme? musi lon ilo ni li kama ante.' },
+    loadGameFailed: { en: 'This game save could not be loaded. Your current progress has been kept.', tp: 'musi lon lipu ni li ken kama ala. musi sina lon ilo ni li awen.' },
+    saveGameFailed: { en: 'The game save file could not be created.', tp: 'ilo li ken ala pali e lipu pi awen musi.' },
     controlsLegend: {
       en: 'W/S move · A/D strafe · ←/→ turn · E interact · G glyph collection · M map · X leave solved maze · mobile: use the circular joystick by quadrant: up moves forward, down moves backward, left/right rotate in place, and sideways drag within up/down steers; touch/hold the map to face and move that way; center-drag the main view to turn; hold/drag near the top or bottom to move; USE interacts.',
       tp: '[[W/S]] li tawa · [[A/D]] li tawa poka · [[←/→]] li sike · [[E]] li kepeken · [[G]] li open e kulupu sitelen · [[M]] li open e sitelen ma · [[X]] li tawa weka tan nasin nasa pini · ilo luka: ilo sike tawa la poka sewi li tawa sinpin; poka anpa li tawa monsi; poka loje en poka laso li sike taso; luka li tawa poka lon poka sewi anu poka anpa la jan li tawa li sike; o luka e sitelen ma la jan li lukin li tawa lon nasin ni; o tawa e luka lon insa lukin la jan li sike; o luka lon sewi anu anpa la jan li tawa; o luka e [[kepeken]] tawa pali.'

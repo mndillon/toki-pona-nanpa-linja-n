@@ -2815,3 +2815,9 @@ button.countryCrosswordCell{background:rgba(255,255,255,.42)}
   .sudokuControls>button{min-height:26px!important;padding:2px 3px!important;font-size:9px!important}
   .sudokuKeypad{grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:2px}.sudokuKey{min-height:27px!important;padding:1px!important}.sudokuKey .sitelenGlyph{font-size:14px}.sudokuKey small{font-size:5px}
 }
+
+/* Portable campaign saves: same controls on mobile and within active puzzles. */
+#puzzleExportGameBtn, #puzzleImportGameBtn { font-size: 12px; padding: 8px 10px; }
+@media (max-width: 460px) {
+  #puzzleExportGameBtn, #puzzleImportGameBtn { flex: 1 1 38%; }
+}

@@ -83,6 +83,23 @@
     .pageHomeLink:focus-visible { opacity: 1; outline: 2px solid rgba(17,17,17,0.65); outline-offset: 2px; }
     .pageHomeIcon { display: block; width: 16px; height: 16px; }
 
+    /* Reuse the digits banner from index.html without enlarging the heading row. */
+    .pageHeadingDigits {
+      display: block;
+      flex: 0 1 auto;
+      align-self: flex-start;
+      width: auto;
+      height: 20px;
+      max-width: min(40vw, 260px);
+      object-fit: contain;
+      margin-left: auto;
+    }
+
+    /* Avoid wrapping or crowding the calendar title on narrow screens. */
+    @media (max-width: 560px) {
+      .pageHeadingDigits { display: none; }
+    }
+
     h1 { margin: 0 0 6px; font-size: 18px; }
 
     .tpLine,
@@ -878,6 +895,17 @@
     .dateTimeExampleRow > * + * { border-left: 1px solid rgba(91,80,65,.18); }
     .dateTimeExampleRow { border-top: 1px solid rgba(91,80,65,.18); align-items: center; font-size: 12px; }
     .dateTimeExampleMeaning { color: var(--muted); }
+    /* Daypart table has four columns: English, Toki Pona, sitelen pona, literal meaning. */
+    .dateTimeDayPartGrid .dateTimeExampleHeader,
+    .dateTimeDayPartGrid .dateTimeExampleRow {
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.5fr);
+    }
+    .dateTimeDayPartGrid .dateTimeExampleSitelen {
+      gap: 3px 4px;
+      font-size: 23px;
+      align-content: center;
+    }
+    .dateTimeDayPartLiteral { color: var(--muted); line-height: 1.45; }
     .dateTimeExampleLatin { overflow-wrap: anywhere; line-height: 1.45; }
     .dateTimeExampleSitelen {
       display: flex;
@@ -1028,6 +1056,8 @@
           </svg>
         </a>
         <h1 id="pageTitle" data-ui="pageTitle">lipu tenpo pi nanpa-linja-n</h1>
+        <img class="pageHeadingDigits" src="./images/nanpa-linja-n-digits-v3.png?v=5"
+          alt="nanpa-linja-n digits" decoding="async" />
       </div>
 
       <div class="help" id="introHelp" data-ui="introHelp">
@@ -1312,6 +1342,7 @@
               </div>
             </div>
           </section>
+
           <section class="dateTimeGlossarySection" aria-labelledby="dt-timestamps-heading">
             <h3 id="dt-timestamps-heading" data-dt-en="Complete timestamps" data-dt-tok="sitelen tenpo pi sona ale">sitelen tenpo pi sona ale</h3>
             <p data-dt-en="A local timestamp combines a full calendar date, local clock time, signed UTC offset and IANA time zone. New York and India show the same instant. A Sitelen-headed Unix timestamp counts seconds since 1970-01-01 00:00:00 UTC." data-dt-tok="sitelen tenpo pi ma li jo e tenpo suno, e tenpo pi ilo tenpo, e ante tenpo tan UTC, e nimi ma pi nasin IANA. tenpo pi ma New York en ma India li sama. nanpa pi open Sitelen li nanpa e tenpo lili tan 1970-01-01 00:00:00 lon UTC.">sitelen tenpo pi ma li jo e tenpo suno, e tenpo pi ilo tenpo, e ante tenpo tan UTC, e nimi ma pi nasin IANA. tenpo pi ma New York en ma India li sama. nanpa pi open Sitelen li nanpa e tenpo lili tan 1970-01-01 00:00:00 lon UTC.</p>
@@ -1398,6 +1429,127 @@
                 <span class="dateTimeExampleMeaning" role="cell" data-dt-en="345 milliseconds · 345 × 0.001 s = 0.345 s" data-dt-tok="345 millisecond · 345 × 0.001 s = 0.345 s">345 millisecond · 345 × 0.001 s = 0.345 s</span>
                 <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo Nanpa Senalun lili Nanpa Wan Eko Nosen</span>
                 <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-example="milliseconds-345" aria-label="tenpo Nanpa Senalun lili Nanpa Wan Eko Nosen"></span>
+              </div>
+            </div>
+          </section>
+          <section class="dateTimeGlossarySection" aria-labelledby="dt-dayparts-heading">
+            <h3 id="dt-dayparts-heading" data-dt-en="Times of the day" data-dt-tok="tenpo ante pi tenpo suno">Times of the day</h3>
+            <p><span data-dt-en="We could use " data-dt-tok="mi ken kepeken nimi ">We could use </span><strong>pimeja</strong><span data-dt-en=" for darkness and " data-dt-tok=" tawa pimeja. mi ken kepeken nimi "> for darkness and </span><strong>open → meso → pini</strong><span data-dt-en=" for early, middle, and late portions of a time period. These portions could be subdivided recursively using the same three words." data-dt-tok=" tawa tenpo open en tenpo meso en tenpo pini. mi ken kipisi sin e tenpo ni kepeken nimi sama."> for early, middle, and late portions of a time period. These portions could be subdivided recursively using the same three words.</span></p>
+            <p data-dt-en="The following table arranges the resulting expressions alongside familiar parts of the day, from midnight to midnight." data-dt-tok="lipu ni li pana e nimi tenpo ni lon nasin tenpo, tan tenpo meso pi tenpo pimeja tawa tenpo meso pi tenpo pimeja sin.">The following table arranges the resulting expressions alongside familiar parts of the day, from midnight to midnight.</p>
+            <div class="dateTimeExampleGrid dateTimeDayPartGrid" role="table" aria-label="Times of the day">
+              <div class="dateTimeExampleHeader" role="row">
+                <span role="columnheader">English</span>
+                <span role="columnheader">Toki Pona</span>
+                <span role="columnheader">sitelen pona</span>
+                <span role="columnheader">Literal meaning</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Midnight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo meso pi tenpo pimeja</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo meso pi tenpo pimeja" aria-label="tenpo meso pi tenpo pimeja"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of nighttime</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Night</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pimeja</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pimeja" aria-label="tenpo pimeja"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Dark time</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Dawn</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pi kama suno</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pi kama suno" aria-label="tenpo pi kama suno"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Time of becoming light</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Sunrise</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pi suno kama</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pi suno kama" aria-label="tenpo pi suno kama"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Time of the arriving sun</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Beginning of early daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno open open</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno open open" aria-label="tenpo suno open open"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Beginning of the early daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Middle of early daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno open meso</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno open meso" aria-label="tenpo suno open meso"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of the early daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">End of early daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno open pini</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno open pini" aria-label="tenpo suno open pini"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">End of the early daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Beginning of middle daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno meso open</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno meso open" aria-label="tenpo suno meso open"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Beginning of the middle daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Middle of middle daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno meso meso</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno meso meso" aria-label="tenpo suno meso meso"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of the middle daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Noon</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo meso pi tenpo suno</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo meso pi tenpo suno" aria-label="tenpo meso pi tenpo suno"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of daytime</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">End of middle daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno meso pini</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno meso pini" aria-label="tenpo suno meso pini"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">End of the middle daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Beginning of late daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno pini open</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno pini open" aria-label="tenpo suno pini open"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Beginning of the late daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Middle of late daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno pini meso</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno pini meso" aria-label="tenpo suno pini meso"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of the late daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">End of late daylight</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo suno pini pini</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo suno pini pini" aria-label="tenpo suno pini pini"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">End of the late daylight period</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Sunset</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pi suno weka</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pi suno weka" aria-label="tenpo pi suno weka"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Time of the departing sun</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Dusk</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pi kama pimeja</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pi kama pimeja" aria-label="tenpo pi kama pimeja"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Time of becoming dark</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Night</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo pimeja</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo pimeja" aria-label="tenpo pimeja"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Dark time</span>
+              </div>
+              <div class="dateTimeExampleRow" role="row">
+                <span class="dateTimeExampleMeaning" role="cell">Midnight (next day)</span>
+                <span class="dateTimeExampleLatin" role="cell" lang="tok">tenpo meso pi tenpo pimeja</span>
+                <span class="dateTimeExampleSitelen sitelen" role="cell" lang="tok" data-dt-daypart="tenpo meso pi tenpo pimeja" aria-label="tenpo meso pi tenpo pimeja"></span>
+                <span class="dateTimeDayPartLiteral" role="cell">Middle of nighttime</span>
               </div>
             </div>
           </section>
@@ -4739,14 +4891,14 @@
       return country ? countryOptionText(country) : code;
     }
 
-    function drawPdfCountryCode(ctx, countryCode) {
+    function drawPdfCountryCode(ctx, countryCode, centerY = 18) {
       const code = String(countryCode || "").toUpperCase();
       if (!code) return;
       drawFitText(
         ctx,
         code,
         PDF_CANVAS_W - 24,
-        18,
+        centerY,
         42,
         10,
         "Arial",
@@ -4807,7 +4959,9 @@
 
     function renderPdfMonthCanvas(year, month, countryCode = "") {
       const { canvas, ctx } = makePdfCanvas();
-      drawPdfCountryCode(ctx, countryCode);
+      // Keep the 10px country code fully above the header, which is drawn from y=20.
+      // The same monthly page renderer is used by standalone and full-year exports.
+      drawPdfCountryCode(ctx, countryCode, 11);
       const margin=24;
       const contentW=PDF_CANVAS_W-2*margin;
       const top=20, headerH=145, weekdayH=86;
@@ -5286,6 +5440,44 @@
         : (expanded ? "o weka e lipu sona" : "o lukin e lipu sona");
     }
 
+    function renderDateTimeDayParts() {
+      // Canonical sitelen pona extended pi controls. Each entire pi group must
+      // occupy one text run so the font can shape its continuous long-pi line.
+      const LONG_PI_START_CP = 0xF1997;
+      const LONG_PI_END_CP = 0xF1998;
+      const glyphForWord = word => {
+        const codepoints = NanpaParser.tpWordsToUcsurCodepoints([word]);
+        if (!Array.isArray(codepoints) || codepoints.length !== 1) {
+          throw new Error(`Could not convert Toki Pona word to sitelen pona: ${word}`);
+        }
+        return String.fromCodePoint(codepoints[0]);
+      };
+      for (const target of dateTimeGlossary.querySelectorAll("[data-dt-daypart]")) {
+        const words = String(target.getAttribute("data-dt-daypart") || "").trim().split(/\s+/).filter(Boolean);
+        try {
+          const nodes = [];
+          for (let index = 0; index < words.length;) {
+            if (words[index] === "pi" && index + 1 < words.length) {
+              // Preserve the original Latin text; apply long pi only to sitelen pona.
+              // The remainder of this daypart expression is the pi modifier group.
+              const longPiGlyphs = glyphForWord("pi")
+                + String.fromCodePoint(LONG_PI_START_CP)
+                + words.slice(index + 1).map(glyphForWord).join("")
+                + String.fromCodePoint(LONG_PI_END_CP);
+              nodes.push(el("span", "dateTimeWordGlyphs sitelen dateTimeLongPiGroup", longPiGlyphs));
+              break;
+            }
+            nodes.push(el("span", "dateTimeWordGlyphs sitelen", glyphForWord(words[index])));
+            index += 1;
+          }
+          target.replaceChildren(...nodes);
+        } catch (error) {
+          console.warn("Times of the day sitelen pona rendering failed:", error);
+          target.textContent = "—";
+        }
+      }
+    }
+
     function setDateTimeGlossaryVisible(visible, { persist = false } = {}) {
       dateTimeGlossaryContent.hidden = !visible;
       dateTimeGlossaryToggleBtn.setAttribute("aria-expanded", visible ? "true" : "false");
@@ -5421,6 +5613,7 @@
     populateYears();
     setInitialMonth();
     applyUiLanguage(uiLanguage, { persist: false });
+    renderDateTimeDayParts();
     applyNationalDaysMapVisibility({ persist: false });
 
     async function startCalendar() {
