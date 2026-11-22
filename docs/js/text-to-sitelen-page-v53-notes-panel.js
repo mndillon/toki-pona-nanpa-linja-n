@@ -1,13 +1,13 @@
-import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=294";
+import SitelenRenderer, { NanpaParser } from "./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=296";
 import {
   createSitelenFontPairController,
   TEXT_FONT_OPTION_SITELEN,
   TEXT_FONT_OPTION_NANPA_LINJA_N
-} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=23";
+} from "./sitelen-font-pair-controller-merged-updated-font-label.js?v=29";
 
 import { CartoucheApi } from './cartouche-api-v3-previewdesc.js?v=35';
 import { SitelenVectorExporter } from './sitelen-vector-exporter.js?v=178';
-import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=90';
+import { createTokiPonaVoice } from './toki-pona-voice-api.js?v=91';
 import {
   buildSitelenSentenceAudioBuffersFromRawText,
   extractSpeechSegmentsFromRenderPlan,
@@ -482,8 +482,8 @@ let sitelenVectorReady = false;
 
 const VECTOR_DIAGNOSTIC_DEBUG = true;
 const VECTOR_DIAG_IMPORTS = Object.freeze({
-  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=294",
-  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=23",
+  renderer: "./js/renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=296",
+  fontController: "./js/sitelen-font-pair-controller-merged-updated-font-label.js?v=29",
   cartoucheApi: "./js/cartouche-api-v3-previewdesc.js?v=35",
   vectorExporter: "./js/sitelen-vector-exporter.js?v=178",
   vectorWasm: "./wasm/sitelen_vector_wasm.js?v=144"
@@ -5773,6 +5773,124 @@ function getUnicodeJsonRunCodepoints(run) {
   return stringToCodepoints(text);
 }
 
+// Unicode JSON only: preserve a fractional glyph's visible suffix in the
+// reconstructible codepoint stream. ASCII fractions are encoded as their
+// equivalent single Unicode vulgar fractions; the original spelling remains
+// available in each JSON run's input field.
+const UNICODE_JSON_FRACTION_SUFFIXES = Object.freeze({
+  "¼": "¼", "⅓": "⅓", "½": "½", "⅔": "⅔", "¾": "¾",
+  "1/4": "¼", "1/3": "⅓", "1/2": "½", "2/3": "⅔", "3/4": "¾"
+});
+const UNICODE_JSON_FRACTION_CP_SET = new Set(
+  Object.values(UNICODE_JSON_FRACTION_SUFFIXES).map(ch => ch.codePointAt(0))
+);
+
+function readUnicodeJsonFractionSuffix(source, index) {
+  // A fraction follows the glyph directly, or after exactly one ASCII space.
+  const match = /^( ?)(¼|⅓|½|⅔|¾|1\/4|1\/3|1\/2|2\/3|3\/4)/.exec(source.slice(index));
+  if (!match) return null;
+  const next = source[index + match[0].length] || "";
+  // Do not silently treat 1/22 or 1/2/3 as an accepted fractional suffix.
+  if (/^[0-9/]/.test(next)) return null;
+  return { cp: UNICODE_JSON_FRACTION_SUFFIXES[match[2]].codePointAt(0), length: match[0].length };
+}
+
+function tryBuildUnicodeJsonFractionalCartoucheCodepointsFromSource(run) {
+  if (String(run?.sourceKind ?? "").toLowerCase() !== "bracket") return null;
+  let source = String(run?.sourceText ?? "").trim();
+  if (source.startsWith("[") && source.endsWith("]")) source = source.slice(1, -1);
+  if (!/[¼⅓½⅔¾]|[123]\/[234]/.test(source)) return null;
+
+  const cps = [];
+  let sawFraction = false;
+  let i = 0;
+  while (i < source.length) {
+    const ch = source[i];
+    const cp = source.codePointAt(i);
+    if (/\s/.test(ch)) { i += ch.length; continue; }
+    if (ch === "," || cp === CARTOUCHE_TALLY_CP) {
+      cps.push(CARTOUCHE_TALLY_CP);
+      i += ch.length;
+      continue;
+    }
+
+    let glyphCp = null;
+    if (ch === ":" || ch === "." || ch === "·") {
+      glyphCp = WORD_TO_UCSUR_CP[ch];
+      i += ch.length;
+    } else if (/[A-Za-z^<>]/.test(ch)) {
+      let j = i + 1;
+      while (j < source.length && /[A-Za-z^<>]/.test(source[j])) j++;
+      const token = normalizeTpGlyphToken(source.slice(i, j));
+      glyphCp = token === "zz" ? 0x3000 : WORD_TO_UCSUR_CP[token];
+      i = j;
+    } else {
+      return null;
+    }
+    if (glyphCp == null) return null;
+    cps.push(glyphCp);
+
+    const fraction = readUnicodeJsonFractionSuffix(source, i);
+    if (fraction) {
+      cps.push(fraction.cp);
+      i += fraction.length;
+      sawFraction = true;
+    }
+  }
+  return sawFraction ? [CARTOUCHE_START_CP, ...cps, CARTOUCHE_END_CP] : null;
+}
+
+function getUnicodeJsonExportRunCodepoints(run) {
+  const cps = getUnicodeJsonRunCodepoints(run);
+
+  // Numeric cartouches are visually rendered with a half-height "nanpa"
+  // heading and separator colon. Preserve those *implicit* fractional glyph
+  // sizes in Unicode JSON even when the original input is just digits.
+  // Restrict this to the conventional leading [nanpa: sequence; do not
+  // annotate the digits, final "nanpa", or unrelated cartouches.
+  if (getUnicodeJsonRunType(run) === "number" &&
+      cps[0] === CARTOUCHE_START_CP && cps[1] === WORD_TO_UCSUR_CP.nanpa) {
+    const scaled = cps.slice();
+    const halfCp = 0x00BD;
+    let colonIndex = 2;
+    if (scaled[colonIndex] === halfCp) colonIndex++;
+    if (scaled[colonIndex] === WORD_TO_UCSUR_CP[":"]) {
+      if (colonIndex === 2) {
+        scaled.splice(2, 0, halfCp);
+        colonIndex++;
+      }
+      if (scaled[colonIndex + 1] !== halfCp) scaled.splice(colonIndex + 1, 0, halfCp);
+      return scaled;
+    }
+  }
+
+  if (String(run?.sourceKind ?? "").toLowerCase() === "bracket" && run?.kind === "cartouche") {
+    return tryBuildUnicodeJsonFractionalCartoucheCodepointsFromSource(run) || cps;
+  }
+
+  // Keep date/quote and every other run type unchanged.
+  // A normal glyph (including a compound) may carry a fractional suffix;
+  // a spacing-control run can do the same for the zz ideographic space.
+  const kind = String(run?.kind ?? "").toLowerCase();
+  const sourceKind = String(run?.sourceKind ?? "").toLowerCase();
+  if (sourceKind === "quote") return cps;
+  const isZz = cps.length === 1 && cps[0] === 0x3000 && kind === "text";
+  if (kind !== "glyph" && !isZz) return cps;
+  const source = String(run?.sourceText ?? "").trim();
+  const match = /^(.*?)( ?)(¼|⅓|½|⅔|¾|1\/4|1\/3|1\/2|2\/3|3\/4)$/.exec(source);
+  if (!match || !match[1] || (!isZz && !/[A-Za-z:.·^<>]$/.test(match[1]))) return cps;
+  if (isZz && match[1] !== "zz") return cps;
+  const fractionCp = UNICODE_JSON_FRACTION_SUFFIXES[match[3]].codePointAt(0);
+  if (cps.includes(fractionCp)) return cps;
+  // If the canonical run already contains any suffix, don't duplicate it.
+  if (cps.some(cp => UNICODE_JSON_FRACTION_CP_SET.has(cp))) return cps;
+  const result = cps.slice();
+  let insertAt = result.length;
+  while (insertAt > 0 && result[insertAt - 1] === CARTOUCHE_TALLY_CP) insertAt--;
+  result.splice(insertAt, 0, fractionCp);
+  return result;
+}
+
 function getFontSpecificRenderedRunCodepoints(run) {
   if (!run || typeof run !== "object") return [];
 
@@ -6237,7 +6355,7 @@ async function loadWordToUcsurCpMapFromRendererSource() {
 return __wordToUcsurCpCache;
   }
 
-  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=294", import.meta.url);
+  const rendererUrl = new URL("./renderer-fontuploads-renderer-preview-bottom-detect-final-fixed-yearless-datetime.js?v=296", import.meta.url);
   const res = await fetch(rendererUrl.href, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load renderer source: ${res.status}`);
 
@@ -6367,13 +6485,27 @@ async function decodeUnicodeStringToTpShortcuts(unicode) {
   let out = "";
   let prevWasWord = false;
 
-  for (const ch of chars) {
+  for (let index = 0; index < chars.length; index++) {
+const ch = chars[index];
 const cp = ch.codePointAt(0);
+const prevCp = index ? chars[index - 1].codePointAt(0) : null;
+const nextCp = index + 1 < chars.length ? chars[index + 1].codePointAt(0) : null;
+const fractionalHost = prevCp === 0x3000 || prevCp === 0x200D ||
+  (prevCp >= 0xF1900 && prevCp <= 0xF198F) ||
+  [0xF1992, 0xF1995, 0xF1996, 0xF1999, 0xF199C, 0xF199D].includes(prevCp);
 
 let piece = null;
 let isWord = false;
+let joinsPreviousGlyph = false;
 
-if (/\s/.test(ch)) {
+if (cp === 0x3000 && UNICODE_JSON_FRACTION_CP_SET.has(nextCp)) {
+  piece = "zz";
+  isWord = true;
+} else if (UNICODE_JSON_FRACTION_CP_SET.has(cp) && fractionalHost) {
+  piece = ch;
+  isWord = true;
+  joinsPreviousGlyph = true;
+} else if (/\s/.test(ch)) {
   piece = ch;
   isWord = false;
 } else if (cpToName.has(cp)) {
@@ -6387,7 +6519,7 @@ if (/\s/.test(ch)) {
   isWord = false;
 }
 
-if (out && prevWasWord && isWord) out += " ";
+if (out && prevWasWord && isWord && !joinsPreviousGlyph) out += " ";
 out += piece;
 prevWasWord = isWord;
   }
@@ -6400,7 +6532,7 @@ async function buildUnicodeJsonLineRuns(plan, line, lineIndex, familyToId, prese
 
   const exportedRuns = await Promise.all(lineRuns.map(async run => {
 const fontFamily = String(run?.fontFamily || "");
-const cps = getUnicodeJsonRunCodepoints(run);
+const cps = getUnicodeJsonExportRunCodepoints(run);
 let fontId = familyToId.get(fontFamily);
 if (!fontId) {
   if (fontFamily === preset.textFamily) fontId = "1";

@@ -252,7 +252,24 @@ const SitelenRenderer = (() => {
     return (count % 2) === 1;
   }
 
-  function splitLineIntoAstSegments(line) {
+  // Native ASCII quoted cartouches are a font-specific capability. This scanner
+  // leaves the complete source byte-for-byte intact for OpenType shaping.
+  function findNativeAsciiQuotedCartoucheEnd(source, openIndex) {
+    if (!source.startsWith('["', openIndex)) return -1;
+    let i = openIndex + 2;
+    while (i < source.length - 1) {
+      // Backslash only protects the two defined literal-font escape sequences.
+      if (source[i] === '\\' && (source[i + 1] === '"' || source[i + 1] === '\\')) {
+        i += 2;
+        continue;
+      }
+      if (source[i] === '"' && source[i + 1] === ']') return i + 2;
+      i += 1;
+    }
+    return -1;
+  }
+
+  function splitLineIntoAstSegments(line, nativeAsciiQuotedCartouches = false) {
     const s = String(line ?? '');
     const out = [];
     let i = 0;
@@ -260,6 +277,14 @@ const SitelenRenderer = (() => {
     const pushText = (a, b) => { if (b > a) out.push({ kind: 'text', value: s.slice(a, b) }); };
     while (i < s.length) {
       const ch = s[i];
+      if (nativeAsciiQuotedCartouches && s.startsWith('["', i) && !s.startsWith('[""]', i)) {
+        const end = findNativeAsciiQuotedCartoucheEnd(s, i);
+        if (end > i) {
+          pushText(start, i);
+          out.push({ kind: 'nativeAsciiQuotedCartouche', value: s.slice(i, end), sourceStart: i, sourceEnd: end });
+          i = end; start = i; continue;
+        }
+      }
       if (ch === '[') {
         const j = s.indexOf(']', i + 1);
         if (j < 0) break;
@@ -829,7 +854,10 @@ const SitelenRenderer = (() => {
           sentenceIndexInSourceLine,
           sourceText: renderedSourceLine,
           ...(cspNormalized.changed ? { canonicalSourceText: cspNormalized.text, sourceEncoding: 'mixed-csp-unicode' } : {}),
-          children: splitLineIntoAstSegments(cspNormalized.changed ? cspNormalized.text : renderedSourceLine)
+          children: splitLineIntoAstSegments(
+            cspNormalized.changed ? cspNormalized.text : renderedSourceLine,
+            parserOptions.literalCartoucheEncoding === 'ascii-quoted'
+          )
         });
       }
     }
@@ -2111,6 +2139,17 @@ const SitelenRenderer = (() => {
     );
   }
 
+  // Advance by actual line ink, not by a full em when a line contains only
+  // short literal text. Keep a small non-user-removable safety clearance so
+  // zero lineGapPx cannot make adjacent glyphs/cartouches touch. Deliberately
+  // empty lines retain the old full-em height.
+  function measuredLineBoxHeight(maxAscent, maxDescent, fontPx) {
+    const inkHeight = Math.max(0, Number(maxAscent) || 0) + Math.max(0, Number(maxDescent) || 0);
+    if (inkHeight <= 0) return Math.max(1, Number(fontPx) || 1);
+    const safetyPx = Math.max(2, Math.ceil((Number(fontPx) || 1) * 0.08));
+    return Math.ceil(inkHeight) + safetyPx;
+  }
+
   function shouldUseExplicitLineGapPx(layout = {}) {
     const n = Number(layout?.lineGapPx);
     if (!Number.isFinite(n)) return false;
@@ -2280,6 +2319,21 @@ const SitelenRenderer = (() => {
           } else {
             __bridgeParseTextSegmentToElements(seg.value, elements, { fontPx, sourceBaseStart: 0, sourceKind, sourceSegmentIndex, mixedStyle });
           }
+        }
+        else if (seg.kind === 'nativeAsciiQuotedCartouche') {
+          const source = String(seg.value);
+          __bridgeMakeRunElementFromCodepoints(elements, stringToCodepoints(source), {
+            fontPx,
+            fontFamily: FONT_FAMILY_LITERAL_CARTOUCHE,
+            fontRole: 'literalCartouche',
+            elementKind: 'native-ascii-quoted-cartouche',
+            bypassRenderAdapter: true,
+            sourceText: source,
+            sourceStart: seg.sourceStart,
+            sourceEnd: seg.sourceEnd,
+            sourceKind,
+            sourceSegmentIndex
+          });
         }
         else if (seg.kind === 'bracket') {
           if (parser.mode === 'sitelen-seli-kiwen') {
@@ -3659,16 +3713,15 @@ const SitelenRenderer = (() => {
           w += (el.w | 0);
           const a0 = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
           const d0 = el.descent ?? Math.ceil((el.h | 0) * 0.3);
-          const allowance = Math.max(2, Math.round(fontPx * 0.08));
-          const capA = Math.ceil(fontPx * 0.80) + allowance;
-          const hasManualTallies = Array.isArray(el.manualTallies) && el.manualTallies.some(n => Number(n) > 0);
-          const capD = Math.ceil(fontPx * (hasManualTallies ? 0.20 : 0.20)) + allowance;
-          maxAscent = Math.max(maxAscent, Math.min(a0, capA) + haloExtra);
-          maxDescent = Math.max(maxDescent, Math.min(d0, capD) + haloExtra);
+          // Use real cartouche ink extents, including descending tally marks.
+          // The previous per-em cap could position the following line on top
+          // of tallies that extended below the cartouche baseline.
+          maxAscent = Math.max(maxAscent, a0 + haloExtra);
+          maxDescent = Math.max(maxDescent, d0 + haloExtra);
           continue;
         }
       }
-      const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+      const lineBoxH = measuredLineBoxHeight(maxAscent, maxDescent, fontPx);
       measuredLines.push({ lineIndex: li, measuredEls, w, lineBoxH, maxAscent, maxDescent });
       maxLineW = Math.max(maxLineW, w);
       totalH += lineBoxH;
@@ -12473,24 +12526,17 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
             measuredEls.push(el);
             w += (el.w | 0);
 
-            // Cap how much cartouche can inflate line height
+            // Account for the full cartouche and any descending tally ink;
+            // capped metrics could allow the following line to overlap it.
             const a0 = el.ascent ?? Math.ceil((el.h | 0) * 0.7);
             const d0 = el.descent ?? Math.ceil((el.h | 0) * 0.3);
-
-            const allowance = Math.max(2, Math.round(fontPx * 0.08)); // 8% extra
-            const capA = Math.ceil(fontPx * 0.80) + allowance;
-            const hasManualTallies = Array.isArray(el.manualTallies) && el.manualTallies.some(n => Number(n) > 0);
-            const capD = Math.ceil(fontPx * (hasManualTallies ? 0.20 : 0.20)) + allowance;
-
-            const aCapped = Math.min(a0, capA) + haloExtra;
-            maxAscent = Math.max(maxAscent, aCapped);
-            const dCapped = Math.min(d0, capD) + haloExtra;
-            maxDescent = Math.max(maxDescent, dCapped);
+            maxAscent = Math.max(maxAscent, a0 + haloExtra);
+            maxDescent = Math.max(maxDescent, d0 + haloExtra);
             continue;
           }
         }
 
-        const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+        const lineBoxH = measuredLineBoxHeight(maxAscent, maxDescent, fontPx);
         measuredLines.push({ measuredEls, w, lineBoxH, maxAscent, maxDescent });
 
         if (w > maxLineW) maxLineW = w;
@@ -12990,7 +13036,7 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
           // console.warn("Unknown element type in PDF export:", el);
         }
 
-        const lineBoxH = Math.max(maxAscent + maxDescent, fontPx);
+        const lineBoxH = measuredLineBoxHeight(maxAscent, maxDescent, fontPx);
 
         measuredLines.push({ measuredEls, wPt, lineBoxH, maxAscent, maxDescent });
         maxLineWpt = Math.max(maxLineWpt, wPt);

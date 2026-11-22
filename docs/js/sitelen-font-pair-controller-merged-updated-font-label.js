@@ -2,6 +2,9 @@ const DEFAULT_FONT_LOAD_SAMPLE = String.fromCodePoint(0xF196C, 0xF1954, 0xF1990)
 
 export const TEXT_FONT_OPTION_SITELEN = '__active_text_family__';
 export const TEXT_FONT_OPTION_NANPA_LINJA_N = '__active_cartouche_family__';
+// Compatibility alias for the separate choice introduced in the preceding
+// controller version. The existing nanpa-linja-n choice now covers that role.
+const TEXT_FONT_OPTION_PAIRED_LITERAL = '__paired_literal_family__';
 
 export const DEFAULT_TEXT_FONT_OPTIONS = [
   [TEXT_FONT_OPTION_SITELEN, 'sitelen font'],
@@ -185,6 +188,13 @@ async function writeAppliedPreloadedManifestSchema(dbName, storeName, schema) {
   }
 }
 
+
+// Font Maker-published pairs are user-created library entries, not preloaded
+// asset caches. Manifest schema migrations must never silently delete them.
+function isProtectedFontMakerPair(record) {
+  return String(record?.fontKey || '').startsWith('site-font-maker:') &&
+    record?.support?.origin === 'sitelen-pona-font-maker';
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -702,17 +712,50 @@ export function createSitelenFontPairController({
     return getPresetByKey(activePresetKey) || presetEntries()[0][1];
   }
 
+  function resolveDedicatedLiteralFontFamily(preset = getActivePreset()) {
+    const family = cleanString(preset?.literalCartoucheFamily);
+    if (!family) return '';
+
+    // Some older presets fill literalCartoucheFamily with their base font as a
+    // fallback. That is NOT evidence of a separate Latin-safe Literal font;
+    // using it would cause unwanted sitelen pona substitutions in quoted text.
+    if (family === cleanString(preset?.textFamily) ||
+        family === cleanString(preset?.cartoucheFamily)) return '';
+
+    // Only select an actually provisioned, dedicated font face. A family name
+    // alone is not enough: dynamic projects with no Literal TTF must keep the
+    // original companion-font fallback. Built-in manifest and imported project
+    // records both populate preset.faces with a URL (or blob: object URL).
+    const face = (Array.isArray(preset?.faces) ? preset.faces : []).find(item =>
+      cleanString(item?.family) === family && !!cleanString(item?.url)
+    );
+    return face ? family : '';
+  }
+
   function getTextFontOptionsForPreset(preset = getActivePreset()) {
     const opts = Array.isArray(preset?.literalOptions) && preset.literalOptions.length
       ? preset.literalOptions
       : DEFAULT_TEXT_FONT_OPTIONS;
-    return opts.map(item => Array.isArray(item) ? item : [item?.value, item?.label]);
+    const hasLiteralFont = !!resolveDedicatedLiteralFontFamily(preset);
+    return opts.map(item => {
+      const [value, label] = Array.isArray(item) ? item : [item?.value, item?.label];
+      // Keep the long-established option key and saved setting, but show what
+      // it *actually* selects for the current pair.
+      if (value === TEXT_FONT_OPTION_NANPA_LINJA_N && hasLiteralFont) {
+        return [value, 'literal font'];
+      }
+      return [value, label];
+    });
   }
 
   function normalizeTextFontOptionKey(key, preset = getActivePreset()) {
     const raw = String(key ?? '').trim();
+    // Migrate the former standalone "paired literal font" selection without
+    // dropping the user's saved choice when upgrading the controller.
+    const requested = raw === TEXT_FONT_OPTION_PAIRED_LITERAL
+      ? TEXT_FONT_OPTION_NANPA_LINJA_N : raw;
     const options = getTextFontOptionsForPreset(preset);
-    if (options.some(([value]) => value === raw)) return raw;
+    if (options.some(([value]) => value === requested)) return requested;
     const presetDefault = String(preset?.defaultTextFontOption ?? '').trim();
     if (presetDefault && options.some(([value]) => value === presetDefault)) return presetDefault;
     return options.some(([value]) => value === defaultTextFontOption)
@@ -772,7 +815,9 @@ export function createSitelenFontPairController({
   function resolveLiteralFontFamily(optionKey = getSelectedTextFontOptionKey(), preset = getActivePreset()) {
     const normalized = normalizeTextFontOptionKey(optionKey, preset);
     if (normalized === TEXT_FONT_OPTION_SITELEN) return String(preset?.textFamily || '');
-    if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) return String(preset?.cartoucheFamily || '');
+    if (normalized === TEXT_FONT_OPTION_NANPA_LINJA_N) {
+      return resolveDedicatedLiteralFontFamily(preset) || String(preset?.cartoucheFamily || '');
+    }
     return normalized;
   }
 
@@ -805,6 +850,7 @@ export function createSitelenFontPairController({
       cartoucheTallyMode: normalizeCartoucheTallyMode(tally.cartoucheTallyMode),
       cartoucheVulgarFractions: tally.cartoucheVulgarFractions === true,
       emulateLegacyCartoucheScaling: tally.emulateLegacyCartoucheScaling === true,
+      ...(tally.literalCartoucheEncoding === 'ascii-quoted' ? { literalCartoucheEncoding: 'ascii-quoted' } : {}),
     };
   }
 
@@ -1319,7 +1365,7 @@ export function createSitelenFontPairController({
           for (const record of existingRecords) {
             const key = cleanString(record?.fontKey);
             if (!key) continue;
-            if (!preserveFontKeys.has(key)) {
+            if (!preserveFontKeys.has(key) && !isProtectedFontMakerPair(record)) {
               store.delete(key);
               continue;
             }
@@ -1475,8 +1521,8 @@ export function createSitelenFontPairController({
         const existingRecords = await getRawStoredRecords();
         const preservedExistingKeys = new Set(
           existingRecords
+            .filter(record => preserveFontKeys.has(cleanString(record?.fontKey)) || isProtectedFontMakerPair(record))
             .map(record => cleanString(record?.fontKey))
-            .filter(fontKey => fontKey && preserveFontKeys.has(fontKey))
         );
         const parserModesUpdated = existingRecords.filter(record => {
           const fontKey = cleanString(record?.fontKey);
@@ -1484,8 +1530,9 @@ export function createSitelenFontPairController({
           return fontKey && preserveFontKeys.has(fontKey) && manifestParserMode && cleanString(record?.parserMode) !== manifestParserMode;
         }).length;
         const deletedKeys = existingRecords
+          .filter(record => !preserveFontKeys.has(cleanString(record?.fontKey)) && !isProtectedFontMakerPair(record))
           .map(record => cleanString(record?.fontKey))
-          .filter(fontKey => fontKey && !preserveFontKeys.has(fontKey));
+          .filter(Boolean);
 
         await replaceRecordsAtomically(existingRecords, recordsToInstall, preservedParserModes);
 

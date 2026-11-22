@@ -195,31 +195,35 @@ export function buildRandomDescForLetters(letters, { excludeNanpaAtEnds = false 
 
 // Build the renderer input string for one segment
 export function buildSegmentRendererInput(seg, entry, segIndex) {
+  const collapseBlankRuns = (s) =>
+    String(s || '').replace(/(^| )""(?: +"")+/g, '$1""').trim();
+
   // Nanpa segments: normally pass original words — renderer handles natively.
   // But if forceNormal is set, treat as a normal segment using cartoucheMap.
   if (seg.type === 'nanpa') {
-    if (!entry.forceNormal) return `[${seg.words.join(' ')}]`;
+    if (!entry.forceNormal) return `[ ${seg.words.join(' ')} ]`;
     // forceNormal — use stored cartouche from map like a normal segment
     const cm = entry.cartoucheMap || {};
     const stored = cm[segIndex];
-    if (entry.mode === 'preferred' && stored) return `[""${stored}]`;
+    if (entry.mode === 'preferred' && stored) return `["" ${collapseBlankRuns(stored)} ]`;
     // Random — generate from the words' letters.
     // "" prefix forces renderer to treat as glyph cartouche, not numeric.
     const letters = seg.words.join('').toLowerCase().split('');
-    return `[""${buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })}]`;
+    return `["" ${collapseBlankRuns(buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true }))} ]`;
   }
+
   // Normal segment
   const cm = entry.cartoucheMap || {};
   if (entry.merge) {
     const stored = cm[segIndex];
-    if (entry.mode === 'preferred' && stored) return `[${stored}]`;
+    if (entry.mode === 'preferred' && stored) return `[ ${collapseBlankRuns(stored)} ]`;
     const { letters } = segmentLetters(seg.words);
-    return `[${buildRandomDescForLetters(letters)}]`;
+    return `[ ${collapseBlankRuns(buildRandomDescForLetters(letters))} ]`;
   } else {
     return seg.words.map((w, wi) => {
       const stored = cm[`${segIndex}_${wi}`];
-      if (entry.mode === 'preferred' && stored) return `[${stored}]`;
-      return `[${buildRandomDescForLetters(w.toLowerCase().split(''))}]`;
+      if (entry.mode === 'preferred' && stored) return `[ ${collapseBlankRuns(stored)} ]`;
+      return `[ ${collapseBlankRuns(buildRandomDescForLetters(w.toLowerCase().split('')))} ]`;
     }).join(' ');
   }
 }

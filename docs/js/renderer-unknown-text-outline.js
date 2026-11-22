@@ -4637,12 +4637,22 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
 
     const PDF_CARTOUCHE_SCALE = 6;//3; // 2 or 3 is usually enough
 
-    function buildCartoucheCanvasForPdf(cartEl, { fontPx }){
-      const scale = PDF_CARTOUCHE_SCALE;
+    function pdfRasterScaleForFontPx(basePx) {
+      const px = Math.max(8, Number(basePx || 56));
 
+      if (px <= 12) return 16;
+      if (px <= 16) return 14;
+      if (px <= 20) return 12;
+      if (px <= 24) return 10;
+      if (px <= 32) return 8;
+      return 6;
+    }
+
+    function buildCartoucheCanvasForPdf(cartEl, { fontPx }){
       const c = document.createElement("canvas");
 
       const basePx = Math.max(8, Number(fontPx ?? cartEl?.px ?? getFontPx() ?? 56));
+      const scale = pdfRasterScaleForFontPx(basePx);
       const px = Math.round(basePx * scale);
 
       const basePadPx = Math.max(4, Math.round(basePx * 0.11));
@@ -4691,11 +4701,10 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
     const PDF_QUOTED_TEXT_SCALE = 6; // 4–6. 6 is crisp but bigger PDFs.
 
     function buildQuotedTextCanvasForPdf(txt, { px, fontFamily, fgCss }) {
-      const scale = PDF_QUOTED_TEXT_SCALE;
-
       const basePx = Math.max(8, Number(px ?? 56));
+      const scale = pdfRasterScaleForFontPx(basePx);
       const pxHi = Math.round(basePx * scale);
-
+      
       // Tiny padding so strokes don't clip
       const basePad = Math.max(0, Math.round(basePx * 0.02));
       const padHi = Math.round(basePad * scale);

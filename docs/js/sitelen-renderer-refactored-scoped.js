@@ -4268,7 +4268,7 @@ function wireHaloControls() {
       // IMPORTANT: these URLs must be same-origin in your static site
       const [textBytes, cartBytes, literalBytes] = await Promise.all([
         fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-v5.otf"),              // TP-Nasin-Nanpa-Font
-        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-v10.otf"),// TP-Cartouche-Font
+        fetchFontBytes("./fonts/nasin-nanpa-5.0.0-beta.3-UCSUR-nanpa-linja-n-good-kasi.otf"),// TP-Cartouche-Font
         //fetchFontBytes("./fonts/PatrickHand-Regular.ttf"),                             // Patrick-Head-Font
       ]);
 

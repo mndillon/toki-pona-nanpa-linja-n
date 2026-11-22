@@ -1,0 +1,1065 @@
+/**
+ * cartouche-api.js
+ * Shared site-wide cartouche database API.
+ *
+ * Usage:
+ *   import { CartoucheApi } from './cartouche-api-v3.js';
+ *
+ *   // DB page (read/write, no lookup):
+ *   const api = await CartoucheApi.open({ lookup: false });
+ *
+ *   // Renderer pages (read-only cache, greedy scan):
+ *   const api = await CartoucheApi.open({ lookup: true });
+ *   const pageMap = await api.resolvePageMap();   // call once at page init
+ *   // then use CartoucheApi.greedyScan(words, pageMap) before each render
+ */
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const DB_NAME    = 'cartouche-db-site';
+const DB_VERSION = 3;
+const STORE      = 'entries';
+
+const VOWELS     = new Set(['a','e','i','o','u']);
+const CONSONANTS = new Set(['p','t','k','m','n','s','w','l','j']);
+const FORBIDDEN  = new Set(['ji','ti','wu','wo']);
+
+
+// ── Diagnostic logging ────────────────────────────────────────────────────
+// Enabled by default in this diagnostic build. You can disable at runtime with:
+//   window.__CARTOUCHE_API_DEBUG__ = false
+// or localStorage.setItem('cartoucheApiDebug', '0')
+const CARTOUCHE_API_DEBUG_DEFAULT = true;
+const CARTOUCHE_API_DEBUG_PREFIX = '[cartouche-api-db-debug]';
+
+function cartoucheApiDebugEnabled() {
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.__CARTOUCHE_API_DEBUG__ != null) {
+      return !!globalThis.__CARTOUCHE_API_DEBUG__;
+    }
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('cartoucheApiDebug');
+      if (raw === '0' || raw === 'false') return false;
+      if (raw === '1' || raw === 'true') return true;
+    }
+  } catch (_) {}
+  return CARTOUCHE_API_DEBUG_DEFAULT;
+}
+
+function cartoucheApiShortString(value, maxLen = 240) {
+  const s = String(value ?? '');
+  return s.length > maxLen ? s.slice(0, maxLen) + `…(${s.length} chars)` : s;
+}
+
+function cartoucheApiSummarizeMapValue(mapVal) {
+  if (mapVal === null) return null;
+  if (!mapVal || typeof mapVal !== 'object') return mapVal;
+  return {
+    forceNormal: !!mapVal.forceNormal,
+    requiresAtDb: !!mapVal.requiresAtDb,
+    input: cartoucheApiShortString(mapVal.input),
+    inputForceNormal: cartoucheApiShortString(mapVal.inputForceNormal),
+  };
+}
+
+function cartoucheApiSummarizeToken(token) {
+  if (!token || typeof token !== 'object') return token;
+  if (token.type === 'cartouche') {
+    return { type: token.type, input: cartoucheApiShortString(token.input) };
+  }
+  if (Array.isArray(token.words)) return { ...token, words: token.words.slice() };
+  return { ...token };
+}
+
+function cartoucheApiSummarizeTokens(tokens) {
+  return Array.from(tokens ?? []).map(cartoucheApiSummarizeToken);
+}
+
+function cartoucheApiFlatValue(value) {
+  if (value == null) return String(value);
+  if (typeof value === 'string') return JSON.stringify(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try { return JSON.stringify(value); }
+  catch (_) { return JSON.stringify(String(value)); }
+}
+
+function cartoucheApiFlatPayload(data) {
+  if (data === undefined) return '';
+  if (!data || typeof data !== 'object') return `value=${cartoucheApiFlatValue(data)}`;
+  return Object.entries(data)
+    .map(([key, value]) => `${key}=${cartoucheApiFlatValue(value)}`)
+    .join(' ');
+}
+
+function cartoucheApiDebug(label, data = undefined) {
+  if (!cartoucheApiDebugEnabled()) return;
+  try {
+    const payload = cartoucheApiFlatPayload(data);
+    console.warn(`${CARTOUCHE_API_DEBUG_PREFIX} label=${JSON.stringify(label)}${payload ? ' ' + payload : ''}`);
+  } catch (_) {}
+}
+
+function cartoucheApiDebugGroup(label, data, fn) {
+  if (!cartoucheApiDebugEnabled()) return fn();
+  cartoucheApiDebug(label + ': ENTER', data);
+  try {
+    const result = fn();
+    cartoucheApiDebug(label + ': EXIT');
+    return result;
+  } catch (err) {
+    cartoucheApiDebug(label + ': ERROR', { error: err?.message ?? String(err), stack: err?.stack ?? null });
+    throw err;
+  }
+}
+
+// ── TP word list for random cartouche generation ───────────────────────────
+const TP_WORDS_BY_LETTER = (() => {
+  const all = [
+    'a','akesi','ala','alasa','ale','anpa','ante','anu','awen',
+    'e','en','epiku','esun','ijo','ike','ilo','insa',
+    'jaki','jan','jasima','jelo','jo',
+    'kala','kalama','kama','kasi','ken','kepeken','kijetesantakalu','kili','kin','kipisi',
+    'kiwen','ko','kokosila','kon','ku','kule','kulupu','kute',
+    'la','lanpan','lape','laso','lawa','leko','len','lete','li','lili',
+    'linja','linluwi','lipu','loje','lon','luka','lukin','lupa',
+    'ma','majuna','mama','mani','meli','meso','mi','mije','misikeke',
+    'moku','moli','monsi','monsuta','mu','mun','musi','mute',
+    'n','namako','nanpa','nasa','nasin','nena','ni','nimi','noka',
+    'o','oko','olin','ona','open',
+    'pakala','pake','pali','palisa','pan','pana','pi','pilin','pimeja',
+    'pini','pipi','poka','poki','pona','powe','pu',
+    'sama','seli','selo','seme','sewi','sijelo','sike','sin','sina',
+    'sinpin','sitelen','soko','sona','soweli','su','suli','suno','supa','suwi',
+    'tan','taso','tawa','telo','tenpo','toki','tomo','tonsi','tu',
+    'unpa','uta','utala',
+    'walo','wan','waso','wawa','weka','wile',
+  ];
+  const map = {};
+  for (const w of all) {
+    const c = w[0];
+    if (!map[c]) map[c] = [];
+    map[c].push(w);
+  }
+  return map;
+})();
+
+function randFrom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+
+
+const TP_KNOWN_WORDS = new Set(
+  Object.values(TP_WORDS_BY_LETTER).flat()
+);
+
+function mergedLettersToWord(words) {
+  return segmentLetters(words).letters.join('');
+}
+
+function entryRequiresAtDbForTpWordCollision(entry) {
+  if (!entry || !Array.isArray(entry.words) || !entry.words.length) return false;
+
+  const segs = segmentWords(entry.words);
+
+  for (const seg of segs) {
+    if (seg.type !== 'normal') continue;
+
+    // If merge is on, this segment becomes one cartouche word after merge.
+    if (entry.merge) {
+      const merged = mergedLettersToWord(seg.words);
+      if (TP_KNOWN_WORDS.has(merged)) return true;
+    } else {
+      // If merge is off, each separate word becomes its own cartouche.
+      for (const w of seg.words) {
+        if (TP_KNOWN_WORDS.has(w.toLowerCase())) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+
+function getEntryLookupAliases(entry) {
+  const aliases = new Set();
+
+  if (!entry || !Array.isArray(entry.words) || !entry.words.length) return aliases;
+
+  // Always include the exact DB key.
+  aliases.add(entry.key);
+
+  // Only include a merged single-word alias when this record is merge=true
+  // AND the whole entry collapses to a single normal (mergeable) run.
+  // Building the alias per-segment was wrong: when a nanpa segment splits the
+  // words (e.g. "Ate Nemen" -> normal["Ate"] + nanpa["Nemen"]), the leftover
+  // fragment "Ate" got registered as a lookup key for the whole entry, so a
+  // lone "Ate" expanded into the entire "Ate Nemen" cartouche.
+  if (entry.merge) {
+    const segs = segmentWords(entry.words);
+    if (segs.length === 1 && segs[0].type === 'normal') {
+      const merged = segmentLetters(segs[0].words).letters.join('');
+      if (merged) {
+        aliases.add(merged.charAt(0).toUpperCase() + merged.slice(1));
+      }
+    }
+  }
+
+  return aliases;
+}
+
+// ── CV(N) validation ───────────────────────────────────────────────────────
+export function validateTpWord(w) {
+  // TODO: digit support coming later
+  if (!/^[A-Za-z]+$/.test(w))
+    return { ok: false, reason: `"${w}" must contain toki pona letters only (a e i j k l m n o p s t u w) — no digits, spaces, or special characters` };
+
+  const lower = w.toLowerCase();
+  let i = 0;
+
+  while (i < lower.length) {
+    let cons = '';
+    if (CONSONANTS.has(lower[i])) { cons = lower[i]; i++; }
+
+    if (i >= lower.length || !VOWELS.has(lower[i])) {
+      const pos = i + 1;
+      const ch = lower[i] ?? '(end of word)';
+      return {
+        ok: false,
+        reason: `"${w}" has an invalid syllable at letter ${pos} ("${ch}") — toki pona words follow the pattern consonant+vowel(+n), e.g. "ma", "jan", "toki"`
+      };
+    }
+
+    const vow = lower[i];
+    i++;
+
+    if (FORBIDDEN.has(cons + vow))
+      return { ok: false, reason: `"${w}" contains the forbidden syllable "${cons + vow}" — toki pona does not use ji, ti, wu, or wo` };
+
+    if (i < lower.length && lower[i] === 'n') {
+      const nxt = lower[i + 1];
+
+      // In-word nn and nm are not allowed.
+      if (nxt === 'n' || nxt === 'm') {
+        return {
+          ok: false,
+          reason: `"${w}" contains the disallowed sequence "${lower[i]}${nxt}" — inside one word, syllables must follow (C)V(N), so "nn" and "nm" are not allowed`
+        };
+      }
+
+      // Accept syllable-final n whenever the following character is absent
+      // or is not a vowel. This keeps normal CVN parsing behaviour.
+      if (!nxt || !VOWELS.has(nxt)) i++;
+    }
+  }
+
+  return { ok: true, normalised: w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() };
+}
+
+// ── Nanpa detection ────────────────────────────────────────────────────────
+// NanpaParser is injected via CartoucheApi.open({ nanpaParser }) or setNanpaParser()
+let _nanpaParser = null;
+
+export function setNanpaParser(parser) { _nanpaParser = parser; }
+
+function isNanpaCaps(s) {
+  try { return !!(_nanpaParser && _nanpaParser.isValidCaps(s)); }
+  catch { return false; }
+}
+
+// ── Greedy nanpa-linja-n run detection ─────────────────────────────────────
+// Returns array of segments: { type:'nanpa'|'normal', words:[] }
+export function segmentWords(words) {
+  if (!Array.isArray(words) || !words.length) return [];
+  const segments = [];
+  let i = 0;
+  while (i < words.length) {
+    let nanpaLen = 0;
+    for (let len = words.length - i; len >= 1; len--) {
+      const run = words.slice(i, i + len).map(w => w.toUpperCase()).join('');
+      if (isNanpaCaps(run)) { nanpaLen = len; break; }
+    }
+    if (nanpaLen > 0) {
+      segments.push({ type: 'nanpa', words: words.slice(i, i + nanpaLen) });
+      i += nanpaLen;
+    } else {
+      if (segments.length && segments[segments.length - 1].type === 'normal') {
+        segments[segments.length - 1].words.push(words[i]);
+      } else {
+        segments.push({ type: 'normal', words: [words[i]] });
+      }
+      i++;
+    }
+  }
+  return segments;
+}
+
+// ── Boundary validation ────────────────────────────────────────────────────
+// Word boundaries are allowed. Merge-time letter building handles the only
+// special case now: if merging creates nn or nm across a word boundary,
+// the first n is dropped.
+export function validateBoundaries(words) {
+  return { ok: true };
+}
+
+// ── Parse and validate a full input line ───────────────────────────────────
+export function parseAndValidateLine(raw) {
+  const tokens = raw.trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return { ok: false, reason: 'No words entered', words: [] };
+  const normalised = [];
+  for (const t of tokens) {
+    const v = validateTpWord(t);
+    if (!v.ok) return { ok: false, reason: v.reason, words: [] };
+    normalised.push(v.normalised);
+  }
+  const b = validateBoundaries(normalised);
+  if (!b.ok) return { ok: false, reason: b.reason, words: [] };
+  return { ok: true, words: normalised };
+}
+
+export function makeKey(words) { return words.join(' '); }
+
+// ── Final-n dropping for merged cartouche letter sequences ─────────────────
+// Only drop final n when merging words would create nn or nm.
+// All other n+consonant cross-word sequences are allowed and kept.
+export function segmentLetters(words) {
+  const result = [];
+  const wordBoundaries = [];
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const isLast = i === words.length - 1;
+    const nextFirst = isLast ? null : words[i + 1][0].toLowerCase();
+
+    const dropN =
+      !isLast &&
+      w.toLowerCase().endsWith('n') &&
+      (nextFirst === 'n' || nextFirst === 'm');
+
+    wordBoundaries.push(result.length);
+    const letters = w.toLowerCase().split('');
+    if (dropN) letters.pop();
+    letters.forEach(l => result.push(l));
+  }
+  return { letters: result, wordBoundaries };
+}
+
+// ── Random cartouche generation ────────────────────────────────────────────
+export function buildRandomDescForLetters(letters, { excludeNanpaAtEnds = false } = {}) {
+  return letters.map((ch, idx) => {
+    let pool = TP_WORDS_BY_LETTER[ch];
+    if (!pool) return ch;
+    // For forceNormal entries, avoid 'nanpa' at first or last position
+    // to prevent the renderer treating [nanpa ... nanpa] as a numeric cartouche
+    if (excludeNanpaAtEnds && (idx === 0 || idx === letters.length - 1)) {
+      pool = pool.filter(w => w !== 'nanpa');
+    }
+    return randFrom(pool) || ch;
+  }).join(' ');
+}
+
+function cleanLiteralText(value) {
+  return String(value ?? '').replace(/"/g, '').trim();
+}
+
+function getEntryLiteralText(entry) {
+  return cleanLiteralText(entry?.literalText) || entry?.key || '';
+}
+
+function tokenizeStoredCartouche(value) {
+  return String(value || '').trim().split(/\s+/).filter(Boolean);
+}
+
+function sanitizeStoredCartoucheTokens(tokens, { keepLeadingBlank = false } = {}) {
+  const result = [];
+  let leadingBlankKept = false;
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i];
+    if (tok !== '""') {
+      result.push(tok);
+      continue;
+    }
+    if (keepLeadingBlank && i === 0 && !leadingBlankKept) {
+      result.push(tok);
+      leadingBlankKept = true;
+    }
+  }
+  return result;
+}
+
+function sanitizeStoredCartoucheText(value, { keepLeadingBlank = false } = {}) {
+  return sanitizeStoredCartoucheTokens(tokenizeStoredCartouche(value), { keepLeadingBlank }).join(' ');
+}
+
+// Append tally commas to non-blank tokens in a raw cartouche word list.
+// Only called in preferred mode. Safe on old entries where tallyMap is absent.
+// subKey: the coordinate prefix matching the tallyMap key scheme, e.g. "0", "0_1"
+// Token at position li → tallyMap[`${subKey}_${li}`] commas appended.
+// Blank tokens ('""') are never modified.
+function applyTalliesToTokens(tokens, tallyMap, subKey) {
+  if (!tallyMap || !tokens.length) return tokens;
+  return tokens.map((tok, li) => {
+    if (tok === '""') return tok;
+    const n = tallyMap[`${subKey}_${li}`] || 0;
+    return n > 0 ? tok + ','.repeat(n) : tok;
+  });
+}
+
+function ensureLeadingBlankGlyphToken(value) {
+  const tokens = tokenizeStoredCartouche(value);
+  const cleaned = sanitizeStoredCartoucheTokens(tokens, { keepLeadingBlank: false });
+  if (!cleaned.length) return '""';
+  if (cleaned[0] !== '""') cleaned.unshift('""');
+  return cleaned.join(' ');
+}
+
+function getStoredSegmentCartoucheText(seg, entry, segIndex) {
+  const cm = entry.cartoucheMap || {};
+
+  if (seg.type === 'nanpa') {
+    const stored = cm[segIndex];
+    if (entry.forceNormal) return ensureLeadingBlankGlyphToken(stored);
+    return sanitizeStoredCartoucheText(stored, { keepLeadingBlank: false });
+  }
+
+  if (entry.merge) {
+    return sanitizeStoredCartoucheText(cm[segIndex]);
+  }
+
+  return seg.words.map((w, wi) => {
+    const stored = cm[`${segIndex}_${wi}`];
+    return `[ ${sanitizeStoredCartoucheText(stored)} ]`;
+  }).join(' ');
+}
+
+// Build the renderer input string for one segment
+export function buildSegmentRendererInput(seg, entry, segIndex) {
+  if (entry.mode === 'literal') {
+    return `["${getEntryLiteralText(entry)}"]`;
+  }
+
+  // tallyMap is only used in preferred mode; absent on old entries → safe.
+  const tm = (entry.mode === 'preferred') ? (entry.tallyMap || null) : null;
+
+  // Nanpa segments: normally pass original words — renderer handles natively.
+  // But if forceNormal is set, treat as a normal segment using cartoucheMap.
+  if (seg.type === 'nanpa') {
+    if (!entry.forceNormal) return `[ ${seg.words.join(' ')} ]`;
+    // forceNormal preferred — inject tallies on raw tokens then restore leading blank
+    if (entry.mode === 'preferred') {
+      const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
+      const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
+      const cleaned = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false });
+      if (!cleaned.length) cleaned.unshift('""'); else if (cleaned[0] !== '""') cleaned.unshift('""');
+      const stored = cleaned.join(' ');
+      if (stored) return `["" ${stored} ]`;
+    }
+    // Random — generate from the words' letters.
+    // Leading "" forces renderer to treat as glyph cartouche, not numeric.
+    const letters = seg.words.join('').toLowerCase().split('');
+    return `[ "" ${buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true })} ]`;
+  }
+
+  // Normal segment
+  if (entry.merge) {
+    if (entry.mode === 'preferred') {
+      const rawTokens = tokenizeStoredCartouche((entry.cartoucheMap || {})[segIndex]);
+      const withTallies = applyTalliesToTokens(rawTokens, tm, String(segIndex));
+      const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
+      if (sanitized) return `[ ${sanitized} ]`;
+    }
+    const { letters } = segmentLetters(seg.words);
+    return `[ ${buildRandomDescForLetters(letters)} ]`;
+  } else {
+    return seg.words.map((w, wi) => {
+      const cm = entry.cartoucheMap || {};
+      if (entry.mode === 'preferred') {
+        const rawTokens = tokenizeStoredCartouche(cm[`${segIndex}_${wi}`]);
+        const withTallies = applyTalliesToTokens(rawTokens, tm, `${segIndex}_${wi}`);
+        const sanitized = sanitizeStoredCartoucheTokens(withTallies, { keepLeadingBlank: false }).join(' ');
+        if (sanitized) return `[ ${sanitized} ]`;
+      }
+      return `[ ${buildRandomDescForLetters(w.toLowerCase().split(''))} ]`;
+    }).join(' ');
+  }
+}
+
+// Build full renderer input string for an entry (all segments)
+export function buildEntryRendererInput(entry) {
+  const segs = segmentWords(entry.words);
+  return segs.map((seg, si) => buildSegmentRendererInput(seg, entry, si)).join(' ');
+}
+
+// Build the exact display string that should be shown in the DB preview/latin-desc UI.
+// This intentionally matches the renderer input builder so the UI and renderer stay consistent.
+export function buildEntryDisplayInput(entry, { ignoredText = '— (ignored)' } = {}) {
+  if (entry?.mode === 'ignore') return ignoredText;
+  return buildEntryRendererInput(entry);
+}
+
+// Build a live preview string for one segment using an optional temporary cartoucheMap.
+// Useful for edit UIs that want preview text to match the real renderer input.
+export function buildSegmentDisplayInput(seg, entry, segIndex, cartoucheMapOverride = null) {
+  const effectiveEntry = cartoucheMapOverride ? { ...entry, cartoucheMap: cartoucheMapOverride } : entry;
+  return buildSegmentRendererInput(seg, effectiveEntry, segIndex);
+}
+
+// Build a live preview string for a whole entry using optional temporary overrides.
+// Useful for edit modals so the preview matches the exact renderer input without mutating storage.
+export function buildEntryPreviewInput(entry, cartoucheMapOverride = null, tallyMapOverride = null) {
+  const effectiveEntry = { ...entry };
+  if (cartoucheMapOverride) effectiveEntry.cartoucheMap = cartoucheMapOverride;
+  if (tallyMapOverride)     effectiveEntry.tallyMap     = tallyMapOverride;
+  return buildEntryRendererInput(effectiveEntry);
+}
+
+// ── IndexedDB access ───────────────────────────────────────────────────────
+function readOldDb() {
+  return new Promise(res => {
+    const probe = indexedDB.open(DB_NAME);
+    probe.onsuccess = () => {
+      const db = probe.result;
+      const ver = db.version;
+      const storeNames = Array.from(db.objectStoreNames);
+      if (!storeNames.includes(STORE) || ver >= DB_VERSION) { db.close(); res([]); return; }
+      try {
+        const tx  = db.transaction(STORE, 'readonly');
+        const req = tx.objectStore(STORE).getAll();
+        req.onsuccess = () => { db.close(); res(req.result || []); };
+        req.onerror   = () => { db.close(); res([]); };
+      } catch { db.close(); res([]); }
+    };
+    probe.onerror = () => res([]);
+    probe.onupgradeneeded = e => { e.target.transaction.abort(); res([]); };
+  });
+}
+
+function openDb() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
+      db.createObjectStore(STORE, { keyPath: 'key' });
+    };
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function migrateRecord(e) {
+  const rawWord = (typeof e.key === 'string' && e.key) ? e.key
+                : (typeof e.word === 'string' && e.word) ? e.word : '';
+  if (!rawWord) return null;
+  const wordList = rawWord.trim().split(/\s+/).filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  if (!wordList.length) return null;
+  const key  = wordList.join(' ');
+  const mode = ['random','preferred','literal','ignore'].includes(e.mode) ? e.mode : 'random';
+  const cartoucheMap = (typeof e.cartoucheMap === 'object' && e.cartoucheMap) ? e.cartoucheMap : {};
+  if (e.cartouche && typeof e.cartouche === 'string' && !Object.keys(cartoucheMap).length)
+    cartoucheMap['0'] = e.cartouche;
+  return { key, words: wordList, merge: e.merge !== false, mode, cartoucheMap, tallyMap: (typeof e.tallyMap === 'object' && e.tallyMap) ? e.tallyMap : {}, forceNormal: !!e.forceNormal, literalText: cleanLiteralText(e.literalText) || key };
+}
+
+// ── Pure page-map construction ────────────────────────────────────────────
+// Converts a supplied entry array into the same lookup map used by the
+// IndexedDB-backed CartoucheApi.resolvePageMap(). This lets document-local
+// stores, such as a scrapbook-local cartouche DB, reuse the same greedy-scan
+// behaviour without writing anything to the machine-wide cartouche-db-site DB.
+export function buildPageMapFromCartoucheEntries(entries) {
+  return cartoucheApiDebugGroup('buildPageMapFromCartoucheEntries()', {
+    entriesIsArray: Array.isArray(entries),
+    entryCount: Array.isArray(entries) ? entries.length : null,
+  }, () => {
+    const map = new Map();
+
+    if (!Array.isArray(entries)) {
+      cartoucheApiDebug('buildPageMapFromCartoucheEntries: entries was not an array; returning empty map');
+      return map;
+    }
+
+    for (const entry of entries) {
+      if (!entry || typeof entry.key !== 'string' || !Array.isArray(entry.words) || !entry.words.length) {
+        cartoucheApiDebug('buildPageMapFromCartoucheEntries: skipped invalid entry', entry);
+        continue;
+      }
+
+      const aliasesForLog = Array.from(getEntryLookupAliases(entry));
+      cartoucheApiDebug('buildPageMapFromCartoucheEntries: entry start', {
+        key: entry.key,
+        words: entry.words.slice(),
+        mode: entry.mode,
+        merge: entry.merge,
+        forceNormal: !!entry.forceNormal,
+        aliases: aliasesForLog,
+      });
+
+      if (entry.mode === 'ignore') {
+        for (const alias of getEntryLookupAliases(entry)) {
+          map.set(alias, null); // null = ignore
+          cartoucheApiDebug('buildPageMapFromCartoucheEntries: map alias -> ignore', { alias, key: entry.key });
+        }
+        continue;
+      }
+
+      // Pre-compute random cartouches now (once per map build), matching the
+      // existing global DB behaviour.
+      let rendererInput;
+      if (entry.mode === 'random') {
+        const segs = segmentWords(entry.words);
+        const cm = {};
+
+        segs.forEach((seg, si) => {
+          // Skip nanpa segments UNLESS forceNormal — then generate random glyph cartouche.
+          if (seg.type === 'nanpa' && !entry.forceNormal) return;
+
+          if (seg.type === 'nanpa' && entry.forceNormal) {
+            const letters = seg.words.join('').toLowerCase().split('');
+            cm[si] = buildRandomDescForLetters(letters, { excludeNanpaAtEnds: true });
+            return;
+          }
+
+          if (entry.merge) {
+            const { letters } = segmentLetters(seg.words);
+            cm[si] = buildRandomDescForLetters(letters);
+          } else {
+            seg.words.forEach((w, wi) => {
+              cm[`${si}_${wi}`] = buildRandomDescForLetters(w.toLowerCase().split(''));
+            });
+          }
+        });
+
+        rendererInput = buildEntryRendererInput({ ...entry, cartoucheMap: cm });
+      } else {
+        rendererInput = buildEntryRendererInput(entry);
+      }
+
+      // Store as object so greedyScan can read forceNormal flag.
+      // forceNormal entries carry two inputs:
+      //   input — nanpa segments rendered natively (used without @db)
+      //   inputForceNormal — nanpa segments overridden with glyph cartouche (used with @db)
+      let inputForceNormal = rendererInput;
+      if (entry.forceNormal) {
+        const entryNormal = { ...entry, forceNormal: false };
+        inputForceNormal = rendererInput;
+        rendererInput = buildEntryRendererInput(entryNormal);
+      }
+
+      const mapValue = {
+        input:            rendererInput,
+        inputForceNormal: inputForceNormal,
+        forceNormal:      !!entry.forceNormal,
+        requiresAtDb:     entryRequiresAtDbForTpWordCollision(entry),
+      };
+
+      for (const alias of getEntryLookupAliases(entry)) {
+        map.set(alias, mapValue);
+        cartoucheApiDebug('buildPageMapFromCartoucheEntries: map alias -> value', {
+          alias,
+          key: entry.key,
+          value: cartoucheApiSummarizeMapValue(mapValue),
+        });
+      }
+    }
+
+    cartoucheApiDebug('buildPageMapFromCartoucheEntries: complete', {
+      mapSize: map.size,
+      keys: Array.from(map.keys()),
+    });
+    return map;
+  });
+}
+
+// ── CartoucheApi class ─────────────────────────────────────────────────────
+// Uses a plain object for state instead of private fields for broad compatibility
+export class CartoucheApi {
+  constructor({ lookup = true } = {}) {
+    this._db       = null;
+    this._lookup   = lookup;
+    this._initDone = false;
+  }
+
+  static async open({ lookup = true, nanpaParser = null } = {}) {
+    if (nanpaParser) setNanpaParser(nanpaParser);
+    const api = new CartoucheApi({ lookup });
+    await api._init();
+    return api;
+  }
+
+  async _init() {
+    if (this._initDone) return;
+    this._initDone = true;
+    const oldRecords = await readOldDb();
+    this._db = await openDb();
+    if (oldRecords.length) {
+      const existing = await this._getAll();
+      if (!existing.length) {
+        for (const old of oldRecords) {
+          const m = migrateRecord(old);
+          if (m) await this._put(m);
+        }
+      }
+    }
+  }
+
+  async _getAll() {
+    return new Promise((res, rej) => {
+      const tx  = this._db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror   = () => rej(req.error);
+    });
+  }
+
+  async _put(entry) {
+    return new Promise((res, rej) => {
+      const tx = this._db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(entry);
+      tx.oncomplete = res;
+      tx.onerror    = () => rej(tx.error);
+    });
+  }
+
+  async _delete(key) {
+    return new Promise((res, rej) => {
+      const tx = this._db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).delete(key);
+      tx.oncomplete = res;
+      tx.onerror    = () => rej(tx.error);
+    });
+  }
+
+  async _clear() {
+    return new Promise((res, rej) => {
+      const tx = this._db.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = res;
+      tx.onerror    = () => rej(tx.error);
+    });
+  }
+
+  // ── Public DB operations (used by cartouche-db page) ────────────────────
+  async getAllEntries() {
+    const raw = await this._getAll();
+    return raw.filter(e => e && typeof e.key === 'string' && Array.isArray(e.words) && e.words.length);
+  }
+
+  async putEntry(entry) {
+    return this._put(entry);
+  }
+
+  async deleteEntry(key) {
+    return this._delete(key);
+  }
+
+  async clearAll() {
+    return this._clear();
+  }
+
+  get lookupEnabled() { return this._lookup; }
+
+  // ── resolvePageMap ────────────────────────────────────────────────────────
+  // Loads all entries and pre-computes a flat map of key → renderer input string.
+  // random entries get a random cartouche generated once per page load.
+  // ignore entries map to null.
+  // Not found → key absent from map.
+  // Call once at page init; cache the result for the session.
+  async resolvePageMap() {
+    const entries = await this.getAllEntries();
+    return buildPageMapFromCartoucheEntries(entries);
+  }
+
+  // ── greedyScan (static — no DB needed, pure computation) ─────────────────
+  // Takes a word array and a resolved pageMap.
+  // Returns an array of tokens: each is either
+  //   { type: 'text', words: [...] }          — pass through to renderer as-is
+  //   { type: 'cartouche', input: '[...]' }   — substitute this into renderer input
+  //   { type: 'ignore', words: [...] }        — omit entirely
+  //
+  // Rules:
+  // - Only starts a lookup from a capitalised word
+  // - Identifies nanpa segments within capitalised runs as atomic units
+  // - Greedy: tries longest sequence of units first, walks back unit by unit
+  // - A standalone nanpa unit is NEVER looked up — passed through natively
+  // - Lowercase words are passed through as-is
+  // ── stripAtDb ─────────────────────────────────────────────────────────────
+  // Strips @db suffix from a word if present. Returns { word, hasAtDb }.
+  // When @db is present, underscores encode spaces in the DB lookup key.
+  // Example: San_Pan@db looks up the stored DB key "San Pan".
+  static _stripAtDb(word) {
+    if (word.endsWith('@db')) {
+      const raw = word.slice(0, -3);
+      const stripped = { word: raw.replace(/_/g, ' '), hasAtDb: true };
+      cartoucheApiDebug('_stripAtDb: stripped @db token', { rawWord: word, rawWithoutSuffix: raw, cleanWord: stripped.word });
+      return stripped;
+    }
+    return { word, hasAtDb: false };
+  }
+
+  // Return the longest native nanpa-linja-n proper-name prefix in a
+  // capitalised run. This protects spans such as "Nenin One Len" from
+  // being partially replaced by DB entries such as "One" before the
+  // renderer's nanpa parser sees the full span. @db remains the explicit
+  // escape hatch and is handled by the caller via atDbRequested.
+  static _nativeNanpaPrefixLength(words) {
+    const runWords = Array.isArray(words) ? words : [];
+    for (let len = runWords.length; len >= 1; len--) {
+      const candidateWords = runWords.slice(0, len);
+      const candidateSegs = segmentWords(candidateWords);
+      if (
+        candidateSegs.length === 1 &&
+        candidateSegs[0].type === 'nanpa' &&
+        candidateSegs[0].words.length === len
+      ) {
+        return len;
+      }
+    }
+    return 0;
+  }
+
+  static _lookupSingleDbWord(cleanWord, pageMap, atDbRequested) {
+    const pageMapSize = pageMap ? pageMap.size : null;
+    const hasKey = !!(pageMap && pageMap.has(cleanWord));
+    cartoucheApiDebug('_lookupSingleDbWord: start', { cleanWord, atDbRequested: !!atDbRequested, pageMapSize, hasKey });
+
+    if (!pageMap || !pageMap.has(cleanWord)) {
+      cartoucheApiDebug('_lookupSingleDbWord: miss', {
+        cleanWord,
+        atDbRequested: !!atDbRequested,
+        nearbyKeys: pageMap ? Array.from(pageMap.keys()).filter(k => String(k).toLowerCase().includes(String(cleanWord).toLowerCase()) || String(cleanWord).toLowerCase().includes(String(k).toLowerCase())).slice(0, 20) : [],
+      });
+      return null;
+    }
+
+    const mapVal = pageMap.get(cleanWord);
+    cartoucheApiDebug('_lookupSingleDbWord: raw map value', { cleanWord, value: cartoucheApiSummarizeMapValue(mapVal) });
+
+    if (mapVal === null) {
+      const out = { type: 'ignore', words: [cleanWord] };
+      cartoucheApiDebug('_lookupSingleDbWord: ignore hit', { cleanWord, out: cartoucheApiSummarizeToken(out) });
+      return out;
+    }
+
+    const { input, inputForceNormal, forceNormal, requiresAtDb } = mapVal;
+
+    // Entries that collide with ordinary toki pona words only activate when
+    // @db is explicitly attached to this exact single word.
+    if (requiresAtDb && !atDbRequested) {
+      cartoucheApiDebug('_lookupSingleDbWord: blocked because requiresAtDb and no @db was attached', { cleanWord, requiresAtDb, atDbRequested: !!atDbRequested });
+      return null;
+    }
+
+    const chosenInput = (forceNormal && atDbRequested) ? inputForceNormal : input;
+    const out = { type: 'cartouche', input: chosenInput };
+    cartoucheApiDebug('_lookupSingleDbWord: cartouche hit', {
+      cleanWord,
+      atDbRequested: !!atDbRequested,
+      forceNormal: !!forceNormal,
+      requiresAtDb: !!requiresAtDb,
+      chosenInputKind: (forceNormal && atDbRequested) ? 'inputForceNormal' : 'input',
+      out: cartoucheApiSummarizeToken(out),
+    });
+    return out;
+  }
+
+  static greedyScan(words, pageMap) {
+    return cartoucheApiDebugGroup('greedyScan()', {
+      words: Array.isArray(words) ? words.slice() : words,
+      pageMapSize: pageMap ? pageMap.size : null,
+      pageMapKeys: pageMap ? Array.from(pageMap.keys()) : [],
+    }, () => {
+      // Note: even with empty map we must process words to strip @db suffixes.
+      // @db applies only to the single input token it is attached to.
+      // That token may use underscores to encode spaces in a DB key.
+      // Example: San_Pan@db looks up the stored DB key "San Pan".
+      // It never forces lookup for a preceding multi-word capitalised run.
+      const hasEntries = pageMap && pageMap.size > 0;
+
+      const result = [];
+      let i = 0;
+
+      while (i < words.length) {
+        const rawWord = words[i];
+        const { word: cleanWord, hasAtDb } = CartoucheApi._stripAtDb(rawWord);
+        cartoucheApiDebug('greedyScan: loop start', { i, rawWord, cleanWord, hasAtDb, resultSoFar: cartoucheApiSummarizeTokens(result) });
+
+        // @db is an explicit DB lookup override for this one input token.
+        // If the token contains underscores, they encode spaces in the DB key.
+        // Example: San_Pan@db -> lookup "San Pan".
+        if (hasAtDb) {
+          cartoucheApiDebug('greedyScan: @db branch', { i, rawWord, cleanWord, startsCapital: /^[A-Z]/.test(cleanWord), hasEntries });
+          if (/^[A-Z]/.test(cleanWord) && hasEntries) {
+            const hit = CartoucheApi._lookupSingleDbWord(cleanWord, pageMap, true);
+            cartoucheApiDebug('greedyScan: @db lookup result', { cleanWord, hit: cartoucheApiSummarizeToken(hit) });
+            if (hit) {
+              result.push(hit);
+              cartoucheApiDebug('greedyScan: pushed @db hit and advancing', { iBefore: i, iAfter: i + 1, resultSoFar: cartoucheApiSummarizeTokens(result) });
+              i++;
+              continue;
+            }
+          }
+
+          // No DB match: strip @db and pass through the expanded words.
+          // This means San_Pan@db falls back as "San Pan", not "San_Pan".
+          const fallback = {
+            type: 'text',
+            words: cleanWord.split(/\s+/).filter(Boolean),
+          };
+          result.push(fallback);
+          cartoucheApiDebug('greedyScan: @db miss fallback text pushed', { fallback: cartoucheApiSummarizeToken(fallback), iBefore: i, iAfter: i + 1, resultSoFar: cartoucheApiSummarizeTokens(result) });
+          i++;
+          continue;
+        }
+
+        // Lowercase/non-capitalised words are never DB-looked-up.
+        if (!/^[A-Z]/.test(cleanWord)) {
+          const out = { type: 'text', words: [cleanWord] };
+          result.push(out);
+          cartoucheApiDebug('greedyScan: lowercase/non-capitalized pushed as text', { out: cartoucheApiSummarizeToken(out), iBefore: i, iAfter: i + 1, resultSoFar: cartoucheApiSummarizeTokens(result) });
+          i++;
+          continue;
+        }
+
+        // Collect a capitalised run, but stop before any @db token because @db
+        // belongs only to that token and must not affect the preceding run.
+        let j = i;
+        let stopReason = 'end-of-words';
+        while (j < words.length) {
+          const stripped = CartoucheApi._stripAtDb(words[j]);
+          if (stripped.hasAtDb) { stopReason = '@db-token'; break; }
+          if (!/^[A-Z]/.test(stripped.word)) { stopReason = 'non-capitalized'; break; }
+          j++;
+        }
+        const runWords = words.slice(i, j).map(w => CartoucheApi._stripAtDb(w).word);
+        cartoucheApiDebug('greedyScan: capitalized run collected', { i, j, stopReason, runWords, nextWord: words[j] ?? null });
+
+        // Protect native nanpa-linja-n proper-name spans before DB lookup.
+        // Without this, a valid span like "Nenin One Len" can be split by a
+        // shorter DB match such as "One", producing "Nenin [ ... ] Len".
+        const nativeNanpaPrefixLen = CartoucheApi._nativeNanpaPrefixLength(runWords);
+        cartoucheApiDebug('greedyScan: nativeNanpaPrefixLen', { runWords, nativeNanpaPrefixLen });
+        if (nativeNanpaPrefixLen > 0) {
+          const out = { type: 'text', words: runWords.slice(0, nativeNanpaPrefixLen) };
+          result.push(out);
+          cartoucheApiDebug('greedyScan: pushed native nanpa prefix as text', { out: cartoucheApiSummarizeToken(out), iBefore: i, iAfter: i + nativeNanpaPrefixLen, resultSoFar: cartoucheApiSummarizeTokens(result) });
+          i += nativeNanpaPrefixLen;
+          continue;
+        }
+
+        // Multi-word DB lookup is intentionally not allowed. If the current
+        // capitalised run has more than one word and is not a native nanpa span,
+        // pass the whole run through unchanged. This prevents an interior word
+        // such as "One" in "Nenin One Len@db" from being looked up unless
+        // @db is attached to that exact word.
+        if (runWords.length > 1) {
+          const out = { type: 'text', words: runWords };
+          result.push(out);
+          cartoucheApiDebug('greedyScan: multi-word capitalized run pushed as plain text', { out: cartoucheApiSummarizeToken(out), iBefore: i, iAfter: i + runWords.length, resultSoFar: cartoucheApiSummarizeTokens(result) });
+          i += runWords.length;
+          continue;
+        }
+
+        // Single capitalised word lookup is still allowed. Entries that collide
+        // with ordinary toki pona words are filtered inside _lookupSingleDbWord
+        // unless @db was explicitly attached to this same single word.
+        if (hasEntries) {
+          const hit = CartoucheApi._lookupSingleDbWord(cleanWord, pageMap, false);
+          cartoucheApiDebug('greedyScan: single capitalized lookup result', { cleanWord, hit: cartoucheApiSummarizeToken(hit) });
+          if (hit) {
+            result.push(hit);
+            cartoucheApiDebug('greedyScan: pushed single capitalized DB hit', { iBefore: i, iAfter: i + 1, resultSoFar: cartoucheApiSummarizeTokens(result) });
+            i++;
+            continue;
+          }
+        }
+
+        const out = { type: 'text', words: [cleanWord] };
+        result.push(out);
+        cartoucheApiDebug('greedyScan: no DB hit, pushed capitalized word as text', { out: cartoucheApiSummarizeToken(out), iBefore: i, iAfter: i + 1, resultSoFar: cartoucheApiSummarizeTokens(result) });
+        i++;
+      }
+
+      cartoucheApiDebug('greedyScan: complete', { result: cartoucheApiSummarizeTokens(result) });
+      return result;
+    });
+  }
+
+  // ── buildRendererInput ────────────────────────────────────────────────────
+  // Takes a greedyScan result and builds the final input string for the renderer.
+  // type:'text'      → words joined with spaces (renderer handles natively)
+  // type:'cartouche' → the pre-computed cartouche input string
+  // type:'ignore'    → omitted entirely
+  static buildRendererInput(scanResult) {
+    const output = scanResult
+      .filter(t => t.type !== 'ignore')
+      .map(t => t.type === 'cartouche' ? t.input : t.words.join(' '))
+      .join(' ')
+      .trim();
+    cartoucheApiDebug('buildRendererInput()', {
+      scanResult: cartoucheApiSummarizeTokens(scanResult),
+      output: cartoucheApiShortString(output, 500),
+    });
+    return output;
+  }
+
+  // ── prepareInput ──────────────────────────────────────────────────────────
+  // Convenience method: takes raw multi-line text and a resolved pageMap,
+  // processes each line independently (preserving newlines for the renderer),
+  // and returns the final input string ready to pass to renderTextToNewCanvas.
+  //
+  // Usage:
+  //   const processedInput = CartoucheApi.prepareInput(rawText, pageMap);
+  //   await renderer.renderTextToNewCanvas({ input: processedInput, ... });
+  static prepareInput(rawText, pageMap) {
+    return cartoucheApiDebugGroup('prepareInput()', {
+      rawText: cartoucheApiShortString(rawText, 1000),
+      pageMapSize: pageMap ? pageMap.size : null,
+      pageMapKeys: pageMap ? Array.from(pageMap.keys()) : [],
+    }, () => {
+      const output = String(rawText ?? '').split('\n').map((line, lineIndex) => {
+        cartoucheApiDebug('prepareInput: line start', { lineIndex, line: cartoucheApiShortString(line, 500) });
+        if (!line.trim()) {
+          cartoucheApiDebug('prepareInput: blank line', { lineIndex });
+          return '';
+        }
+        // Split on double-quoted sections — even indices are unquoted, odd are quoted.
+        // Quoted sections pass through untouched; only unquoted sections are scanned.
+        // We re-join with a space separator to preserve word boundaries around quotes.
+        const parts = line.split('"');
+        cartoucheApiDebug('prepareInput: split quoted parts', { lineIndex, parts: parts.map(p => cartoucheApiShortString(p, 300)) });
+        const processed = parts.map((part, idx) => {
+          if (idx % 2 === 1) {
+            // Inside quotes — pass through exactly as written
+            const quoted = '"' + part + '"';
+            cartoucheApiDebug('prepareInput: quoted part passthrough', { lineIndex, partIndex: idx, quoted: cartoucheApiShortString(quoted, 300) });
+            return quoted;
+          }
+          // Outside quotes — run greedy DB scan, preserving surrounding whitespace
+          const leading  = part.match(/^\s*/)[0];
+          const trailing = part.match(/\s*$/)[0];
+          const words = part.trim().split(/\s+/).filter(Boolean);
+          cartoucheApiDebug('prepareInput: unquoted part words', { lineIndex, partIndex: idx, part: cartoucheApiShortString(part, 300), leading, trailing, words });
+          if (!words.length) return leading + trailing;
+          const tokens = CartoucheApi.greedyScan(words, pageMap);
+          const built = CartoucheApi.buildRendererInput(tokens);
+          const partOutput = leading + built + trailing;
+          cartoucheApiDebug('prepareInput: unquoted part output', {
+            lineIndex,
+            partIndex: idx,
+            words,
+            tokens: cartoucheApiSummarizeTokens(tokens),
+            built: cartoucheApiShortString(built, 500),
+            partOutput: cartoucheApiShortString(partOutput, 500),
+          });
+          return partOutput;
+        });
+        const lineOutput = processed.join('');
+        cartoucheApiDebug('prepareInput: line output', { lineIndex, lineOutput: cartoucheApiShortString(lineOutput, 800) });
+        return lineOutput;
+      }).join('\n');
+      cartoucheApiDebug('prepareInput: final output', { output: cartoucheApiShortString(output, 2000) });
+      return output;
+    });
+  }
+}
+
+export default CartoucheApi;

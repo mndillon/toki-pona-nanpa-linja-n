@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>nanpa-linja-n sitelen pona Font Maker v0.3.41</title>
+  <link rel="stylesheet" href="./file-maker/style.css?v=0.3.41.8">
+</head>
+<body>
+<header class="masthead">
+  <div class="brand">
+    <a class="home-link" href="/" aria-label="Home" title="Home">
+      <svg class="pageHomeIcon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3.5 10.5 12 3.75l8.5 6.75M5.75 9.25V20h12.5V9.25M9.5 20v-6h5v6"
+          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <div><strong>nanpa-linja-n sitelen pona Font Maker</strong><small>Draw, edit and export fonts</small></div>
+  </div>
+  <div class="top-actions">
+    <label class="visually-hidden" for="projectSelect">Active project</label>
+    <select id="projectSelect" title="Current project"></select>
+    <button id="btnNewProject" class="btn">+ New</button>
+    <button id="btnDeleteProject" class="btn danger" type="button" title="Delete the selected project and its saved history">Delete project</button>
+    <button id="btnImportProject" class="btn">Open project</button>
+    <button id="btnStartFromFont" class="btn">Import font</button>
+    <button id="btnImportProjectFontZip" class="btn" type="button" title="Create a new editable project from a verified exported font ZIP; bundled licences are reused">Import ZIP</button>
+    <button id="btnExportProject" class="btn primary">Save project file</button>
+  </div>
+</header>
+<div id="statusbar" role="status" aria-live="polite"><span id="statusText">Loading…</span><span id="saveLabel">—</span></div>
+<div class="workspace">
+  <aside class="sidebar">
+    <div class="side-top"><h2>Glyph library</h2><span id="glyphStats" class="meta">0 / 180</span></div>
+    <div class="field"><label for="glyphSearch">Find a glyph</label><input id="glyphSearch" type="search" placeholder="jan, ni02, sewi02, ali…"></div><div class="field"><label for="glyphCategory">Glyph category</label><select id="glyphCategory"><option value="all">All editable glyphs</option><option value="sitelen">Sitelen pona</option><option value="ascii">Printable ASCII (95)</option><option value="custom">25 custom slots</option><option value="special">Special characters</option></select></div>
+    <div class="side-toolbar"><button class="mini" id="filterAll" aria-pressed="true">All</button><button class="mini" id="filterDrawn" aria-pressed="false">Drawn</button><button class="mini" id="filterMissing" aria-pressed="false">Missing</button></div>
+    <div id="glyphList" class="glyph-list" aria-label="SP Font Maker template glyph slots"></div>
+    <div class="side-footer"><button class="btn" id="btnShowTemplate">View original template</button><p>180 original SP Font Maker slots + 95 printable ASCII + recognised standard alternatives. Custom names use fixed UCSUR assignments.</p></div>
+  </aside>
+  <main class="main-panel">
+    <nav class="tabs" aria-label="Studio mode">
+      <button class="tab active" data-tab="glyph" aria-selected="true">Draw glyph</button>
+      <button class="tab" data-tab="compound" aria-selected="false">Compounds</button>
+      <button class="tab" data-tab="preview" aria-selected="false">Preview</button>
+      <button class="tab" data-tab="build" aria-selected="false">Build & export</button>
+    </nav>
+    <section id="pane-glyph" class="pane active">
+      <div class="pane-title"><div><h1 id="glyphTitle">jan</h1><p id="glyphDescription">Draw or edit glyphs against the light-grey imported reference.</p></div><div class="glyph-pane-title-actions"><span class="tag" id="glyphCp">U+F1911</span><button type="button" class="btn" id="btnExpandEditor" aria-pressed="false" title="Expand the drawing workspace (Escape to collapse)">⛶ Expand editor</button></div></div>
+      <div class="tools">
+        <div class="toolset" role="group" aria-label="Drawing tools">
+          <button class="tool" data-tool="select" aria-pressed="false" title="Drag to select editable artwork. Move by dragging inside; resize with handles. Press Fill to fill the selected region.">▣ Select</button>
+          <button class="tool" data-tool="lasso" aria-pressed="false" title="Draw a freehand selection around editable artwork">◌ Lasso</button>
+          <button class="tool active" data-tool="pen" aria-pressed="true">✎ Pencil</button>
+          <button class="tool" data-tool="eraser" aria-pressed="false">◫ Eraser</button>
+          <button class="tool" data-tool="line" aria-pressed="false">╱ Line</button>
+          <button class="tool" data-tool="ellipse" aria-pressed="false">◯ Circle</button>
+          <button class="tool" data-tool="rect" aria-pressed="false">▢ Rectangle</button>
+          <button class="tool" data-tool="curve" aria-pressed="false" title="Drag the curve endpoints; click or drag the visible purple bend handle to finish">⌒ Curve</button>
+          <button class="tool" data-tool="fill" aria-pressed="false" title="Click within an enclosed region, or select an area first and press Fill">▰ Fill</button>
+          <button class="tool" data-tool="bezier" aria-pressed="false">⌁ Edit path</button>
+          <button class="tool" data-tool="pan" aria-pressed="false" title="Drag the canvas without drawing (or hold Space)">✥ Pan</button>
+        </div>
+        <div class="selection-actions" id="selectionActions" hidden role="group" aria-label="Selected artwork actions">
+          <button type="button" class="btn compact" id="btnSelectionAll">Select all</button>
+          <button type="button" class="btn compact" id="btnSelectionCopy" disabled>Copy</button>
+          <button type="button" class="btn compact" id="btnSelectionCut" disabled>Cut</button>
+          <button type="button" class="btn compact" id="btnSelectionPaste" disabled>Paste</button>
+          <button type="button" class="btn compact" id="btnSelectionDuplicate" disabled>Duplicate</button>
+          <button type="button" class="btn compact" id="btnSelectionRotateLeft" disabled title="Rotate selected artwork anticlockwise 90 degrees">↶ 90°</button>
+          <button type="button" class="btn compact" id="btnSelectionRotateRight" disabled title="Rotate selected artwork clockwise 90 degrees">↷ 90°</button>
+          <button type="button" class="btn compact" id="btnSelectionFlipH" disabled>Flip H</button>
+          <button type="button" class="btn compact" id="btnSelectionFlipV" disabled>Flip V</button>
+          <label class="small-label transform-label" for="selectionAngle">Rotate ° <input id="selectionAngle" type="number" value="45" min="-360" max="360" step="5" aria-label="Custom rotation in degrees"></label>
+          <button type="button" class="btn compact" id="btnSelectionRotate" disabled>Apply rotation</button>
+          <label class="small-label transform-label" for="selectionScale">Scale % <input id="selectionScale" type="number" value="100" min="10" max="300" step="5" aria-label="Selected artwork scale percentage"></label>
+          <button type="button" class="btn compact" id="btnSelectionScale" disabled>Apply scale</button>
+          <button type="button" class="btn compact" id="btnSelectionCrop" disabled title="Remove editable artwork outside the rectangle; preserves the glyph metrics">Crop</button>
+          <button type="button" class="btn compact danger" id="btnSelectionDelete" disabled>Delete</button>
+          <button type="button" class="btn compact" id="btnSelectionClear">Deselect</button>
+        </div>
+        <div class="drawing-control"><label class="small-label" for="brushSize">Width <output id="brushSizeLabel">9</output></label><input id="brushSize" type="range" min="1" max="100" value="9"></div>
+        <div class="drawing-control"><label class="small-label" for="strokeSmoothing">Smooth <output id="strokeSmoothingLabel">55%</output></label><input id="strokeSmoothing" type="range" min="0" max="100" step="5" value="55" title="Smooth strength: affects pencil strokes while drawing; click Smooth outline to apply to existing artwork"></div>
+        <button type="button" id="btnSmoothExisting" class="btn compact" title="Smooth existing outlines. With Select or Lasso active, smooth only inside the selection; leave a protected band unchanged near its edges. Undo restores the original.">〰 Smooth outline</button>
+        <label class="check"><input id="autoShape" type="checkbox"> Auto-straighten / circle</label>
+        <label class="check" title="For circle and rectangle tools"><input id="filledShape" type="checkbox"> Solid shape</label>
+        <button type="button" class="btn compact" id="btnCopyGlyph" title="Copy the whole editable glyph or the imported vector reference">Copy glyph</button>
+        <button type="button" class="btn compact" id="btnPasteGlyph" disabled title="Add the copied glyph artwork into this glyph">Paste into glyph</button>
+        <button type="button" class="btn compact" id="btnReplaceGlyph" disabled title="Replace current editable artwork with the copied glyph, after confirmation">Replace glyph</button>
+        <button id="btnUndo" class="btn compact" title="Ctrl+Z">↶ Undo</button><button id="btnRedo" class="btn compact" title="Ctrl+Y">↷ Redo</button>
+        <button id="btnClearGlyph" class="btn compact danger">Clear glyph</button>
+        <button id="btnCloseBezier" class="btn compact" hidden>Close outline (automatic)</button>
+        <button id="btnCloseBezierHole" class="btn compact" hidden>Close hole (Shift+Enter)</button>
+        <button id="btnCancelBezier" class="btn compact" hidden>Cancel contour (Esc)</button>
+        <button id="btnDeleteBezier" class="btn compact danger" hidden>Delete selected contour</button>
+        <label class="small-label bezier-role" id="bezierPickerWrapper" hidden for="bezierContourPicker">Outline <select id="bezierContourPicker" aria-label="Choose finished contour to edit"><option value="">Choose outline…</option></select></label>
+        <label class="small-label bezier-role" id="bezierRoleWrapper" hidden for="bezierContourRole">Selected contour <select id="bezierContourRole" aria-label="Selected Bézier contour fill type"><option value="fill">Filled (black)</option><option value="hole">Hole (transparent)</option></select></label>
+        <button id="btnBezierPreview" type="button" class="btn compact" hidden aria-pressed="false">Preview filled glyph</button>
+      </div>
+      <section id="selectionHelp" class="selection-guide" hidden aria-label="Selection tool instructions">
+        <div class="editor-guide-title"><strong>Select and Lasso — move and edit artwork</strong><button id="btnHideSelectionHelp" type="button" class="mini editor-help-hide" aria-controls="selectionHelp">✕ Hide help</button></div>
+        <div class="bezier-steps">
+          <span><b>1</b> Drag a box (Select) or freehand outline (Lasso)</span>
+          <span><b>2</b> Drag the selection to move it</span>
+          <span><b>3</b> Drag handles to resize it</span>
+          <span><b>4</b> Use the selection action buttons to edit it</span>
+        </div>
+        <p>Select editable ink or complete vector contours. Drag inside the selection to move it; drag the eight handles to resize. Corner handles preserve proportions (hold Shift to resize freely); side handles change one dimension. Select an area and press <strong>Fill</strong> to fill it without losing the selection.</p>
+        <p><strong>More:</strong> Copy, cut, paste, duplicate, delete, rotate, flip and scale selected artwork. Arrow keys nudge by 1 unit (Shift: 10). Width changes affect only selected ink. Each completed drag is one Undo step. The faint grey source font is an uneditable guide; use <strong>Copy glyph</strong> to copy the original outlines. To change individual Bézier points, switch to <strong>Edit path</strong>.</p>
+        <small>Press <strong>✕ Hide help</strong> to clear this panel. Reopen it anytime with <strong>ⓘ Help</strong> beside Drawing canvas.</small>
+      </section>
+      <div id="bezierHelp" class="bezier-guide" hidden aria-label="Bézier drawing instructions">
+        <div class="bezier-guide-title"><strong>Drawing with Bézier curves</strong><span id="bezierCount">Ready to draw a new outline</span><button id="btnHideBezierHelp" type="button" class="mini editor-help-hide" aria-controls="bezierHelp">✕ Hide help</button></div>
+        <div class="bezier-steps">
+          <span><b>1</b> Click to place points</span>
+          <span><b>2</b> Click + drag for curves</span>
+          <span><b>3</b> Click first/last point to close (inner outlines cut holes)</span>
+          <span><b>4</b> Close hole to make transparent</span>
+        </div>
+        <div class="bezier-guidance"><svg width="150" height="53" viewBox="0 0 150 53" role="img" aria-label="Two anchor points joined by a curved segment, showing a purple control handle">
+          <path d="M 15 41 C 32 -2 96 3 126 36" fill="none" stroke="#7246a8" stroke-width="2" />
+          <path d="M15 41 L32 2 M126 36 L96 3" fill="none" stroke="#b08ccc" stroke-width="1"/>
+          <circle cx="15" cy="41" r="4" fill="white" stroke="#1f916e" stroke-width="2"/><circle cx="126" cy="36" r="4" fill="white" stroke="#6546a0" stroke-width="2"/>
+          <circle cx="32" cy="2" r="3" fill="#bd9aec"/><circle cx="96" cy="3" r="3" fill="#bd9aec"/>
+        </svg><div><p id="bezierState" role="status" aria-live="polite">Click in the drawing area to place your first point.</p><small><strong>Fill:</strong> open paths are guide lines; closed contours immediately fill black. To cut out the centre of a shape (like the letter o), draw an inner outline and click its first or last point to close it; fully enclosed outlines automatically become holes. You can also press <strong>Close hole</strong> to force a hole, or convert a finished outline with <strong>Make selected outline a hole</strong>. You can also choose a completed outline from the <strong>Outline</strong> menu and change its type to <strong>Hole</strong>, without clicking a tiny point. Choose <strong>Preview filled glyph</strong> to hide handles and see only the black ink and transparent holes.</small><small>Sharp corner: click. Smooth curve: click and drag. Click the first or last point to close, or <strong>click and drag while closing to bend the final segment</strong>; Shift+click/drag forces a hole. The drag changes only the last segment, not the first one. <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo one point; <kbd>Enter</kbd> closes automatically, <kbd>Shift+Enter</kbd> closes as hole, <kbd>Esc</kbd> cancels; <kbd>Alt</kbd> + drag a handle adjusts it independently.</small></div></div>
+      </div>
+      <div class="editor-layout">
+        <div class="canvas-card">
+          <div class="canvas-bar"><div class="canvas-title"><strong>Drawing canvas</strong><button id="btnShowEditorHelp" type="button" class="mini canvas-help-toggle" hidden aria-expanded="false" aria-controls="bezierHelp" title="Show instructions for the current tool">ⓘ Show help</button></div><div class="bar-right"><label class="check"><input id="toggleGrid" type="checkbox" checked> Grid</label><label class="check"><input id="toggleMetrics" type="checkbox" checked> Metrics</label><button id="btnFitCanvas" class="mini" title="Show the complete drawing and metric guides (F)">Fit</button><button id="btnZoomOut" class="mini" title="Zoom out">−</button><output id="zoomLabel" title="Zoom relative to fit-to-canvas">100%</output><button id="btnZoomIn" class="mini" title="Zoom in">+</button></div></div>
+          <div class="canvas-viewport" id="canvasViewport"><div class="canvas-plane" id="canvasPlane"><canvas id="originalGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><canvas id="glyphCanvas" width="400" height="430" aria-label="Draw the selected glyph" tabindex="0"></canvas><canvas id="metricGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="bezierOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="selectionOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg></div></div>
+          <p class="canvas-help">Mouse-wheel or pinch to zoom · Space + drag to pan · F to fit · Shift constrains circles and squares · Select artwork to copy, paste, move, resize with handles, rotate, flip or scale · Fill: click inside a closed shape or select an area and press Fill · Curve: drag endpoints, then click or drag the purple bend handle to finish · Undo/redo stays on your glyph or asks before returning to another glyph. Smooth: set the strength, then click <strong>Smooth outline</strong> to reduce bumps in existing curves. <strong>To smooth only part of a drawing, select that area first:</strong> the edges of your selection remain unchanged, and the result blends gradually into the surrounding ink. Undo reverses it. The slider also smooths Pencil strokes while drawing. The faint original glyph remains an uneditable reference.</p>
+        </div>
+        <div class="inspector">
+          <div class="panel"><h3>Source glyph</h3><label for="glyphWord">Word / slot name</label><input id="glyphWord" type="text" spellcheck="false"><label for="glyphCodepoint">Unicode assignment (fixed catalogue)</label><input id="glyphCodepoint" type="text" spellcheck="false" readonly title="Unicode mappings are assigned by the glyph catalogue"><label for="glyphAliases">Additional input aliases (one per line)</label><textarea id="glyphAliases" rows="3" spellcheck="false"></textarea><button id="btnApplyMetadata" class="btn compact">Apply metadata</button></div>
+          <div class="panel"><h3>Vector trace</h3><div class="svg-preview" id="tracePreview" aria-label="Traced SVG outline"></div><label for="traceThreshold">Opacity threshold <output id="thresholdLabel">96</output></label><input id="traceThreshold" type="range" min="1" max="254" value="96"><label for="traceSimplify">Outline simplification <output id="simplifyLabel">1</output></label><input id="traceSimplify" type="range" min="0" max="4" step="0.5" value="1"><button id="btnExportSvg" class="btn compact">Export this glyph as SVG</button></div>
+          <div class="panel"><h3>Original glyph reference</h3><label class="check"><input id="toggleOriginal" type="checkbox" checked> Show original filled silhouette</label><label for="originalOpacity">Reference opacity <output id="originalOpacityLabel">35%</output></label><input id="originalOpacity" type="range" min="0" max="70" step="5" value="35"><p class="small muted">Filled portions appear light grey; transparent holes stay empty. The guide is derived from the original font stored in IndexedDB; it is never included in the new glyph or TTF export.</p><div id="attachmentPanel" class="alignment-controls" hidden><h3>Joining-stroke alignment (font units)</h3>
+          <p id="attachmentNotice" class="small muted"></p><div class="alignment-fields">
+          <label>Cartouche top <input type="number" id="attachCartTop" step="1"></label>
+          <label>Cartouche bottom <input type="number" id="attachCartBottom" step="1"></label>
+          <label>Cartouche stroke <input type="number" id="attachCartStroke" min="1" max="512" step="1"></label>
+          <label>Long-pi upper edge <input type="number" id="attachPiTop" step="1"></label>
+          <label>Long-pi lower edge <input type="number" id="attachPiBottom" step="1"></label>
+          </div><button id="btnSaveAttachments" class="btn compact">Confirm attachment geometry</button>
+          <p class="small muted">Measurements come from this imported font where available. Confirm explicitly if its extension glyphs are missing or ambiguous. These values also control the exported font.</p></div>
+          <h3>Imported source</h3><p id="importState" class="small muted">Blank template. Import a source TTF/OTF to populate glyphs.</p><button id="btnRestoreImported" class="btn compact">Restore selected glyph from font</button></div>
+        </div>
+      </div>
+    </section>
+    <section id="pane-compound" class="pane" hidden>
+      <div class="pane-title"><div><h1>Custom compounds</h1><p>Override one combination without altering its source glyphs.</p></div><span class="tag">Separate from fractional scaling</span></div>
+      <div class="compound-controls panel">
+        <div class="fields-3"><div><label for="compoundLeft">First glyph</label><select id="compoundLeft"></select></div><div><label for="compoundOperator">Operator</label><select id="compoundOperator"><option value="&">& — generic</option><option value="-">− — stacking</option><option value="+">+ — nesting</option></select></div><div><label for="compoundRight">Second glyph</label><select id="compoundRight"></select></div></div>
+        <div class="wrap-row"><button id="btnCreateCompound" class="btn primary">Create / edit override</button><button id="btnResetCompound" class="btn">Remove override</button><span id="compoundStatus" class="small muted"></span></div>
+      </div>
+      <div class="editor-layout">
+        <div class="canvas-card"><div class="canvas-bar"><strong id="compoundName">toki&pona</strong><span class="small muted">Drag components to position them</span></div><div class="compound-viewport"><svg id="compoundSvg" viewBox="0 0 600 460" role="img" aria-label="Compound composition editor"><rect width="600" height="460" fill="#fffdf7"/></svg></div><p class="canvas-help">Select either component, drag to move it, then use the controls to scale and rotate. These are project-level overrides, not changes to the source glyphs.</p></div>
+        <div class="inspector"><div class="panel"><h3>Selected component</h3><label for="compX">Horizontal offset</label><input id="compX" type="number" step="1"><label for="compY">Vertical offset</label><input id="compY" type="number" step="1"><label for="compScale">Scale <output id="compScaleLabel">1.00</output></label><input id="compScale" type="range" min="0.1" max="2.5" step="0.05"><label for="compRotation">Rotation (degrees)</label><input id="compRotation" type="number" step="5"><button id="btnResetComponent" class="btn compact">Reset component transform</button></div><div class="panel"><h3>Defined overrides</h3><div id="overrideList" class="override-list"></div></div></div>
+      </div>
+    </section>
+    <section id="pane-preview" class="pane" hidden>
+      <div class="pane-title"><h1>Preview</h1></div>
+      <div class="panel preview-build-panel">
+        <div class="wrap-row preview-controls" aria-label="Compiled font preview options">
+          <label for="previewFontMode">Show font
+            <select id="previewFontMode"><option value="both">Both fonts</option><option value="normal">Ligatures only</option><option value="literal">Literal only</option></select>
+          </label>
+          <label for="previewFontSize">Font size
+            <input id="previewFontSize" type="number" min="8" max="256" step="1" value="72" inputmode="numeric"> px
+          </label>
+          <button type="button" class="btn primary" id="btnPreviewBuild">Build preview fonts</button>
+          <span id="previewBuildStatus" class="small muted" role="status">Preview fonts not built yet.</span>
+        </div>
+        <label class="preview-test-label" for="previewTestText">Test text (type anything)</label>
+        <textarea id="previewTestText" class="preview-test-text" rows="8" spellcheck="false" aria-label="Arbitrary text to shape using the compiled font">toki pona [jan pona]
+["ABC"]
+[nanpa1/2 :½ wan nanpa½]
+[jan¼ pona⅓ telo½ lili⅔ suli¾]
+[jan 1/4 pona 1/3 telo 1/2 lili 2/3 suli 3/4]
+[.½ :1/2 zz⅓ zz 3/4]
+[jan,, telo,,] [jan½,,]
+pi(telo lete) pi jan</textarea>
+        <div id="compiledPreviewOutput" class="compiled-preview-output" aria-label="Compiled font preview" aria-live="polite"></div>
+        <div class="preview-adjusters" id="previewAdjusters" aria-label="Font geometry adjustments">
+          <div class="preview-adjuster-tabs" role="tablist" aria-label="Geometry control groups">
+            <button type="button" class="preview-adjuster-tab active" id="adjusterTabCartouches" data-adjuster-tab="cartouches" role="tab" aria-controls="adjusterPanelCartouches" aria-selected="true" tabindex="0">Rails &amp; spacing</button>
+            <button type="button" class="preview-adjuster-tab" id="adjusterTabCaps" data-adjuster-tab="caps" role="tab" aria-controls="adjusterPanelCaps" aria-selected="false" tabindex="-1">Cartouche ends</button>
+            <button type="button" class="preview-adjuster-tab" id="adjusterTabPi" data-adjuster-tab="pi" role="tab" aria-controls="adjusterPanelPi" aria-selected="false" tabindex="-1">Pi &amp; long-pi</button>
+            <button type="button" class="preview-adjuster-tab" id="adjusterTabTallies" data-adjuster-tab="tallies" role="tab" aria-controls="adjusterPanelTallies" aria-selected="false" tabindex="-1">Tallies</button>
+            <button type="button" class="preview-adjuster-tab" id="adjusterTabAlignment" data-adjuster-tab="alignment" role="tab" aria-controls="adjusterPanelAlignment" aria-selected="false" tabindex="-1">Alignment</button>
+          </div>
+          <section class="preview-adjuster-group" id="adjusterPanelCartouches" role="tabpanel" aria-labelledby="adjusterTabCartouches" data-adjuster-group="cartouches">
+          <div class="preview-adjuster" title="Space between adjacent glyphs inside a cartouche. Adds padding on both sides of each glyph cell (0–200 editor units per side).">
+            <label for="glyphHorizontalPadding">Cartouche glyph spacing <output id="glyphHorizontalPaddingValue">0</output></label>
+            <input id="glyphHorizontalPadding" type="range" min="0" max="200" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Inside height of the upper cartouche rule, in 1200-UPM font units.">
+            <label for="cartoucheTop">Top rail <output id="cartoucheTopValue">1000</output></label>
+            <input id="cartoucheTop" type="range" min="500" max="1800" value="1000" step="10">
+          </div>
+          <div class="preview-adjuster" title="Inside height of the lower cartouche rule, in 1200-UPM font units.">
+            <label for="cartoucheBottom">Bottom rail <output id="cartoucheBottomValue">−210</output></label>
+            <input id="cartoucheBottom" type="range" min="-900" max="200" value="-210" step="10">
+          </div>
+          <div class="preview-adjuster" title="Shared thickness of the top and bottom cartouche rails in font units.">
+            <label for="cartoucheStroke">Rail thickness <output id="cartoucheStrokeValue">80</output></label>
+            <input id="cartoucheStroke" type="range" min="15" max="240" value="80" step="5">
+          </div>
+          <div class="preview-adjuster" title="Extra equal clearance at the opening and closing ends of an automatic cartouche, in 1200-UPM font units. This moves the frame ends outward while keeping them joined to the rails.">
+            <label for="cartoucheEdgePadding">Start/end padding <output id="cartoucheEdgePaddingValue">0</output></label>
+            <input id="cartoucheEdgePadding" type="range" min="0" max="300" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Shift the enclosed ink left (negative) or right (positive) relative to automatic cartouche brackets. Encoded into the exported TTF; does not alter the individual source glyphs or advances.">
+            <label for="cartoucheContentOffset">Content X offset <output id="cartoucheContentOffsetValue">0</output></label>
+            <input id="cartoucheContentOffset" type="range" min="-300" max="300" value="0" step="5">
+          </div>
+          </section>
+          <section class="preview-adjuster-group" id="adjusterPanelCaps" role="tabpanel" aria-labelledby="adjusterTabCaps" data-adjuster-group="caps" hidden>
+          <div class="preview-adjuster" title="Shape the opening and closing cap curves; 100% uses the Fairfax reference curve. The upper and lower flanges stay joined to the horizontal rails.">
+            <label for="cartoucheEndHeight">End shape <output id="cartoucheEndHeightValue">100%</output></label>
+            <input id="cartoucheEndHeight" type="range" min="50" max="190" value="100" step="1">
+          </div>
+          <div class="preview-adjuster" title="Adjust the rounded cap side curvature vertically; the upper and lower terminal bands stay joined to the rails.">
+            <label for="cartoucheEndY">End curve Y <output id="cartoucheEndYValue">0</output></label>
+            <input id="cartoucheEndY" type="range" min="-800" max="800" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Thickness of the opening cartouche cap's vertical stroke, measured inward from its fixed outer edge. Independent of right cap and top/bottom rail thickness.">
+            <label for="cartoucheLeftStroke">Left cap stroke <output id="cartoucheLeftStrokeValue">80</output></label>
+            <input id="cartoucheLeftStroke" type="range" min="20" max="240" value="80" step="5">
+          </div>
+          <div class="preview-adjuster" title="Thickness of the closing cartouche cap's vertical stroke, measured inward from its fixed outer edge. Independent of left cap and top/bottom rail thickness.">
+            <label for="cartoucheRightStroke">Right cap stroke <output id="cartoucheRightStrokeValue">80</output></label>
+            <input id="cartoucheRightStroke" type="range" min="20" max="240" value="80" step="5">
+          </div>
+          <div class="preview-adjuster" title="Move the rounded opening cap sideways. Its straight top/bottom terminal flanges extend as needed to remain joined; glyph advance is unchanged.">
+            <label for="cartoucheLeftX">Left X <output id="cartoucheLeftXValue">0</output></label>
+            <input id="cartoucheLeftX" type="range" min="-500" max="500" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Move the rounded closing cap sideways. Its straight top/bottom terminal flanges extend as needed to remain joined; glyph advance is unchanged.">
+            <label for="cartoucheRightX">Right X <output id="cartoucheRightXValue">0</output></label>
+            <input id="cartoucheRightX" type="range" min="-500" max="500" value="0" step="5">
+          </div>
+          </section>
+          <section class="preview-adjuster-group" id="adjusterPanelPi" role="tabpanel" aria-labelledby="adjusterTabPi" data-adjuster-group="pi" hidden>
+          <div class="preview-adjuster" title="Vertical size of the native long-pi start, independent of both rails.">
+            <label for="longPiStartHeight">Pi height <output id="longPiStartHeightValue">100%</output></label>
+            <input id="longPiStartHeight" type="range" min="35" max="220" value="100" step="1">
+          </div>
+          <div class="preview-adjuster" title="Move the native long-pi start up/down without resizing it. Positive is upward.">
+            <label for="longPiStartY">Pi Y <output id="longPiStartYValue">0</output></label>
+            <input id="longPiStartY" type="range" min="-800" max="800" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Horizontal shift of the native long-pi starting glyph without changing its advance.">
+            <label for="longPiStartX">Pi X <output id="longPiStartXValue">0</output></label>
+            <input id="longPiStartX" type="range" min="-500" max="500" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Uniform thickness of the vertical stem and horizontal bar in ordinary sitelen pona pi (pi telo). Independent of long-pi and cartouche rails.">
+            <label for="ordinaryPiStroke">Pi stroke <output id="ordinaryPiStrokeValue">80</output></label>
+            <input id="ordinaryPiStroke" type="range" min="20" max="240" value="80" step="5">
+          </div>
+          <div class="preview-adjuster" title="Uniform thickness of both vertical and horizontal strokes in pi(...), including every long-pi extension. Independent of ordinary pi and cartouche rails.">
+            <label for="longPiStroke">Long-pi stroke <output id="longPiStrokeValue">80</output></label>
+            <input id="longPiStroke" type="range" min="20" max="240" value="80" step="5">
+          </div>
+          <div class="preview-adjuster" title="Round the upright top, exposed horizontal tip and bottom-left corner of the long-pi outline. Internal joins stay continuous; advances do not change.">
+            <label for="longPiRounded">Round Pi tips <input id="longPiRounded" type="checkbox"></label>
+          </div>
+          </section>
+          <section class="preview-adjuster-group" id="adjusterPanelTallies" role="tabpanel" aria-labelledby="adjusterTabTallies" data-adjuster-group="tallies" hidden>
+          <div class="preview-adjuster" title="Length of tally marks in 1200-UPM font units.">
+            <label for="tallyLength">Tally length <output id="tallyLengthValue">250</output></label>
+            <input id="tallyLength" type="range" min="40" max="700" value="250" step="5">
+          </div>
+          <div class="preview-adjuster" title="Shift tally marks up or down; positive moves up.">
+            <label for="tallyY">Tally Y <output id="tallyYValue">0</output></label>
+            <input id="tallyY" type="range" min="-600" max="600" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Exact tally mark pitch in font units, including 6–8 groups; large values may overhang a cell.">
+            <label for="tallySpacing">Tally spacing <output id="tallySpacingValue">160</output></label>
+            <input id="tallySpacing" type="range" min="35" max="400" value="160" step="5">
+          </div>
+          </section>
+          <section class="preview-adjuster-group" id="adjusterPanelAlignment" role="tabpanel" aria-labelledby="adjusterTabAlignment" data-adjuster-group="alignment" hidden>
+          <div class="preview-adjuster" title="Fractional glyph vertical placement; 100% retains native alignment.">
+            <label for="fractionalVerticalAlignment">Fraction % <output id="fractionalVerticalAlignmentValue">100%</output></label>
+            <input id="fractionalVerticalAlignment" type="range" min="0" max="100" value="100" step="1">
+            <div class="preview-adjuster-presets"><button type="button" class="mini" id="btnFractionBaseline">Baseline</button><button type="button" class="mini" id="btnFractionCentre">Centre</button></div>
+          </div>
+          <div class="preview-adjuster" title="Reserved space above the outermost rails, end caps, long-pi and tallies, in 1200-UPM units. Does not move any outlines.">
+            <label for="verticalPaddingTop">Top padding <output id="verticalPaddingTopValue">0</output></label>
+            <input id="verticalPaddingTop" type="range" min="0" max="800" value="0" step="5">
+          </div>
+          <div class="preview-adjuster" title="Reserved space below the lowest rails, end caps, long-pi and tally descenders, in 1200-UPM units. Does not move any outlines.">
+            <label for="verticalPaddingBottom">Bottom padding <output id="verticalPaddingBottomValue">0</output></label>
+            <input id="verticalPaddingBottom" type="range" min="0" max="800" value="0" step="5">
+          </div>
+          <div class="vertical-padding-guide" aria-label="Calculated vertical clearance indicator">
+            <svg id="verticalPaddingGauge" viewBox="0 0 64 52" width="64" height="52" role="img" aria-label="Typographic space around cartouche, long-pi and tallies">
+              <rect x="6" y="3" width="52" height="46" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1"/>
+              <rect id="verticalPaddingGaugeTop" x="7" y="3" width="50" height="0" fill="#c4a0de"/>
+              <rect id="verticalPaddingGaugeInk" x="7" y="3" width="50" height="46" fill="#62606a"/>
+              <rect id="verticalPaddingGaugeBottom" x="7" y="49" width="50" height="0" fill="#c4a0de"/>
+            </svg>
+            <div class="vertical-padding-guide-labels">
+              <span>Above <strong id="verticalPaddingClearanceTop">0 u</strong></span>
+              <span>Below <strong id="verticalPaddingClearanceBottom">0 u</strong></span>
+              <small>Space beyond rails, ends, pi and tally ink · font-wide line metrics</small>
+            </div>
+          </div>
+          </section>
+          <p id="previewAdjusterStatus" class="small muted" role="status">Changes rebuild both fonts after a short pause.</p>
+        </div>
+      </div>
+    </section>
+    <section id="pane-build" class="pane" hidden>
+      <div class="pane-title"><h1>Build & export</h1></div>
+      <div class="rules-grid">
+        <div class="panel"><h3>Font identity</h3>
+          <p class="small muted">These values are written into the actual OpenType name table. Project ID is distinct from the browser's internal IndexedDB key.</p>
+          <label for="fontFamily">Font family</label><input id="fontFamily" maxlength="90" placeholder="My Sitelen Pona">
+          <label for="fontStyle">Style</label><input id="fontStyle" maxlength="35" value="Regular">
+          <label for="fontVersion">Version</label><input id="fontVersion" maxlength="32" value="1.0.0">
+          <label for="fontPostScript">PostScript base name</label><input id="fontPostScript" maxlength="55" placeholder="MySitelenPona-Regular">
+          <label for="fontProjectId">User project ID</label><input id="fontProjectId" maxlength="128" placeholder="my-sitelen-001">
+          <button id="btnSaveIdentity" class="btn primary">Save font identity</button>
+        </div>
+        <div class="panel"><h3>Editable project and custom names</h3>
+          <p>The project JSON contains editable glyphs, font settings, source font bytes and compound overrides. The custom-name manifest can be consumed by a website parser.</p>
+          <button id="btnExportProject2" class="btn">Export editable project JSON</button>
+          <button id="btnExportAssets" class="btn">Export vector SVG assets ZIP</button>
+          <button id="btnExportRegistry" class="btn">Export custom-name Unicode manifest</button>
+        </div>
+      </div>
+      <details class="panel advanced-font-settings">
+        <summary>Advanced font settings</summary>
+        <div class="font-settings-content">
+          <label for="hintRasterization">Rasterization profile</label>
+          <select id="hintRasterization"><option value="neutral">Default</option><option value="grayscale">Grayscale without grid-fitting</option><option value="gridfit">Grayscale with grid-fitting</option></select>
+
+        </div>
+      </details>
+      <div class="panel compiler-panel">
+        <div class="font-export-actions">
+          <button id="btnBuildFonts" class="btn primary" type="button">Export fonts ZIP</button>
+          <button id="btnUseOnSite" class="btn" type="button" title="Compile and save the font pair to this browser’s shared site font library">Use on this site</button>
+          <button id="btnImportFontZip" class="btn" type="button" title="Install a verified font-pair ZIP exported on this or another computer">Import font ZIP</button>
+        </div>
+        <p class="font-site-help">Use on this site installs the compiled font pair in this browser. Export fonts ZIP creates a portable ZIP with a verified manifest; Import font ZIP installs a saved pair on another device. Fonts remain local to this browser and website, not shared with other visitors.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<footer class="site-disclaimer" aria-label="Disclaimer">
+  <p><strong>Disclaimer:</strong> This tool is provided “as is”, with no claim, guarantee, or warranty that the output is correct, complete, or suitable for any purpose. You are responsible for verifying results.
+    <span class="tpLine">sona: ilo ni li lon nasin “as is”. mi pana ala e wawa pona. sina o lukin e ni: sitelen li pona anu seme.</span>
+  </p>
+  <p>By importing, modifying or exporting a font, you confirm that you have the necessary rights and have complied with applicable font licences, notices, attribution requirements and distribution restrictions. <strong>You accept full responsibility for all fonts you produce, use or distribute.</strong> The Font Maker does not verify licence compatibility or grant permissions to use third-party fonts.</p>
+</footer>
+<div id="modal" class="modal" hidden aria-modal="true" role="dialog"><div class="modal-card"><div class="modal-title"><strong id="modalTitle">New project</strong><button id="modalClose" class="mini" aria-label="Close dialog">✕</button></div><div id="modalBody"></div></div></div>
+<input type="file" id="fileImportProject" accept=".json,application/json" hidden>
+<input type="file" id="fileImportFont" accept=".ttf,.otf,font/ttf,font/otf" hidden>
+<input type="file" id="fileImportProjectFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+<input type="file" id="fileImportFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+<script type="module" src="./file-maker/js/app.js?v=0.3.41.20261122.2"></script>
+<script>
+  const productionHosts = new Set([
+        'nanpa-linja-n.com',
+    'www.nanpa-linja-n.com'
+  ]);
+
+   if (!productionHosts.has(window.location.hostname)) {
+      window.goatcounter = { no_onload: true };
+  }
+ 
+
+function trackUsage(eventName) {
+    if (!productionHosts.has(window.location.hostname)) {
+      return;
+    }
+
+    if (
+      window.goatcounter &&
+      typeof window.goatcounter.count === 'function'
+    ) {
+      window.goatcounter.count({
+        path: eventName,
+        title: eventName,
+        event: true
+      });
+    }
+  }
+</script>
+
+<script
+  data-goatcounter="https://nanpalinjan.goatcounter.com/count"
+  async
+  src="./js/goatcounter-count.js">
+</script>
+</body>
+</html>

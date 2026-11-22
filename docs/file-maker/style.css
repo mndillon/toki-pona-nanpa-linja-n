@@ -1,0 +1,287 @@
+:root{--bg:#f3dfc0;--ink:#191929;--muted:#615c61;--purple:#7354af;--purple-dark:#513182;--panel:#fffaf0;--line:#c6b7a1;--soft:#ead9bc;--radius:14px;--shadow:0 9px 24px #3f2d1816}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:var(--bg)}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.52}h1,h2,h3,p{margin-top:0}h1{font-size:1.55rem;margin:0 0 4px}h2{font-size:1rem;margin:0}h3{font-size:.97rem;margin:0 0 14px}.muted,.meta{color:var(--muted)}.small{font-size:.82rem}.tag{font-size:.77rem;background:#f0e8ff;color:#4d3978;padding:7px 11px;border-radius:20px;white-space:nowrap}.draft-tag{background:#f6e6cd;color:#754d19}.brand{display:flex;gap:12px;align-items:center}.brand strong{display:block;font-size:1rem}.brand small{display:block;color:var(--muted);font-size:.75rem}.brand-mark{display:grid;place-items:center;border-radius:11px;background:var(--purple);color:#fff;font-weight:750;width:43px;height:43px;letter-spacing:-.06em;font-size:1.2rem}.masthead{padding:11px 20px;display:flex;justify-content:space-between;gap:15px;align-items:center;border-bottom:1px solid #0002;background:#fff7e5a8;flex-wrap:wrap}.top-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.btn,.mini,.tool{background:#fff8eb;border:1px solid #aa9e8c;border-radius:9px;padding:9px 12px;color:var(--ink);font-weight:600;font-size:.84rem}.btn:hover:not(:disabled),.mini:hover,.tool:hover{border-color:var(--purple);background:#fff}.primary{background:var(--purple);color:white;border-color:var(--purple)}.primary:hover:not(:disabled){background:var(--purple-dark);color:white}.danger{color:#94493b}.compact{padding:7px 10px;font-size:.78rem}.mini{padding:5px 9px;font-size:.76rem}.mini[aria-pressed=true],.tool.active{background:#e7ddfa;border-color:var(--purple);color:var(--purple-dark)}.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}select,input[type=text],input[type=search],input[type=number],textarea{border:1px solid #b8ac9b;background:#fffdf7;color:var(--ink);border-radius:9px;padding:9px 10px;min-width:0;max-width:100%}select{padding:9px}input[type=range]{accent-color:var(--purple);max-width:125px}label{font-size:.77rem;font-weight:600;display:block;color:#534c53;margin-bottom:5px}.check{display:flex;align-items:center;gap:5px;margin:0;font-size:.77rem}.check input{accent-color:var(--purple)}#statusbar{padding:5px 20px;display:flex;justify-content:space-between;gap:20px;font-size:.75rem;color:#70604f;border-bottom:1px solid #d0bda7;min-height:29px}.workspace{display:grid;grid-template-columns:255px minmax(0,1fr);gap:12px;padding:12px;max-width:1680px;margin:0 auto;height:calc(100vh - 115px);min-height:670px}.sidebar,.main-panel{background:#fff8eac2;border:1px solid #beae94;border-radius:var(--radius);box-shadow:var(--shadow);min-height:0;overflow:hidden}.sidebar{display:flex;flex-direction:column}.side-top{display:flex;justify-content:space-between;align-items:center;padding:14px 13px 8px}.sidebar>.field{padding:3px 12px 9px}.sidebar>.field input{width:100%}.side-toolbar{display:flex;gap:4px;padding:0 12px 10px}.glyph-list{flex:1;overflow:auto;padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;gap:5px;align-content:start}.glyph-card{text-align:left;border:1px solid #cfbea8;border-radius:9px;background:#fffbf1;display:flex;align-items:center;gap:7px;padding:8px 6px;min-height:44px;font-size:.77rem;overflow:hidden}.glyph-card .dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#cfbfa9}.glyph-card.drawn .dot{background:#669a6b}.glyph-card.active{background:#e9def8;border-color:var(--purple)}.glyph-card span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side-footer{border-top:1px solid var(--line);padding:9px 12px}.side-footer p{margin:5px 0 0;font-size:.71rem;color:var(--muted)}.main-panel{display:flex;flex-direction:column}.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 13px;gap:3px;overflow-x:auto;flex-shrink:0}.tab{border:0;border-bottom:3px solid transparent;padding:15px 13px;background:transparent;color:#685e61;white-space:nowrap;font-weight:700;font-size:.83rem}.tab.active{border-bottom-color:var(--purple);color:#49316f}.pane{padding:19px 21px;overflow:auto;flex:1;min-height:0}.pane[hidden],.modal[hidden]{display:none!important}.pane-title{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:15px}.pane-title p{font-size:.85rem;color:var(--muted);margin:0}.tools{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:14px}.toolset{display:flex;gap:4px}.small-label{margin:0}.editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:13px;align-items:start}.canvas-card,.panel{background:#fffdf7;border:1px solid #c9bba7;border-radius:12px;box-shadow:0 3px 8px #36290f0d}.canvas-card{overflow:hidden}.canvas-bar{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid #ddd2c2}.bar-right{display:flex;align-items:center;gap:8px}.canvas-viewport{height:min(53vh,530px);min-height:370px;display:flex;justify-content:center;align-items:center;overflow:auto;padding:10px;background:repeating-linear-gradient(135deg,#f4eee4,#f4eee4 14px,#f7f3e9 14px,#f7f3e9 28px)}.canvas-plane{width:358px;height:358px;max-width:none;background:white;border:1px solid #c9bca9;box-shadow:0 3px 15px #2020201e;flex:none;touch-action:none;position:relative;transform-origin:center}#glyphCanvas{width:100%;height:100%;touch-action:none;cursor:crosshair;display:block;image-rendering:auto}.canvas-help{padding:9px 14px;color:var(--muted);font-size:.77rem;margin:0;border-top:1px solid #e5d9c9}.inspector{display:flex;flex-direction:column;gap:12px}.panel{padding:15px}.panel label{margin-top:10px}.panel input[type=text],.panel input[type=number],.panel select,.panel textarea{width:100%}.panel textarea{resize:vertical}.panel button{margin-top:9px}.svg-preview{border-radius:8px;background:#faf8ef;border:1px dashed #b7a996;min-height:118px;display:flex;justify-content:center;align-items:center;padding:7px}.svg-preview svg{max-height:108px;max-width:100%}.svg-preview .empty{color:#938473;font-size:.75rem}.compound-controls{margin-bottom:13px}.fields-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}.fields-3 label{margin-top:0}.wrap-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:8px}.compound-viewport{height:min(57vh,520px);min-height:360px;display:flex;justify-content:center;align-items:center;background:#f1e6d3;padding:10px}#compoundSvg{background:#fffdf7;width:100%;height:100%;max-width:670px;touch-action:none;border:1px solid #c7b8aa}.compound-piece{cursor:grab}.compound-piece.selected path{filter:drop-shadow(0px 0px 2px #7551ac)}.override-list{display:flex;flex-direction:column;gap:5px}.override-item{font-size:.82rem;padding:7px 10px;border-radius:7px;border:1px solid #d2c3ae;cursor:pointer;background:#fff}.override-item:hover{background:#f0e9fa}.preview-panel{margin-bottom:13px}.preview-panel textarea{font-family:ui-monospace,monospace}.preview-output{margin-top:14px;padding:18px 14px;min-height:240px;background:#fff;border:1px solid #d4c4af;border-radius:10px;overflow:auto}.preview-line{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:14px;min-height:72px}.preview-token{display:inline-flex;align-items:center;justify-content:center;min-height:55px}.preview-token svg{width:auto;max-width:110px;height:60px}.preview-literal{font-size:1.1rem}.cartouche-preview{display:inline-flex;align-items:stretch;border-bottom:3px solid #1c1a20;min-height:92px;max-width:100%;padding:6px 10px 0;gap:5px;position:relative}.cartouche-preview:before,.cartouche-preview:after{content:"";height:22px;border-left:3px solid #1c1a20;position:absolute;top:4px}.cartouche-preview:before{left:0}.cartouche-preview:after{right:0}.cart-cell{position:relative;display:flex;justify-content:center;align-items:flex-start;height:82px;flex:0 0 auto}.cart-cell svg{height:57px;max-width:none}.cart-tallies{position:absolute;bottom:-2px;left:0;right:0;display:flex;justify-content:center;gap:7px}.cart-tallies i{height:15px;border-left:3px solid #1c1a20;display:block}.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.rules-grid p,.compiler-panel p{font-size:.83rem;color:#5c5360;line-height:1.55}.status-item{font-size:.83rem;margin:8px 0;display:flex;align-items:baseline;gap:8px}.indicator{border-radius:50%;width:9px;height:9px;display:inline-block;flex:none}.indicator.ready{background:#559765}.indicator.pending{background:#d3a054}.compiler-panel{margin-top:14px}.modal{position:fixed;inset:0;background:#130e20a6;display:grid;place-items:center;z-index:100;padding:15px}.modal-card{width:min(540px,100%);max-height:90vh;overflow:auto;background:#fff8e9;border-radius:14px;border:1px solid #b49b7c;padding:20px;box-shadow:0 25px 70px #0006}.modal-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.modal-title strong{font-size:1.12rem}.modal-card input{width:100%}.modal-card p{font-size:.84rem;line-height:1.5;color:var(--muted)}.modal-card img{width:100%;max-height:65vh;object-fit:contain}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:13px}.check-list{display:grid;gap:7px;margin:12px 0}.check-list label{display:flex;gap:8px;align-items:center}code{background:#f1e9db;border-radius:4px;padding:1px 4px}@media(max-width:1120px){.workspace{grid-template-columns:220px minmax(0,1fr)}.editor-layout{grid-template-columns:minmax(0,1fr) 245px}.pane{padding:15px}.canvas-viewport{min-height:330px}.canvas-plane{width:310px;height:310px}}@media(max-width:850px){.workspace{height:auto;min-height:0;grid-template-columns:1fr}.sidebar{height:240px}.glyph-list{grid-template-columns:repeat(4,1fr)}.main-panel{min-height:70vh}.editor-layout{grid-template-columns:1fr}.inspector{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.rules-grid{grid-template-columns:1fr}.fields-3{grid-template-columns:1fr 1fr}.canvas-viewport{height:380px}}@media(max-width:520px){.masthead{padding:10px}.pane-title{align-items:flex-start;flex-wrap:wrap}.tabs{padding:0 5px}.tab{padding:12px 8px}.glyph-list{grid-template-columns:repeat(3,1fr)}.tools{gap:5px}.canvas-plane{width:286px;height:286px}.canvas-viewport{min-height:310px;height:335px}.fields-3{grid-template-columns:1fr}.top-actions select{max-width:145px}} 
+
+/* The nonexporting font-metric layer extends below the baseline to display
+   both edges of the automatically connected long-pi underline. */
+.canvas-plane { aspect-ratio:256/390; height:auto; }
+#glyphCanvas,#originalGuideCanvas {position:absolute;left:0;top:0;width:100%;height:65.641025641%;}
+#glyphCanvas{z-index:2;}
+#originalGuideCanvas{z-index:1;pointer-events:none;}
+#metricGuideCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;}
+
+
+
+/* Import licence modal: keep the checkbox small despite the modal-wide input rule. */
+.modal-card .licence-ack-label{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;line-height:1.45;cursor:pointer;}
+.modal-card .licence-ack-label input[type="checkbox"]{width:18px;min-width:18px;height:18px;margin:2px 0 0;accent-color:var(--purple);}
+.modal-card .licence-ack-label span{flex:1;}
+.modal-card button:disabled{opacity:.55;cursor:not-allowed;}
+
+/* All export-review acknowledgement checkboxes remain compact in the modal. */
+.modal-card input[type="checkbox"]{width:18px;min-width:18px;height:18px;flex:none;accent-color:var(--purple);}
+.modal-card .check-list label{align-items:flex-start;line-height:1.45;}
+
+/* Bézier outlines and editable control nodes live above (not in) the raster. */
+#bezierOverlay{position:absolute;top:0;left:0;width:100%;height:65.641025641%;z-index:4;overflow:visible;pointer-events:none;}
+#bezierOverlay .vector-fill{fill:#1d1b23;fill-rule:nonzero;opacity:.9;}
+#bezierOverlay .vector-draft{fill:none;stroke:#8059b4;stroke-width:1.4;stroke-dasharray:3 3;}
+#bezierOverlay .vector-handle{stroke:#8b67b9;stroke-width:.9;fill:none;}
+#bezierOverlay .vector-anchor{stroke:#6546a0;stroke-width:1.3;fill:white;}
+#bezierOverlay .vector-anchor.selected{fill:#dac6fa;}
+#bezierOverlay .vector-control{fill:#cba9fa;stroke:#6546a0;stroke-width:1;}
+.glyph-thumb{width:34px;height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:5px;background:#f5f0e8;}
+.glyph-thumb svg{width:32px;height:32px;display:block;}
+.glyph-thumb .imported-glyph{font-size:30px;line-height:1;white-space:nowrap;font-variant-ligatures:common-ligatures contextual;}
+.glyph-card{gap:5px;padding:5px 6px;min-height:51px;}
+.glyph-card .glyph-name{font-size:.76rem;line-height:1.15;min-width:0;flex:1;}
+.glyph-card .glyph-name small{display:block;color:#8c7b70;font-size:.65rem;}
+
+
+/* v0.3.9: fixed artboard camera. Never scroll the artwork inside its drawing
+   viewport: all navigation is explicit zoom/pan, with the complete 256×390
+   plane fitted when opening or selecting a glyph. */
+.canvas-viewport {
+  position:relative;
+  height:clamp(290px,54vh,610px);
+  min-height:260px;
+  overflow:hidden;
+  padding:0;
+  display:block;
+  touch-action:none;
+  overscroll-behavior:contain;
+  user-select:none;
+}
+.canvas-plane {
+  position:absolute;
+  left:0;
+  top:0;
+  width:256px;
+  height:390px;
+  aspect-ratio:auto;
+  flex:none;
+  transform-origin:0 0;
+  will-change:transform;
+  overflow:hidden;
+}
+#glyphCanvas,#originalGuideCanvas {
+  position:absolute;
+  top:0;
+  left:0;
+  width:256px;
+  height:256px;
+}
+#metricGuideCanvas {width:256px;height:390px;}
+#bezierOverlay{width:256px;height:256px;}
+#zoomLabel {font-size:.85rem;min-width:42px;text-align:center;font-variant-numeric:tabular-nums;}
+.canvas-viewport.pan-tool #glyphCanvas,.canvas-viewport.space-pan #glyphCanvas{cursor:grab;}
+.canvas-viewport.is-panning #glyphCanvas{cursor:grabbing;}
+@media(max-width:850px){.canvas-viewport{height:clamp(290px,48vh,540px);min-height:260px;}}
+@media(max-width:520px){.canvas-viewport{height:clamp(265px,45vh,430px);min-height:240px;}}
+
+/* v0.3.9 Bézier guidance and correct canvas hit-testing: non-editable overlays
+   must never intercept the pen, anchor, or drag pointer events. */
+#originalGuideCanvas,#metricGuideCanvas,#bezierOverlay{pointer-events:none!important;}
+#originalGuideCanvas{z-index:1;}
+#glyphCanvas{z-index:2;}
+#metricGuideCanvas{position:absolute;top:0;left:0;z-index:3;}
+#bezierOverlay{z-index:4;}
+/* Guidance takes no vertical space when closed. The Show help control lives
+   within the existing canvas toolbar, not a new bar or floating panel. */
+.canvas-bar .canvas-title{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;min-width:0;}
+.canvas-bar .canvas-help-toggle{padding:3px 7px;line-height:1.3;font-size:.72rem;white-space:nowrap;}
+.canvas-help-toggle[hidden],.selection-guide[hidden]{display:none!important;}
+.editor-help-hide{margin-left:auto;flex:none;white-space:nowrap;font-size:.75rem;background:#fff;}
+.editor-help-hide:hover{background:#efe5fb;}
+.selection-guide{border:1px solid #cbbbdc;border-radius:10px;background:#f9f5ff;padding:10px 13px;margin-bottom:12px;font-size:.78rem;line-height:1.45;}
+.selection-guide .editor-guide-title{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+.selection-guide p{margin:5px 0;}
+.selection-guide small{display:block;margin-top:6px;color:#5b5560;font-size:.72rem;}
+.bezier-guide{border:1px solid #cbbbdc;border-radius:10px;background:#fcf9ff;padding:10px 13px;margin-bottom:12px;font-size:.78rem;}
+.bezier-guide[hidden]{display:none!important;}
+.bezier-guide-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+#bezierCount{color:#6b5a82;font-size:.75rem;}
+.bezier-steps{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:8px;}
+.bezier-steps>span{display:inline-flex;gap:5px;align-items:center;white-space:normal;}
+.bezier-steps b{font-size:.73rem;display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:#e9dff3;color:#513182;}
+.bezier-guidance{display:flex;gap:12px;align-items:center;}
+.bezier-guidance svg{width:135px;flex:none;max-width:32%;}
+.bezier-guidance p{margin:0 0 3px;font-weight:650;color:#4c3867;}
+.bezier-guidance small{font-size:.73rem;line-height:1.5;color:#5b5560;}
+.bezier-guidance kbd{font:inherit;background:#efe7f7;border:1px solid #dacbea;border-radius:3px;padding:0 2px;}
+#bezierOverlay .vector-start-ring{stroke:#25876d;stroke-width:1.8;fill:#e2f4ee;fill-opacity:.35;}
+#bezierOverlay .vector-start-label{font:9px system-ui,sans-serif;fill:#23745b;stroke:#fff;stroke-width:2.2;paint-order:stroke;}
+#bezierOverlay .vector-point-number{font:8px system-ui,sans-serif;fill:#71578d;stroke:#fff;stroke-width:2;paint-order:stroke;}
+#bezierOverlay .vector-next{stroke:#a78abf;stroke-width:1;stroke-dasharray:2 4;fill:none;}
+@media(max-width:520px){.bezier-guidance svg{max-width:27%;}.bezier-steps{gap:6px 10px;}}
+
+/* Explicit filled and hollow Bézier contours. The live SVG preview uses the
+   same nonzero winding rule as the exported TrueType glyph. */
+#bezierOverlay .vector-fill{fill-rule:nonzero;opacity:1;}
+#bezierOverlay .vector-hole-outline{fill:none;stroke:#c84b60;stroke-width:1.6;stroke-dasharray:4 3;}
+.bezier-role{display:flex;align-items:center;gap:5px;}
+.bezier-role select{min-width:118px;padding:5px;border:1px solid #cdbbd7;border-radius:5px;background:white;}
+.bezier-guidance>div{display:flex;flex-direction:column;gap:4px;}
+#btnBezierPreview[aria-pressed="true"]{background:#e1f0eb;border-color:#639783;}
+.bezier-role[hidden]{display:none!important;}
+
+/* v0.3.10: one true-font-coordinate plane for imported outlines and edits. */
+.canvas-plane {width:400px;height:430px;aspect-ratio:400/430;}
+#glyphCanvas,#originalGuideCanvas,#bezierOverlay {width:100%;height:100%;}
+#metricGuideCanvas {width:100%;height:100%;}
+.alignment-fields{display:grid;grid-template-columns:1fr 1fr;gap:5px 9px;}
+.alignment-fields label{font-size:.74rem;margin:2px 0;}
+.alignment-fields input{width:100%;margin-top:4px;}
+.alignment-controls{border-top:1px dashed #c8b9cd;margin-top:14px;padding-top:12px;}
+.alignment-controls[hidden]{display:none!important;}
+
+/* v0.3.16: selection does not consume pointer events; drawing stays on glyphCanvas. */
+.selection-actions{display:flex;gap:5px;flex-wrap:wrap;width:100%;border-top:1px solid #e2d7c6;padding-top:9px;}
+.selection-actions[hidden]{display:none!important;}
+
+#selectionOverlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none!important;overflow:visible;}
+.canvas-viewport:has(.selection-marquee) #glyphCanvas{cursor:move;}
+.selection-resize-handle{fill:#fff;stroke:#6745a7;stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none;}
+
+/* Compiled-font workflow: beginner controls first, advanced rasterization tucked away. */
+.preview-build-panel{margin-bottom:13px}.preview-build-panel .wrap-row{margin-top:0}
+.preview-build-panel p{margin:10px 0 0}.preview-controls{gap:12px;margin-top:12px!important}
+.preview-controls label{display:flex;align-items:center;gap:8px;margin:0}
+.preview-controls input[type=number]{width:78px}
+.preview-controls input[type=range]{max-width:235px;width: min(27vw,230px)}
+.compiled-preview-output{background:#fff;border:1px solid #c9bba7;border-radius:10px;margin-top:13px;padding:14px;overflow:auto}
+.compiled-font-row+ .compiled-font-row{border-top:1px solid #ded4c7;margin-top:15px;padding-top:15px}
+.compiled-font-row strong{display:block;font-size:.8rem;margin-bottom:8px;color:#665c6a}
+.compiled-font-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-synthesis:none;font-weight:400}
+.hinting-advanced,.design-preview-details{margin-top:13px;border-top:1px solid #e4d7c7;padding-top:12px}
+.hinting-advanced summary,.design-preview-details summary{font-weight:600;font-size:.85rem;cursor:pointer}
+.hinting-advanced select{max-width:100%}
+
+/* Clarify visible-ink sizing without changing the font's typographic metrics. */
+.compiled-font-size-info{display:block;margin:9px 0 0;color:#675c6b;font-size:.76rem;}
+.preview-controls #previewSizeMode{max-width:205px;}
+
+/* v0.3.31 parser/renderer preview */
+.renderer-preview-panel textarea{width:100%;font-family:ui-monospace,monospace}
+.renderer-preview-output{margin-top:.6rem;overflow:auto;background:#fff;border:1px solid var(--line,#ddd);border-radius:8px;min-height:2rem}
+.renderer-preview-canvas{display:block;max-width:none}
+
+/* Preview settings affect the exported TrueType geometry, never Canvas CSS offsets. */
+.preview-adjusters{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:14px;margin:15px 0 12px;padding:14px;border:1px solid var(--line,#d5d2c7);border-radius:10px;background:rgba(128,128,128,.035)}
+.preview-adjuster{min-width:0}.preview-adjuster label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.preview-adjuster output{font-variant-numeric:tabular-nums;font-size:.88em;white-space:nowrap}
+.preview-adjuster input[type=range]{display:block;width:100%;margin:10px 0}
+.preview-adjuster .small{margin:5px 0 0}.preview-adjuster-presets{gap:6px!important}
+#previewAdjusterStatus{grid-column:1/-1;margin:0}
+
+/* Compact six-control grid: three per row on wide screens, two on tablets,
+   one on narrow phones. The short labels leave room for useful slider travel. */
+.preview-adjusters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 14px;padding:10px 12px}
+.preview-adjuster{min-width:0}
+.preview-adjuster label{margin:0;display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;font-size:.79rem;font-weight:650;gap:6px}
+.preview-adjuster output{font-size:.76rem;font-weight:500;white-space:nowrap}
+.preview-adjuster input[type=range]{width:100%;display:block;margin:5px 0 3px}
+.preview-adjuster-presets{display:flex;gap:4px;justify-content:flex-start}
+.preview-adjuster-presets .mini{font-size:.68rem;padding:2px 7px;margin:0}
+#previewAdjusterStatus{grid-column:1/-1;margin:1px 0 0!important;font-size:.73rem;line-height:1.25}
+@media(max-width:850px){.preview-adjusters{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:520px){.preview-adjusters{grid-template-columns:minmax(0,1fr);}}
+/* Override the application's old global 125px slider cap in this panel. */
+.preview-adjusters .preview-adjuster input[type=range]{max-width:none;width:100%}
+
+/* Compact vertical-space guide. It illustrates the exported typographic
+   clearance; its three bands never alter the actual cartouche outlines. */
+.vertical-padding-guide{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0;padding:3px 7px;border:1px solid var(--line,#d5d2c7);border-radius:7px;}
+.vertical-padding-guide svg{flex:none;display:block;color:var(--ink,#555);}
+.vertical-padding-guide-labels{min-width:0;display:flex;flex-wrap:wrap;align-items:center;column-gap:16px;row-gap:2px;font-size:.78rem;}
+.vertical-padding-guide-labels strong{font-variant-numeric:tabular-nums;}
+.vertical-padding-guide-labels small{color:#666;flex-basis:100%;font-size:.7rem;}
+
+/* Geometry groups share the same controls and saved settings. Only the
+   active set is visible: three columns on wide screens, two/one on smaller. */
+.preview-adjusters{display:block;padding:10px 12px;margin-top:12px}
+.preview-adjuster-tabs{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;border-bottom:1px solid var(--line,#d5d2c7);padding-bottom:7px}
+.preview-adjuster-tab{font:inherit;font-size:.79rem;font-weight:650;cursor:pointer;padding:5px 11px;color:inherit;background:transparent;border:1px solid var(--line,#c9bba7);border-radius:7px}
+.preview-adjuster-tab.active,.preview-adjuster-tab[aria-selected="true"]{background:#ece3f6;border-color:#8161ae;color:#362451}
+.preview-adjuster-tab:focus-visible{outline:2px solid #7551b4;outline-offset:2px}
+.preview-adjuster-group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px 14px;min-height:72px;align-content:start}
+.preview-adjuster-group[hidden]{display:none}
+#previewAdjusterStatus{margin:9px 0 0!important}
+.pi-comparison{margin:12px 0 0}
+.pi-comparison-heading{display:flex;gap:6px 16px;align-items:baseline;flex-wrap:wrap}
+.pi-comparison-heading strong{font-size:.86rem}
+.pi-comparison-output{min-height:3rem;padding:5px 0}
+@media(max-width:850px){.preview-adjuster-group{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.preview-adjuster-group{grid-template-columns:minmax(0,1fr)}.preview-adjuster-tab{flex:1 1 auto}}
+
+/* The comparison stays visible while switching geometry-control tabs.
+   Never constrain the actual glyph advances or reflow long-pi segments. */
+.native-pi-comparison-text{white-space:nowrap;line-height:1.65;padding:4px 12px;min-width:max-content;font-kerning:normal;font-feature-settings:"rlig" 1,"calt" 1;}
+.pi-comparison-output{overflow-x:auto;overflow-y:hidden;}
+
+.pi-comparison-heading .check{margin-left:auto;white-space:nowrap}
+.pi-comparison-output[hidden]{display:none}
+/* Drawing-workspace improvements, v0.3.37. These are layout-only changes;
+   the existing single canvas, ghost layer and editor state are reused. */
+/* Same understated home icon and hover/focus treatment as the other site tools. */
+.home-link{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;width:28px;height:28px;margin-top:-4px;color:#111;opacity:.58;text-decoration:none;border:0;border-radius:5px;background:transparent;transition:opacity .15s ease,background-color .15s ease}
+.home-link:hover{opacity:.9;background:rgba(17,17,17,.06)}
+.home-link:focus-visible{opacity:1;outline:2px solid rgba(17,17,17,.65);outline-offset:2px}
+.pageHomeIcon{display:block;width:16px;height:16px}
+.brand{gap:10px}.brand strong{font-size:.98rem}.brand small{font-size:.7rem}
+.site-disclaimer{font-size:.76rem;line-height:1.5;padding:10px 20px 13px;color:#574b55;border-top:1px solid #d0bda7;background:#fff7e7}
+.site-disclaimer strong{font-weight:700;color:#48334f}
+.site-disclaimer p{margin:0 0 8px}
+.site-disclaimer p:last-child{margin-bottom:0}
+.site-disclaimer .tpLine{display:block;margin-top:2px;font-size:10pt;color:#3f4750;line-height:1.25}
+.workspace{height:calc(100vh - 166px);min-height:590px}
+.glyph-pane-title-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolset{flex-wrap:wrap}.tools{gap:7px}.drawing-control{display:flex;gap:5px;align-items:center}.drawing-control input[type=range]{width:110px}
+.transform-label{display:flex;align-items:center;gap:5px;font-size:.76rem}.transform-label input{width:66px;max-width:66px;padding:4px;font-size:.77rem}
+body.editor-expanded{overflow:hidden}
+body.editor-expanded #pane-glyph{display:flex!important;flex-direction:column;position:fixed;inset:0;z-index:85;background:#fff8ec;padding:11px 16px 15px;overflow:auto}
+body.editor-expanded #pane-glyph .pane-title{flex:none;margin-bottom:7px}
+body.editor-expanded #pane-glyph .tools{flex:none;margin-bottom:6px}
+
+body.editor-expanded #pane-glyph .bezier-guide,body.editor-expanded #pane-glyph .selection-guide{flex:none;margin-bottom:7px}
+body.editor-expanded #pane-glyph .editor-layout{flex:1;min-height:0;grid-template-columns:minmax(0,1fr) minmax(210px,270px);align-items:stretch}
+body.editor-expanded #pane-glyph .canvas-card{display:flex;flex-direction:column;min-height:0}
+body.editor-expanded #pane-glyph .canvas-viewport{flex:1;height:auto;min-height:250px;overflow:hidden}
+body.editor-expanded #pane-glyph .inspector{min-height:0;overflow-y:auto}
+body.editor-expanded #pane-glyph .canvas-help{max-height:5rem;overflow:auto}
+body.editor-expanded #pane-glyph #btnExpandEditor{background:#eadff8;border-color:#7c56ab}
+@media(max-width:850px){.workspace{height:auto}.site-disclaimer{padding:13px}.glyph-pane-title-actions{justify-content:flex-start}body.editor-expanded #pane-glyph .editor-layout{grid-template-columns:minmax(0,1fr)}body.editor-expanded #pane-glyph .inspector{display:none}}
+@media(max-height:680px){body.editor-expanded #pane-glyph .canvas-help{display:none}body.editor-expanded #pane-glyph .pane-title p{display:none}}
+
+/* v0.3.38: previews are compact; font geometry stays available only under
+   the collapsed Build & export advanced settings panel. */
+.advanced-font-settings{margin-top:14px;margin-bottom:14px}
+.advanced-font-settings>summary{cursor:pointer;font-weight:700;line-height:1.4}
+.advanced-font-settings>.font-settings-content{margin-top:15px;border-top:1px solid var(--line);padding-top:14px}
+.advanced-font-settings .preview-adjusters{margin-bottom:0}
+.advanced-font-settings select{max-width:340px}
+.compiled-preview-output .compiled-font-text{font-size:clamp(52px,8vw,96px);}
+
+/* Locally install the compiled pair into the other pages' shared font selector. */
+.font-export-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.font-site-help{margin:10px 0 0;max-width:66ch;font-size:.8rem;line-height:1.5;color:#625a69}
+
+/* Compiled-font preview layout: visibility and size, text, output, geometry tabs. */
+#pane-preview .preview-controls{gap:12px 18px;align-items:end;margin:0 0 12px!important}
+#pane-preview .preview-controls label{display:flex;align-items:center;gap:8px;margin:0 0 2px}
+#pane-preview .preview-controls select{width:auto;min-width:148px}
+#pane-preview .preview-controls input[type=number]{width:76px}
+#pane-preview .preview-controls .btn{margin:0}
+#pane-preview .preview-controls #previewBuildStatus{flex:1 1 220px}
+#pane-preview .preview-test-label{margin:12px 0 6px}
+#pane-preview .preview-test-text{width:100%;height:11rem;max-height:11rem;overflow-y:scroll;overflow-x:auto;scrollbar-gutter:stable;resize:none;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.5}
+#pane-preview .compiled-preview-output{min-height:190px;margin:12px 0 0}
+#pane-preview .compiled-font-text{font-size:72px;overflow-wrap:anywhere}
+#pane-preview .preview-adjusters{margin-top:16px}
+#pane-preview .preview-empty-message{margin:0}
+@media(max-width:600px){#pane-preview .preview-controls{align-items:start}#pane-preview .preview-controls #previewBuildStatus{flex-basis:100%}}
+
+/* Larger visual anchors; hit targets are independently sized in screen pixels. */
+#bezierOverlay .vector-anchor{stroke-width:1.5;}
+#bezierOverlay .vector-start-ring{stroke-width:2.2;}
+#bezierPickerWrapper select{min-width:155px;}
+
+#bezierOverlay .vector-selected-outline{stroke:#6546a0;stroke-width:2.4;stroke-dasharray:5 4;fill:none;}

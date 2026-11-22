@@ -3588,12 +3588,77 @@ function wireHaloControls() {
     }
 
 
+    function drawTinySyntheticCornerBracket(ctx, text, x, yBaseline, { px, fillCss, haloEnabled, haloCss }) {
+      const chars = Array.from(String(text ?? ""));
+      if (Number(px) > 12 || chars.length !== 1) return false;
+
+      const cp = chars[0].codePointAt(0);
+      if (cp !== 0x300C && cp !== 0x300D) return false;
+
+      const isRight = cp === 0x300D;
+      const m = ctx.measureText(chars[0]);
+      const ascent = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      // Match the exporter synthetic fallback for <=12px: the old 2.5px floor
+      // is too heavy at small sizes, so use the same relaxed small-font floor.
+      const strokeW = Math.max(1.0, px * 0.065);
+      const runW = Math.max(Number(m.width || 0), px * 0.36);
+      const runH = Math.max(ascent + descent, px * 0.76);
+
+      const pad = Math.max(0.5, strokeW * 0.5);
+      const xLeft = x + pad;
+      const xRight = x + runW - pad;
+      let yTop = yBaseline - runH * 0.82;
+
+      // Match the exporter: lift only the top-left fallback bracket.
+      if (!isRight) yTop -= Math.max(4, px * 0.18);
+
+      const yBottom = yTop + runH;
+      const arm = Math.max(px * 0.26, Math.min(runW * 0.82, px * 0.48));
+
+      const rects = isRight
+        ? [
+            { x: xRight - strokeW, y: yTop, w: strokeW, h: runH },
+            { x: xRight - arm, y: yBottom - strokeW, w: arm, h: strokeW }
+          ]
+        : [
+            { x: xLeft, y: yTop, w: strokeW, h: runH },
+            { x: xLeft, y: yTop, w: arm, h: strokeW }
+          ];
+
+      if (haloEnabled) {
+        ctx.save();
+        ctx.strokeStyle = haloCss;
+        ctx.lineWidth = haloWidthForPx(px);
+        ctx.lineJoin = "round";
+        ctx.miterLimit = 2;
+        for (const r of rects) ctx.strokeRect(r.x, r.y, r.w, r.h);
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.fillStyle = fillCss;
+      for (const r of rects) ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.restore();
+      return true;
+    }
+
     function drawTextWithOptionalHalo(ctx, text, x, yBaseline, { px, fontFamily, fillCss }) {
       const haloEnabled = getHaloEnabled();
       const haloCss = getHaloHex();
 
       ctx.font = `${px}px "${fontFamily}"`;
       setTextQuality(ctx);
+
+      if (drawTinySyntheticCornerBracket(ctx, text, x, yBaseline, {
+        px,
+        fillCss,
+        haloEnabled,
+        haloCss
+      })) {
+        return;
+      }
 
       if (haloEnabled) {
         ctx.save();
@@ -3928,16 +3993,29 @@ function wireHaloControls() {
       let penX = Number(runX || 0) + (ctx.measureText(startChar).width || 0);
 
       // Manual tally marks are external attachments below the cartouche bottom line.
-      // Keep every measurement proportional to font size so PNG/PDF/canvas exports match.
+      // Keep the existing renderer behavior above 12px. At 12px and below, use
+      // the same small-font minimums as the vector exporter so manual tally
+      // placement/height does not become proportionally too low or too tall.
       const strokeW = Math.max(1.5, fontPx * 0.045); // wider, closer to font stroke
       const gap = fontPx * 0.075;                    // a bit more spread
-      const h = fontPx * 0.10;                       // about 50% shorter
+      const isTinyFontPx = px <= 12;
+      const tallyHMinPx = isTinyFontPx ? Math.max(2, px * 0.20) : 0;
+      const tallyTopMinPx = isTinyFontPx ? Math.max(1, px * 0.08) : 0;
+      const h = isTinyFontPx
+        ? Math.max(tallyHMinPx, px * 0.18)
+        : fontPx * 0.10;
       const belowGap = 0;                            // touch bottom rule
 
       const detectedBottomY = Number.isFinite(Number(cartoucheBottomY)) ? Number(cartoucheBottomY) : null;
       const fallbackBottomY = Number(baselineY || 0) + px * 0.20;
       const bottomRuleY = detectedBottomY != null ? detectedBottomY : fallbackBottomY;
-      const yTop = bottomRuleY;
+
+      // For tiny renderer fonts, do not anchor manual tallies to bottom-rule detection.
+      // Detection can land proportionally too low at <=12px, so mirror the exporter
+      // baseline-based placement used by buildManualTallyVectorPathsForRun.
+      const yTop = isTinyFontPx
+        ? Number(baselineY || 0) + Math.max(tallyTopMinPx, px * 0.12)
+        : bottomRuleY + belowGap;
       const yBottom = yTop + h;
 
       const groups = [];
@@ -5348,8 +5426,36 @@ function repairQuotedCartoucheLeftEdgeWithLipuDonor(canvas, cps, { fontPx, padPx
       setTextQuality(ctx);
       const m = ctx.measureText(ch);
 
-      const ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
-      const descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+      let ascent  = m.actualBoundingBoxAscent ?? Math.ceil(px * 0.8);
+      let descent = m.actualBoundingBoxDescent ?? Math.ceil(px * 0.2);
+
+      const isTinyCornerBracket =
+        Number(px) <= 12 &&
+        (Number(cp) === 0x300C || Number(cp) === 0x300D);
+
+      if (isTinyCornerBracket) {
+        const runW = Math.max(Number(m.width || 0), px * 0.36);
+        const runH = Math.max(ascent + descent, px * 0.76);
+        let yTopRel = -runH * 0.82;
+
+        // Match the exporter synthetic fallback: lift only the top-left bracket.
+        if (Number(cp) === 0x300C) yTopRel -= Math.max(4, px * 0.18);
+
+        const yBottomRel = yTopRel + runH;
+        ascent = Math.max(ascent, -yTopRel);
+        descent = Math.max(descent, yBottomRel);
+
+        return {
+          ch,
+          ascent: Math.ceil(ascent),
+          descent: Math.ceil(descent),
+          left: 0,
+          w: Math.ceil(runW),
+          h: Math.ceil(ascent + descent),
+          px,
+          fontFamily
+        };
+      }
 
       const left = m.actualBoundingBoxLeft ?? 0;
       const right = m.actualBoundingBoxRight ?? Math.ceil(m.width);
