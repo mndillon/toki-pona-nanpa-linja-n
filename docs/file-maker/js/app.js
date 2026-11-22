@@ -26,6 +26,7 @@ import {createPortableFontPairZip,readPortableFontPairZip} from './portable-font
 import {readPortableFontProjectZip} from './portable-project-import.js?v=0.3.41';
 import {verifyPortableFontPairFaces} from './portable-font-validity.js?v=0.3.41';
 import {fontHasCodepoint,registerFont,rasterizeFontGlyph,rasterizeFontGlyphAligned} from './font-import.js';
+import {compoundPreviewKind,compoundPreviewStatus} from './compound-preview.js';
 import {normalizeImportedFont} from './otf-to-ttf.js';
 import {mapImportedLigaturesToUcsur} from './ucsur-ligature-import.js';
 import {IMPORT_ACK,defaultLicensing,fontNameMetadata,evaluateExport,licenceFiles,readLicenceDocument} from './licensing.js';
@@ -73,6 +74,7 @@ let marquee=null,selection=null,selectionDrag=null,selectionClipboard=null,marqu
 let selectedWidthSession=null,selectedWidthStart=9;
 const MAX_HISTORY_BYTES=16*1024*1024,MAX_HISTORY_ACTIONS=250;
 let compoundKey=null,compoundSelection=0,compDragging=false,compLast=null;
+const compoundReferencePreviews=new Map();
 const canvas=$('glyphCanvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
 const DEFAULT_BRUSH=9;
 // One-time, user-initiated licence acknowledgement before each source-font file selection.
@@ -1952,6 +1954,7 @@ function requestDeleteProject(){
 async function refreshProjectPicker(){projects=await listProjects();projects.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));const sel=$('projectSelect');sel.textContent='';for(const p of projects){const o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);}if(project)sel.value=project.id;}
 async function switchProject(id){const preservedGlyph=slotIndex;clearCompiledPreview();cancelSelection();clearTimeout(traceTimer);clearTimeout(saveTimer);if(project)await saveNow();project=await loadProject(id);if(!project)return;project.glyphs||={};project.compounds||={};project.editorDrafts||={};project.settings||={};refreshPreviewAdjusters();const storedHistory=await loadProjectHistory(id);importedCmapCache=new Map();history=Array.isArray(storedHistory.undo)?storedHistory.undo:[];redoStack=Array.isArray(storedHistory.redo)?storedHistory.redo:[];importedFamily=null;
   if(project.sourceFont){try{if(!project.sourceFont.attachmentGeometry)project.sourceFont.attachmentGeometry=inspectAttachmentGeometry(fromBase64(project.sourceFont.normalizedTtf||project.sourceFont.data));importedFamily=await registerFont(sourceReferenceBytes(),project.id)}catch(e){status('Could not load saved source font: '+e.message,true)}}
+  compoundReferencePreviews.clear();
   await selectGlyph(slots[preservedGlyph]?preservedGlyph:slots.findIndex(x=>x.word==='jan'));refreshIdentity();refreshCompoundChoices();renderOverrideList();await refreshProjectPicker();status(`Opened ${project.name} · ${slots[slotIndex].word}`);}
 function toBase64(data){let s='';for(let i=0;i<data.length;i+=8192)s+=String.fromCharCode(...data.subarray(i,i+8192));return btoa(s);}
 function fromBase64(s){const binary=atob(s),out=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);return out;}
@@ -2107,16 +2110,69 @@ function getCompound(){if(!project)return null;const left=$('compoundLeft').valu
 function setOverride(){const c=getCompound(),before=cloned(project.compounds[compoundKey]);project.compounds[compoundKey]=structuredClone(c);recordChange('compound',compoundKey,before,project.compounds[compoundKey]);saveSoon();renderCompound();renderOverrideList();status(`Override saved: ${compoundKey}`);}
 function resetOverride(){const key=compoundValue(),before=cloned(project.compounds[key]);delete project.compounds[key];recordChange('compound',key,before,null);saveSoon();renderCompound();renderOverrideList();status(`Override removed: ${key}`);}
 function findGlyphIndex(word){return slots.findIndex(s=>(slotMeta(s.index).word||s.word)===word);}
-function shapePathForWord(word){const idx=findGlyphIndex(word);return idx>=0?(project.glyphs[idx]?.path||''):'';}
 function addSvg(tag,attrs={},parent=$('compoundSvg')){const el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,String(v));parent.appendChild(el);return el;}
+// Compound parts without user-created outlines are still real glyphs. Display
+// the imported font when its cmap contains the slot; otherwise display the
+// bundled Fairfax glyph, using the same fallback as the drawing guide.
+// This raster image is preview-only: no raster or outline enters project.glyphs.
+function compoundReferencePreview(word){
+ const idx=findGlyphIndex(word),slot=idx>=0?slots[idx]:null,cp=Number(slot?.codepoint);
+ if(!Number.isInteger(cp)||cp<=0||cp>0x10FFFF)return Promise.resolve(null);
+ const selectedProject=project;
+ const key=`${selectedProject.id}:${cp}`;
+ if(compoundReferencePreviews.has(key))return compoundReferencePreviews.get(key);
+ const pending=(async()=>{
+   let family=null;
+   if(selectedProject.sourceFont){
+     const bytes=sourceReferenceBytes();
+     if(fontHasCodepoint(bytes,cp)){
+       // switchProject normally registers this face; recover gracefully if it
+       // was not available when the project was opened.
+       if(!importedFamily)importedFamily=await registerFont(bytes,selectedProject.id);
+       family=importedFamily;
+     }
+   }
+   if(!family){const reference=await loadFairfaxReferenceFont(slot);family=reference?.family||null;}
+   if(!family)return null;
+   return rasterizeFontGlyph(family,cp).toDataURL('image/png');
+ })().catch(error=>{
+   compoundReferencePreviews.delete(key);
+   console.warn('Could not render compound source glyph:',word,error);
+   return null;
+ });
+ compoundReferencePreviews.set(key,pending);
+ return pending;
+}
 function renderCompound(){if(!project)return;const c=getCompound(),svg=$('compoundSvg');$('compoundName').textContent=compoundKey;
  svg.replaceChildren();addSvg('rect',{width:600,height:460,fill:'#fffdf7'});for(let x=0;x<600;x+=40)addSvg('line',{x1:x,y1:0,x2:x,y2:460,stroke:'#e9e1d5','stroke-width':.7});for(let y=0;y<460;y+=40)addSvg('line',{x1:0,y1:y,x2:600,y2:y,stroke:'#e9e1d5','stroke-width':.7});
+ const referenceWords=[];
  c.parts.forEach((p,i)=>{const g=addSvg('g',{'data-part':i,transform:`translate(${p.x} ${p.y}) rotate(${p.rotation||0} 128 128) scale(${p.scale})`,class:`compound-piece ${i===compoundSelection?'selected':''}`});
-   const path=shapePathForWord(p.word);if(path)addSvg('path',{d:path,fill:'#211d28','fill-rule':'nonzero'},g);
-   else{addSvg('rect',{x:0,y:0,width:256,height:256,fill:'#eee4d5',stroke:'#a18a74','stroke-dasharray':'8 6'},g);const label=addSvg('text',{x:128,y:135,'text-anchor':'middle',fill:'#806c5d','font-size':28},g);label.textContent=p.word;}
+   const idx=findGlyphIndex(p.word),glyph=idx>=0?project.glyphs[idx]:null,kind=compoundPreviewKind(glyph);
+   // Transparent hit region preserves drag/select across the entire component
+   // box even when the reference glyph has large empty areas.
+   addSvg('rect',{x:0,y:0,width:256,height:256,fill:'transparent','pointer-events':'all'},g);
+   const artwork=addSvg('g',{'class':'compound-part-artwork'},g);
+   if(kind==='edited')addSvg('path',{d:glyph.path,fill:'#211d28','fill-rule':'nonzero'},artwork);
+   else if(kind==='reference'){
+     referenceWords.push(p.word);
+     const label=addSvg('text',{x:128,y:135,'text-anchor':'middle',fill:'#806c5d','font-size':20},artwork);label.textContent='Loading '+p.word+'…';
+     const renderingProject=project;
+     compoundReferencePreview(p.word).then(url=>{
+       // A pointer drag re-creates the whole SVG. Never update detached parts
+       // or an image belonging to a project that is no longer selected.
+       if(!artwork.isConnected||project!==renderingProject)return;
+       artwork.replaceChildren();
+       if(url)addSvg('image',{x:0,y:0,width:256,height:256,href:url,'aria-label':p.word},artwork);
+       else{const fallback=addSvg('text',{x:128,y:135,'text-anchor':'middle',fill:'#806c5d','font-size':20},artwork);fallback.textContent=`${p.word} (unavailable)`;}
+     });
+   }else{
+     const label=addSvg('text',{x:128,y:135,'text-anchor':'middle',fill:'#806c5d','font-size':20},artwork);label.textContent=`${p.word} (empty)`;
+   }
+   // Keep the selection indication above the asynchronously loaded image.
    if(i===compoundSelection)addSvg('rect',{x:0,y:0,width:256,height:256,fill:'none',stroke:'#8462b9','stroke-width':2,'stroke-dasharray':'8 5'},g);
  });
- $('compoundStatus').textContent=project.compounds[compoundKey]?'Custom override saved':'Preview of automatic arrangement (not an override)';updateComponentControls(c);
+ $('compoundStatus').textContent=compoundPreviewStatus(!!project.compounds[compoundKey],referenceWords);
+ updateComponentControls(c);
 }
 function updateComponentControls(c){const p=c.parts[compoundSelection];if(!p)return;$('compX').value=p.x;$('compY').value=p.y;$('compScale').value=p.scale;$('compScaleLabel').textContent=Number(p.scale).toFixed(2);$('compRotation').value=p.rotation||0;}
 function updateComponent(key,value){const c=getCompound(),before=cloned(project.compounds[compoundKey]);c.parts[compoundSelection][key]=value;project.compounds[compoundKey]=c;recordChange('compound',compoundKey,before,c);renderCompound();renderOverrideList();saveSoon();}

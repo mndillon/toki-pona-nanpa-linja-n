@@ -153,7 +153,7 @@
         <div class="wrap-row"><button id="btnCreateCompound" class="btn primary">Create / edit override</button><button id="btnResetCompound" class="btn">Remove override</button><span id="compoundStatus" class="small muted"></span></div>
       </div>
       <div class="editor-layout">
-        <div class="canvas-card"><div class="canvas-bar"><strong id="compoundName">toki&pona</strong><span class="small muted">Drag components to position them</span></div><div class="compound-viewport"><svg id="compoundSvg" viewBox="0 0 600 460" role="img" aria-label="Compound composition editor"><rect width="600" height="460" fill="#fffdf7"/></svg></div><p class="canvas-help">Select either component, drag to move it, then use the controls to scale and rotate. These are project-level overrides, not changes to the source glyphs.</p></div>
+        <div class="canvas-card"><div class="canvas-bar"><strong id="compoundName">toki&pona</strong><span class="small muted">Drag components to position them</span></div><div class="compound-viewport"><svg id="compoundSvg" viewBox="0 0 600 460" role="img" aria-label="Compound composition editor"><rect width="600" height="460" fill="#fffdf7"/></svg></div><p class="canvas-help">Select either component, drag to move it, then use the controls to scale and rotate. Unedited glyphs display the original font artwork as a reference; to export a custom override, first copy or draw both component glyphs. These overrides do not change the source glyphs.</p></div>
         <div class="inspector"><div class="panel"><h3>Selected component</h3><label for="compX">Horizontal offset</label><input id="compX" type="number" step="1"><label for="compY">Vertical offset</label><input id="compY" type="number" step="1"><label for="compScale">Scale <output id="compScaleLabel">1.00</output></label><input id="compScale" type="range" min="0.1" max="2.5" step="0.05"><label for="compRotation">Rotation (degrees)</label><input id="compRotation" type="number" step="5"><button id="btnResetComponent" class="btn compact">Reset component transform</button></div><div class="panel"><h3>Defined overrides</h3><div id="overrideList" class="override-list"></div></div></div>
       </div>
     </section>
@@ -360,7 +360,7 @@ pi(telo lete) pi jan</textarea>
 <input type="file" id="fileImportFont" accept=".ttf,.otf,font/ttf,font/otf" hidden>
 <input type="file" id="fileImportProjectFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
 <input type="file" id="fileImportFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
-<script type="module" src="./file-maker/js/app.js?v=0.3.41.20261122.2"></script>
+<script type="module" src="./file-maker/js/app.js?v=0.3.41.20261122.compound1"></script>
 <script>
   const productionHosts = new Set([
         'nanpa-linja-n.com',
