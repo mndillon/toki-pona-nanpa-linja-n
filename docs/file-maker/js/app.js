@@ -30,6 +30,9 @@ import {compoundPreviewKind,compoundPreviewStatus} from './compound-preview.js';
 import {normalizeImportedFont} from './otf-to-ttf.js';
 import {mapImportedLigaturesToUcsur} from './ucsur-ligature-import.js';
 import {IMPORT_ACK,defaultLicensing,fontNameMetadata,evaluateExport,licenceFiles,readLicenceDocument} from './licensing.js';
+import {ensureGlyphLayers,activeLayer,layerCanEdit,selectLayer,addLayer,duplicateLayer,removeLayer,moveLayer,updateLayer,updateLayerPath,otherLayerPaths} from './glyph-layers.js';
+import {setupEditorPalettes} from './editor-palettes.js';
+import {initializeEditorGeometry,analyzeContours,editorGeometryStatus,adjustBezierNode} from './editor-wasm.js';
 
 const $=id=>document.getElementById(id);
 let storageAvailable=true;
@@ -39,6 +42,7 @@ let history=[],redoStack=[],historyActionBusy=false,historyNavigationPending=fal
 let canvasFit=1,canvasScale=1,canvasOffset={x:0,y:0},fitMode=true,viewportReady=false,panDrag=null,spacePan=false;
 let strokeBefore=null,strokeStartRaster=null,strokeBaseCanvas=null,strokePoints=[],strokeAnchor=null,strokeEnd=null,strokeConstrain=false,curvePending=null,compoundDragBefore=null;
 let expandedEditor=false;
+let editorPaletteManager=null;
 let bezierDraft=[],bezierInteraction=null,bezierHover=null,selectedBezierContour=-1,selectedBezierNode=-1,bezierPreview=false;
 // The compiled preview fonts are memory-only; never store blobs in IndexedDB.
 let compiledPreview=null,previewRevision=0,previewBuildSerial=0,previewBusy=false;
@@ -88,6 +92,9 @@ function saveStatus(msg){$('saveLabel').textContent=msg;}
 function uid(){return globalThis.crypto?.randomUUID?.()||`project-${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 function cloned(v){return v==null?null:structuredClone(v);}
 function recordChange(target,key,before,after,details=null){
+  if(['glyph','selectedWidth','selectionFill','selectionSmooth','selectionTransform'].includes(target)&&project?.glyphs?.[key]?.layerStack){
+    updateLayerPath(project.glyphs[key]);after=project.glyphs[key];
+  }
   const a=cloned(before),b=cloned(after);
   if(JSON.stringify(a)===JSON.stringify(b))return;
   if(target!=='selectedWidth'){selectedWidthSession=null;selectedWidthStart=brushWidth();}
@@ -686,17 +693,18 @@ function commitGlyph(){
   g.raster=canvas.toDataURL('image/png');
   const t=traceGlyph(canvas,Number($('traceThreshold').value),Number($('traceSimplify').value));
   g.rasterPath=t.path;g.path=combineGlyphPaths(g.rasterPath,g.bezierContours||[]);
-  g.contours=t.contours;g.modified=true;project.glyphs[k]=g;
+  g.contours=t.contours;g.modified=true;project.glyphs[k]=g;updateLayerPath(g);
   saveSoon();updateProgress();updateTrace();
 }
-function scheduleTrace(){clearTimeout(traceTimer);traceTimer=setTimeout(commitGlyph,140);}
+function scheduleTrace(){clearTimeout(traceTimer);traceTimer=setTimeout(()=>{traceTimer=0;commitGlyph();},140);}
 function saveSoon(){if(!project||deletingProject)return;invalidateCompiledPreview();saveStatus('Unsaved changes…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,420);}
-async function saveNow(){if(!project||deletingProject)return;const snapshot=structuredClone(project);snapshot.updatedAt=new Date().toISOString();project.updatedAt=snapshot.updatedAt;
+async function saveNow(){if(!project||deletingProject)return;for(const g of Object.values(project.glyphs||{}))if(g?.layerStack)updateLayerPath(g);const snapshot=structuredClone(project);snapshot.updatedAt=new Date().toISOString();project.updatedAt=snapshot.updatedAt;
   const undo=structuredClone(history),redo=structuredClone(redoStack);
   pendingSave=pendingSave.then(()=>saveWorkspace(snapshot,{undo,redo}));try{await pendingSave;saveStatus(`Autosaved ${new Date(snapshot.updatedAt).toLocaleTimeString()}`);}catch(e){saveStatus('Autosave failed');status('IndexedDB save failed: '+e.message,true);}
 }
 function clearCanvas(){ctx.clearRect(0,0,ARTBOARD_WIDTH,ARTBOARD_HEIGHT);}
-function drawImageUrl(url){return new Promise(resolve=>{if(!url){clearCanvas();resolve();return;}const img=new Image();img.onload=()=>{clearCanvas();ctx.drawImage(img,0,0);resolve();};img.onerror=()=>{clearCanvas();resolve();};img.src=url;});}
+let rasterImageSequence=0;
+function drawImageUrl(url){const serial=++rasterImageSequence;return new Promise(resolve=>{if(!url){clearCanvas();resolve();return;}const img=new Image();img.onload=()=>{if(serial===rasterImageSequence){clearCanvas();ctx.drawImage(img,0,0);}resolve();};img.onerror=()=>{if(serial===rasterImageSequence)clearCanvas();resolve();};img.src=url;});}
 
 // Imported references use the stored normalized TrueType, whose UCSUR cmap
 // includes aliases resolved from the source font's own word ligatures.
@@ -844,7 +852,8 @@ async function selectGlyph(i){if(!project||!slots[i])return;selectedWidthSession
   $('glyphWord').readOnly=base.kind==='ascii'||!base.customSlot;
   $('glyphWord').title=base.customSlot?'Custom name: 2–32 lowercase Toki Pona letters forming (C)V(N) syllables':'Standard assignments are fixed in this catalogue';
   $('glyphCodepoint').value=meta.codepoint==null?'':Number(meta.codepoint).toString(16).toUpperCase();$('glyphAliases').value=(meta.aliases||[]).join('\n');
-  const displayed=project.glyphs[i];await drawImageUrl((displayed?.modified||displayed?.rasterCopyForEditing)?(displayed?.raster||''):'');await renderOriginalGuide();drawMetricGuides();refreshAttachmentUI();renderBezierOverlay();updateTrace();updateProgress();
+  const current=project.glyphs[glyphKey(i)]||{};ensureGlyphLayers(current);project.glyphs[glyphKey(i)]=current;updateLayerPath(current);
+ const displayed=project.glyphs[i];await drawImageUrl((displayed?.modified||displayed?.rasterCopyForEditing)?(displayed?.raster||''):'');await renderOriginalGuide();drawMetricGuides();refreshAttachmentUI();renderBezierOverlay();refreshGlyphLayerPalette();updateTrace();updateProgress();
   if(changedGlyph||!viewportReady)fitCanvas();
   $('importState').textContent=project.sourceFont?`${project.sourceFont.name}. Select “Restore selected glyph from font” to rasterize it into an editable drawing.`:'No imported source font; blank projects need glyph drawings or a separately imported Latin font for full ASCII coverage.';
 }
@@ -892,6 +901,7 @@ function clearDrawingGesture(){drawing=false;strokeBefore=null;strokeStartRaster
 function cancelCurve(){if(curvePending){restoreStrokeBase();curvePending=null;strokeBaseCanvas=null;strokeBefore=null;status('Curve cancelled.');}}
 function pointerDown(ev){
  if(!project)return;if(wantsPan(ev)){startPan(ev);return;}if(ev.button!==0)return;
+ if(!['select','lasso'].includes(tool)&&!editableLayerOrWarn())return;
  if(tool==='select'||tool==='lasso'){selectionPointerDown(ev);return;}if(tool==='bezier'){bezierPointerDown(ev);return;}
  if(tool==='fill'){ev.preventDefault();fillRasterRegion(canvasPos(ev));return;}
  ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
@@ -1051,6 +1061,7 @@ function fillRasterRegion(p){
 // Press Fill while a selection is active: enclose whole holes rather than
 // leaving a one-pixel antialias seam at their existing vector boundaries.
 function fillSelectedRegion(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(!nonemptySelection(selection))return false;
  const w=ARTBOARD_WIDTH,h=ARTBOARD_HEIGHT;
  const clip=newRasterCanvas(w,h),g=clip.getContext('2d',{willReadFrequently:true});
@@ -1122,6 +1133,7 @@ function selectedArtwork(){
 // subsequent freehand Pencil/Eraser strokes. A completed smoothing action is
 // one Undo step and uses the normal glyph / WASM export representation.
 function smoothExistingOutline(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(!project||drawing||bezierInteraction||bezierDraft.length||curvePending){
   status('Finish the active stroke or Bézier outline before smoothing.',true);return;
  }
@@ -1186,6 +1198,7 @@ function smoothExistingOutline(){
 // Each selection uses one frozen baseline and one coalesced history entry,
 // including separate pointer drags on the slider until selection changes.
 function resizeActiveSelectionWidth(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(!project||!nonemptySelection(selection)||!['select','lasso'].includes(tool))return;
  const key=glyphKey(slotIndex);
  if(!selectedWidthSession&&partialVectorInSelection()){
@@ -1253,6 +1266,7 @@ function copySelection(){
  refreshSelectionToolbar();status(`Copied selected artwork (${art.contours.length} Bézier contours).`);return true;
 }
 function selectedGestureStart(ev,handle=null){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return false;
  const art=selectedArtwork();
  // A pasted raster/complete contour may overlap another vector contour that
  // crosses the selection boundary. Move only the artwork fully selected by
@@ -1410,6 +1424,7 @@ function selectAllArtwork(){
  status('Whole glyph drawing selected (original grey guide excluded).');
 }
 function deleteSelectedArtwork(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(partialVectorInSelection()){status('A Bézier contour crosses the selection boundary. Select the complete contour before deleting; partial erasing is supported on pencil ink.',true);return;}
  const art=selectedArtwork();if(!art)return;
  if(!art.hasPixels&&!art.contours.length){status('Selection contains no editable artwork.',true);return;}
@@ -1423,6 +1438,7 @@ function deleteSelectedArtwork(){
 }
 function cutSelection(){if(!copySelection())return;deleteSelectedArtwork();status('Cut selection to the editor clipboard.');}
 function cropSelection(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  const art=selectedArtwork();if(!art)return;
  if(selectionPolygon){status('Crop is rectangular only. Switch to Select and draw a rectangle.',true);return;}
  const g=project.glyphs[glyphKey(slotIndex)],contours=g?.bezierContours||[];
@@ -1508,6 +1524,7 @@ function mergeClipboardLicences(source){
  return oldDocs;
 }
 function pasteSelection({replace=false,offset=true}={}){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(!project)return;
  if(!selectionClipboard){status('Copy a glyph or selected artwork before pasting.',true);return;}
  const clip=selectionClipboard,key=glyphKey(slotIndex),old=cloned(project.glyphs[key]);
@@ -1536,6 +1553,7 @@ function nudgeSelection(dx,dy){
  redrawSelectionDrag(dx,dy);finishSelectionDrag();refreshSelectionToolbar();
 }
 function transformSelection(m){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  selectedWidthSession=null;selectedWidthStart=brushWidth();
  if(!nonemptySelection(selection)){status('Select artwork before transforming.',true);return;}
  if(partialVectorInSelection()){status('The selection crosses a vector contour. Enclose the entire contour to rotate, flip or scale it.',true);return;}
@@ -1574,7 +1592,7 @@ function bezierEntry(){const k=glyphKey(slotIndex),old=project.glyphs[k]||{};
 function commitBezier(before){
  const key=glyphKey(slotIndex),g=bezierEntry();
  g.path=combineGlyphPaths(g.rasterPath,g.bezierContours);g.modified=true;
- project.glyphs[key]=g;recordChange('glyph',key,before,g);
+ project.glyphs[key]=g;updateLayerPath(g);recordChange('glyph',key,before,g);
  updateTrace();updateProgress();renderBezierOverlay();
 }
 function addSvgEl(type,attrs,parent){const el=document.createElementNS('http://www.w3.org/2000/svg',type);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,String(v));parent.appendChild(el);return el;}
@@ -1635,7 +1653,129 @@ function renderBezierHelp(){
  $('btnBezierPreview').textContent=bezierPreview?'Show edit handles':'Preview filled glyph';
  $('btnBezierPreview').setAttribute('aria-pressed',String(bezierPreview));
 }
+function renderOtherGlyphLayers(){
+ const under=$('inactiveLayerUnder'),over=$('inactiveLayerOver');
+ if(!under||!over)return;
+ under.replaceChildren();over.replaceChildren();
+ const g=project?.glyphs?.[slotIndex];if(!g?.layerStack)return;
+ const others=otherLayerPaths(g);
+ for(const [root,paths] of [[under,others.below],[over,others.above]]){
+  for(const item of paths){
+   const path=addSvgEl('path',{d:item.path,'fill-rule':'nonzero','data-layer-id':item.id},root);
+   path.setAttribute('fill','#191921');
+  }
+ }
+}
+function refreshGlyphLayerPalette(){if(editorPaletteManager)editorPaletteManager.refresh();}
+function editableLayerOrWarn(){
+ if(!project)return false;
+ const g=project.glyphs[glyphKey(slotIndex)]||{};
+ if(!layerCanEdit(g)){
+  status('This drawing layer is locked or hidden. Select an unlocked, visible layer before editing.',true);
+  return false;
+ }
+ return true;
+}
+function mutateGlyphLayers(action,label){
+ if(!project)return;
+ if(drawing||bezierInteraction){status('Finish the current pointer gesture before changing layers.',true);return;}
+ if(bezierDraft.length){status('Finish or cancel the open Bézier outline before changing layer settings.',true);return;}
+ if(traceTimer){clearTimeout(traceTimer);traceTimer=0;commitGlyph();}
+ const key=glyphKey(slotIndex),g=project.glyphs[key]||{};
+ ensureGlyphLayers(g);project.glyphs[key]=g;
+ const before=cloned(g),previousId=g.layerStack.activeId;
+ try{action(g);}catch(e){status(String(e.message||e),true);return;}
+ if(g.layerStack.activeId!==previousId){
+  cancelSelection();selectedBezierContour=-1;selectedBezierNode=-1;
+  selectedWidthSession=null;
+ }
+ updateLayerPath(g);recordChange('glyph',key,before,g);
+ // Raster and contours belong to the active layer only; changing layers
+ // swaps the backing art, not the canvas coordinates or project identity.
+ drawImageUrl((g.modified||g.rasterCopyForEditing)?(g.raster||''):'').then(()=>{
+   renderBezierOverlay();updateTrace();refreshGlyphLayerPalette();updateProgress();
+ });
+ status(label);
+}
+function renderGlyphLayerPalette(){
+ const root=$('glyphLayerList');if(!root||!project)return;
+ root.replaceChildren();
+ const g=project.glyphs[glyphKey(slotIndex)]||{};
+ const stack=ensureGlyphLayers(g);
+ const button=(label,title,handler,disabled=false)=>{
+  const el=document.createElement('button');el.type='button';el.className='mini';el.textContent=label;el.title=title;el.setAttribute('aria-label',title);el.disabled=disabled;el.onclick=handler;return el;
+ };
+ for(const layer of stack.layers){
+  const row=document.createElement('div');row.className='palette-layer-row'+(stack.activeId===layer.id?' active':'');
+  const toggle=(key,txt,title)=>button(txt,title,()=>mutateGlyphLayers(glyph=>{
+   if(key==='visible'&&!layer[key]&&glyph.layerStack.activeId===layer.id)return;
+   if(key==='visible'&&layer[key]&&glyph.layerStack.activeId===layer.id)throw Error('Select a different layer before hiding the active layer.');
+   updateLayer(glyph,layer.id,{[key]:!layer[key]});
+  },`Layer ${title.toLowerCase()}.`));
+  row.append(toggle('visible',layer.visible?'◉':'○',layer.visible?'Hide layer':'Show layer'));
+  row.append(toggle('locked',layer.locked?'🔒':'♧',layer.locked?'Unlock layer':'Lock layer'));
+  const name=button(layer.name,'Select layer '+layer.name,()=>{
+   if(layer.id===stack.activeId)return;
+   mutateGlyphLayers(glyph=>selectLayer(glyph,layer.id),'Selected layer '+layer.name+'.');
+  });name.className='palette-layer-name';name.title='Click to select · double-click to rename';
+  name.ondblclick=()=>{
+   const candidate=window.prompt('Rename layer',layer.name);
+   if(candidate!=null)mutateGlyphLayers(glyph=>updateLayer(glyph,layer.id,{name:candidate}),'Layer renamed.');
+  };row.append(name);
+  const included=document.createElement('input');included.type='checkbox';included.className='layer-export';included.checked=layer.enabled;
+  included.title='Use this layer in exported font';included.setAttribute('aria-label','Export layer '+layer.name);
+  included.onchange=()=>mutateGlyphLayers(glyph=>updateLayer(glyph,layer.id,{enabled:included.checked}),'Updated layer export inclusion.');row.append(included);
+  const idx=stack.layers.indexOf(layer);
+  row.append(button('↑','Move layer up',()=>mutateGlyphLayers(glyph=>moveLayer(glyph,layer.id,-1),'Layer moved up.'),idx===0));
+  row.append(button('↓','Move layer down',()=>mutateGlyphLayers(glyph=>moveLayer(glyph,layer.id,1),'Layer moved down.'),idx===stack.layers.length-1));
+  root.append(row);
+ }
+ const base=document.createElement('div');base.className='palette-layer-row';
+ const visible=$('toggleOriginal')?.checked;
+ base.append(button(visible?'◉':'○','Show or hide source font reference',()=>{$('toggleOriginal').checked=!$('toggleOriginal').checked;renderOriginalGuide();refreshGlyphLayerPalette();}));
+ const lock=document.createElement('span');lock.textContent='🔒';lock.title='Protected original font';base.append(lock);
+ const title=document.createElement('span');title.className='palette-layer-name';title.textContent=project.sourceFont?'Imported font (base reference)':'Fairfax template (base reference)';base.append(title);
+ const guide=document.createElement('small');guide.textContent='Guide only';guide.title='Original source remains available to the compiler for unmodified glyphs. Copy it to an editable layer to change it.';base.append(guide);root.append(base);
+ $('btnDeleteGlyphLayer').disabled=stack.activeId==='artwork';
+}
+function wireGlyphLayerActions(){
+ $('btnAddGlyphLayer').onclick=()=>mutateGlyphLayers(g=>addLayer(g),'Created editable layer.');
+ $('btnDuplicateGlyphLayer').onclick=()=>mutateGlyphLayers(g=>duplicateLayer(g,activeLayer(g).id),'Duplicated active layer.');
+ $('btnDeleteGlyphLayer').onclick=()=>{
+  const g=project.glyphs[glyphKey(slotIndex)],layer=activeLayer(g);
+  if(layer?.id==='artwork')return;
+  if(!window.confirm(`Delete layer “${layer.name}” from this glyph? You can Undo this.`))return;
+  mutateGlyphLayers(glyph=>removeLayer(glyph,layer.id),'Deleted layer. Undo can restore it.');
+ };
+ const pathPalette=document.getElementById('palette-path');
+ for(const [label,mode] of [['Smooth selected node','smooth'],['Corner selected node','corner']]){
+  const button=document.createElement('button');button.type='button';button.className='btn compact';button.textContent=label;
+  button.title='Select a Bézier node with Edit path, then change its tangent handles. Undo restores it.';
+  pathPalette.append(button);
+  button.onclick=()=>{
+   if(!editableLayerOrWarn())return;
+   const k=glyphKey(slotIndex),g=project.glyphs[k],contour=g?.bezierContours?.[selectedBezierContour];
+   if(!contour||selectedBezierNode<0){status('Select an outline and click one of its purple anchor points first.',true);return;}
+   const i=selectedBezierNode,n=contour.points.length;
+   if(n<3){status('An outline needs at least three nodes.',true);return;}
+   const before=cloned(g),node=contour.points[i];
+   try{Object.assign(node,adjustBezierNode(node,contour.points[(i+n-1)%n],contour.points[(i+1)%n],mode));}
+   catch(error){status('Cannot adjust selected node: '+error.message,true);return;}
+   commitBezier(before);status(`Selected Bézier point is now ${mode}. Undo restores its handles.`);
+  };
+ }
+ const validate=document.createElement('button');validate.className='btn compact';validate.type='button';validate.id='btnValidateGlyphOutline';validate.textContent='Check current outline';
+ validate.title='Check Bézier point structure with the independent drawing WASM (or offline fallback)';
+ document.getElementById('palette-path').append(validate);
+ validate.onclick=()=>{
+  const g=project.glyphs[glyphKey(slotIndex)]||{},result=analyzeContours(g.bezierContours||[]);
+  status(`Outline check: ${result.contourCount} contour(s), ${result.pointCount} points, ${result.holes} holes`+
+   (result.warnings.length?`; ${result.warnings.join('; ')}`:'; no structural errors detected.')+
+   (editorGeometryStatus().ready?' (drawing WASM)':' (offline JavaScript fallback)'),!!result.warnings.length);
+ };
+}
 function renderBezierOverlay(){
+ renderOtherGlyphLayers();
  const root=$('bezierOverlay');if(!root)return;root.replaceChildren();
  const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
  let maskId=null;
@@ -1692,7 +1832,7 @@ function bezierHit(p,pointerType='mouse'){
    bezierPointerRadius(pointerType==='touch'?17:12));
 }
 function bezierPointerDown(ev){
- if(ev.button!==0||bezierPreview)return;
+ if(ev.button!==0||bezierPreview||!editableLayerOrWarn())return;
  ev.preventDefault();const p=canvasPos(ev);
  bezierHover=null;
  if(bezierDraft.length){
@@ -1776,6 +1916,7 @@ function bezierPointerUp(ev){
  renderBezierOverlay();
 }
 function closeBezier(role='auto',undoDraft=null){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(bezierPreview)return;
  if(!bezierDraft.length&&selectedBezierContour>=0){
    if(role!=='auto')setSelectedContourRole(role);
@@ -1798,6 +1939,7 @@ function cancelBezier(){
  recordChange('bezierDraft',key,before,null);renderBezierOverlay();status('Unfinished Bézier outline cancelled (Undo restores it).');
 }
 function setSelectedContourRole(role){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(bezierDraft.length||bezierPreview||selectedBezierContour<0||!['fill','hole'].includes(role))return;
  const key=glyphKey(slotIndex),before=cloned(project.glyphs[key]),g=bezierEntry();
  const contour=g.bezierContours[selectedBezierContour];if(!contour)return;
@@ -1810,6 +1952,7 @@ async function toggleBezierFillPreview(){
  await renderOriginalGuide();drawMetricGuides();renderBezierOverlay();
 }
 function deleteSelectedBezier(){
+ if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(bezierDraft.length){status('Close or cancel the current outline before deleting a finished contour.',true);return;}
  if(selectedBezierContour<0)return;
  const key=glyphKey(slotIndex),before=cloned(project.glyphs[key]),g=bezierEntry();
@@ -2189,7 +2332,7 @@ async function init(){await initializeGeometry();const resp=await fetch('./file-
  ctx.lineCap='round';ctx.lineJoin='round';let last=null;try{last=localStorage.getItem('spfm-active-project');}catch(_){/* storage unavailable in opaque origins */}
  try{projects=await listProjects();if(last&&!projects.some(x=>x.id===last))last=null;if(!last&&projects.length)last=projects[0].id;if(last)await switchProject(last);else{project=newProject('My Sitelen Pona Font');await saveNow();await switchProject(project.id);}}
  catch(e){storageAvailable=false;status('Project storage unavailable: '+e.message,true);project=newProject('Unsaved font');await selectGlyph(slots.findIndex(s=>s.word==='jan'));}
- initEvents();$('btnDeleteProject').disabled=!storageAvailable;$('btnUseOnSite').disabled=!storageAvailable;refreshHintingUI();refreshIdentity();refreshCompoundChoices();renderOverrideList();showPreviewState();status(storageAvailable?'Font Maker ready · autosaving to IndexedDB':'Font Maker ready · IndexedDB unavailable; export a project file to preserve changes');}
+ initEvents();editorPaletteManager=setupEditorPalettes({renderLayers:renderGlyphLayerPalette});wireGlyphLayerActions();void initializeEditorGeometry();$('btnDeleteProject').disabled=!storageAvailable;$('btnUseOnSite').disabled=!storageAvailable;refreshHintingUI();refreshIdentity();refreshCompoundChoices();renderOverrideList();showPreviewState();status(storageAvailable?'Font Maker ready · autosaving to IndexedDB':'Font Maker ready · IndexedDB unavailable; export a project file to preserve changes');}
 function initEvents(){
  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>chooseTool(b.dataset.tool));
  canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',pointerUp);canvas.addEventListener('pointerleave',()=>{if(!bezierInteraction){bezierHover=null;renderBezierOverlay();}});
@@ -2215,7 +2358,7 @@ function initEvents(){
  $('btnHideBezierHelp').onclick=()=>setEditorHelpHidden(true);
  $('btnHideSelectionHelp').onclick=()=>setEditorHelpHidden(true);
  $('btnShowEditorHelp').onclick=()=>{if(editorHelpMode())setEditorHelpHidden(false);};
- $('btnCloseBezier').onclick=()=>closeBezier(bezierDraft.length?'auto':'fill');$('btnCloseBezierHole').onclick=()=>closeBezier('hole');$('btnCancelBezier').onclick=cancelBezier;$('btnDeleteBezier').onclick=deleteSelectedBezier;$('bezierContourRole').onchange=ev=>setSelectedContourRole(ev.target.value);$('bezierContourPicker').onchange=ev=>{selectedBezierContour=ev.target.value===''?-1:Number(ev.target.value);selectedBezierNode=-1;renderBezierOverlay();};$('btnBezierPreview').onclick=toggleBezierFillPreview;$('btnClearGlyph').onclick=()=>{if(!confirm('Clear this glyph drawing?'))return;const k=glyphKey(slotIndex),before=cloned(project.glyphs[k]);clearCanvas();project.glyphs[k]={...(project.glyphs[k]||{}),bezierContours:[],rasterPath:''};saveDraft(project.editorDrafts,k,null);bezierDraft=[];commitGlyph();recordChange('glyph',k,before,project.glyphs[k]);renderBezierOverlay();};
+ $('btnCloseBezier').onclick=()=>closeBezier(bezierDraft.length?'auto':'fill');$('btnCloseBezierHole').onclick=()=>closeBezier('hole');$('btnCancelBezier').onclick=cancelBezier;$('btnDeleteBezier').onclick=deleteSelectedBezier;$('bezierContourRole').onchange=ev=>setSelectedContourRole(ev.target.value);$('bezierContourPicker').onchange=ev=>{selectedBezierContour=ev.target.value===''?-1:Number(ev.target.value);selectedBezierNode=-1;renderBezierOverlay();};$('btnBezierPreview').onclick=toggleBezierFillPreview;$('btnClearGlyph').onclick=()=>{if(!editableLayerOrWarn()||!confirm('Clear this glyph drawing?'))return;const k=glyphKey(slotIndex),before=cloned(project.glyphs[k]);clearCanvas();project.glyphs[k]={...(project.glyphs[k]||{}),bezierContours:[],rasterPath:''};saveDraft(project.editorDrafts,k,null);bezierDraft=[];commitGlyph();recordChange('glyph',k,before,project.glyphs[k]);renderBezierOverlay();};
  $('toggleGrid').onchange=()=>{$('canvasViewport').style.background=$('toggleGrid').checked?'repeating-linear-gradient(135deg,#f4eee4,#f4eee4 14px,#f7f3e9 14px,#f7f3e9 28px)':'#f7f3e9';};
  $('toggleOriginal').onchange=()=>renderOriginalGuide();$('originalOpacity').oninput=()=>{$('originalOpacityLabel').textContent=$('originalOpacity').value+'%';renderOriginalGuide();};$('toggleMetrics').onchange=drawMetricGuides;
  $('btnZoomIn').onclick=()=>setZoom(canvasZoom*1.2);$('btnZoomOut').onclick=()=>setZoom(canvasZoom/1.2);
@@ -2251,7 +2394,7 @@ function initEvents(){
     if(!file)return;
     if(!acknowledged||!ack||!docs.length){status('Select the original font licence file and acknowledge responsibility before importing.',true);return;}
     await importFontFile(file,docs,ack);};
- $('btnRestoreImported').onclick=restoreSelectedFontGlyph;
+ $('btnRestoreImported').onclick=()=>{if(editableLayerOrWarn())restoreSelectedFontGlyph();};
  $('btnShowTemplate').onclick=()=>{dialog('SP Font Maker original template',`<p>Reference template included under its original MIT licence.</p><img src="./file-maker/assets/sp-font-maker-template.png" alt="SP Font Maker 180-slot drawing sheet"><div class="modal-actions"><button class="btn" id="closeTemplate">Close</button></div>`);$('closeTemplate').onclick=closeModal;};
  $('modalClose').onclick=closeModal;$('modal').onclick=e=>{if(e.target===$('modal'))closeModal();};
  for(const id of ['compoundLeft','compoundRight','compoundOperator'])$(id).onchange=()=>{compoundSelection=0;renderCompound();};

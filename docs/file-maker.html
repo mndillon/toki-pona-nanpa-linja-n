@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>nanpa-linja-n sitelen pona Font Maker v0.3.41</title>
-  <link rel="stylesheet" href="./file-maker/style.css?v=0.3.41.8">
+  <title>nanpa-linja-n sitelen pona Font Maker v0.3.42</title>
+  <link rel="stylesheet" href="./file-maker/style.css?v=0.3.42.1">
 </head>
 <body>
 <header class="masthead">
@@ -47,7 +47,25 @@
     </nav>
     <section id="pane-glyph" class="pane active">
       <div class="pane-title"><div><h1 id="glyphTitle">jan</h1><p id="glyphDescription">Draw or edit glyphs against the light-grey imported reference.</p></div><div class="glyph-pane-title-actions"><span class="tag" id="glyphCp">U+F1911</span><button type="button" class="btn" id="btnExpandEditor" aria-pressed="false" title="Expand the drawing workspace (Escape to collapse)">⛶ Expand editor</button></div></div>
-      <div class="tools">
+      <div id="editorPaletteBar" class="editor-palette-bar" role="toolbar" aria-label="Glyph drawing toolbar">
+        <div id="editorQuickTools" class="editor-quick-tools" role="group" aria-label="Drawing tools"></div>
+        <div class="editor-palette-buttons" role="group" aria-label="Editor tool palettes">
+          <button type="button" class="mini" data-palette="brush" aria-expanded="false" aria-controls="editorPaletteWindow">Brush</button>
+          <button type="button" class="mini" data-palette="edit" aria-expanded="false" aria-controls="editorPaletteWindow">Edit</button>
+          <button type="button" class="mini" data-palette="path" aria-expanded="false" aria-controls="editorPaletteWindow">Paths</button>
+          <button type="button" class="mini" data-palette="layers" aria-expanded="false" aria-controls="editorPaletteWindow">Layers</button>
+          <button type="button" class="mini" data-palette="info" aria-expanded="false" aria-controls="editorPaletteWindow">Inspect</button>
+        </div>
+        <button type="button" class="mini editor-palette-close" id="btnCloseAllPalettes" title="Close the tool palette" aria-label="Close tool palette">×</button>
+      </div>
+      <aside id="editorPaletteWindow" class="editor-palette-window" aria-label="Drawing tools palette" hidden>
+        <div class="editor-palette-header" id="editorPaletteDragHandle" tabindex="0" role="group" aria-label="Move tools palette: drag this header, or focus it and use arrow keys. Double-click to reset its position." title="Drag to move · Arrow keys to nudge · Double-click to reset">
+          <span class="editor-palette-drag-title"><span class="editor-palette-grip" aria-hidden="true">⠿</span><strong id="editorPaletteTitle">Tools</strong></span>
+          <button type="button" id="btnHidePalette" class="mini" title="Hide tools; drawing canvas stays in place">× Hide</button>
+        </div>
+        <div id="editorPaletteContent"></div>
+      </aside>
+      <div class="tools" id="legacyEditorControls" hidden>
         <div class="toolset" role="group" aria-label="Drawing tools">
           <button class="tool" data-tool="select" aria-pressed="false" title="Drag to select editable artwork. Move by dragging inside; resize with handles. Press Fill to fill the selected region.">▣ Select</button>
           <button class="tool" data-tool="lasso" aria-pressed="false" title="Draw a freehand selection around editable artwork">◌ Lasso</button>
@@ -127,7 +145,7 @@
       <div class="editor-layout">
         <div class="canvas-card">
           <div class="canvas-bar"><div class="canvas-title"><strong>Drawing canvas</strong><button id="btnShowEditorHelp" type="button" class="mini canvas-help-toggle" hidden aria-expanded="false" aria-controls="bezierHelp" title="Show instructions for the current tool">ⓘ Show help</button></div><div class="bar-right"><label class="check"><input id="toggleGrid" type="checkbox" checked> Grid</label><label class="check"><input id="toggleMetrics" type="checkbox" checked> Metrics</label><button id="btnFitCanvas" class="mini" title="Show the complete drawing and metric guides (F)">Fit</button><button id="btnZoomOut" class="mini" title="Zoom out">−</button><output id="zoomLabel" title="Zoom relative to fit-to-canvas">100%</output><button id="btnZoomIn" class="mini" title="Zoom in">+</button></div></div>
-          <div class="canvas-viewport" id="canvasViewport"><div class="canvas-plane" id="canvasPlane"><canvas id="originalGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><canvas id="glyphCanvas" width="400" height="430" aria-label="Draw the selected glyph" tabindex="0"></canvas><canvas id="metricGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="bezierOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="selectionOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg></div></div>
+          <div class="canvas-viewport" id="canvasViewport"><div class="canvas-plane" id="canvasPlane"><canvas id="originalGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="inactiveLayerUnder" viewBox="0 0 400 430" aria-hidden="true"></svg><canvas id="glyphCanvas" width="400" height="430" aria-label="Draw the selected glyph" tabindex="0"></canvas><canvas id="metricGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="bezierOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="inactiveLayerOver" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="selectionOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg></div></div>
           <p class="canvas-help">Mouse-wheel or pinch to zoom · Space + drag to pan · F to fit · Shift constrains circles and squares · Select artwork to copy, paste, move, resize with handles, rotate, flip or scale · Fill: click inside a closed shape or select an area and press Fill · Curve: drag endpoints, then click or drag the purple bend handle to finish · Undo/redo stays on your glyph or asks before returning to another glyph. Smooth: set the strength, then click <strong>Smooth outline</strong> to reduce bumps in existing curves. <strong>To smooth only part of a drawing, select that area first:</strong> the edges of your selection remain unchanged, and the result blends gradually into the surrounding ink. Undo reverses it. The slider also smooths Pencil strokes while drawing. The faint original glyph remains an uneditable reference.</p>
         </div>
         <div class="inspector">
@@ -360,7 +378,7 @@ pi(telo lete) pi jan</textarea>
 <input type="file" id="fileImportFont" accept=".ttf,.otf,font/ttf,font/otf" hidden>
 <input type="file" id="fileImportProjectFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
 <input type="file" id="fileImportFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
-<script type="module" src="./file-maker/js/app.js?v=0.3.41.20261122.compound1"></script>
+<script type="module" src="./file-maker/js/app.js?v=0.3.42.1"></script>
 <script>
   const productionHosts = new Set([
         'nanpa-linja-n.com',
