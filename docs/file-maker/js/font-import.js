@@ -10,8 +10,8 @@ export function fontHasCodepoint(bytes,cp){
     if(!cmap)return false;const count=u16(cmap+2);const records=[];
     for(let i=0;i<count;i++){const p=cmap+4+i*8;const platform=u16(p),enc=u16(p+2),off=u32(p+4);const pos=cmap+off,fmt=u16(pos);records.push({platform,enc,pos,fmt});}
     for(const r of records.filter(r=>r.fmt===12).concat(records.filter(r=>r.fmt===4))){
-      if(r.fmt===12){const total=u32(r.pos+12);for(let i=0;i<total;i++){const p=r.pos+16+i*12,start=u32(p),end=u32(p+4);if(cp>=start&&cp<=end)return true;if(start>cp)break;}}
-      else if(cp<=65535){const segs=u16(r.pos+6)/2,ends=r.pos+14,starts=ends+segs*2+2,deltas=starts+segs*2,ros=deltas+segs*2;for(let i=0;i<segs;i++){const a=u16(starts+i*2),b=u16(ends+i*2);if(cp<a||cp>b)continue;const ro=u16(ros+i*2);if(!ro)return ((cp+v.getInt16(deltas+i*2))&65535)!==0;const index=ros+i*2+ro+2*(cp-a);if(index+2>v.byteLength)return false;return u16(index)!==0;}}
+      if(r.fmt===12){const total=u32(r.pos+12);for(let i=0;i<total;i++){const p=r.pos+16+i*12,start=u32(p),end=u32(p+4);if(cp>=start&&cp<=end)return u32(p+8)+cp-start!==0;if(start>cp)break;}}
+      else if(cp<=65535){const segs=u16(r.pos+6)/2,ends=r.pos+14,starts=ends+segs*2+2,deltas=starts+segs*2,ros=deltas+segs*2;for(let i=0;i<segs;i++){const a=u16(starts+i*2),b=u16(ends+i*2);if(cp<a||cp>b)continue;const ro=u16(ros+i*2);if(!ro)return ((cp+v.getInt16(deltas+i*2))&65535)!==0;const index=ros+i*2+ro+2*(cp-a);if(index+2>v.byteLength)return false;const glyph=u16(index);return glyph!==0&&((glyph+v.getInt16(deltas+i*2))&65535)!==0;}}
     }
   }catch(e){console.debug('cmap parse failed',e)}
   return false;

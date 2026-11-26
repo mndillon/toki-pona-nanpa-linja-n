@@ -3136,7 +3136,7 @@ async function importFontFile(file,licenceDocuments,acknowledgement){if(!file)re
     // licensing, and store their normalized TTF for all later compilations.
     // TTF sources are already normalized: do not duplicate their large bytes.
     ...(mapped.bytes===data?{}:{normalizedTtf:toBase64(mapped.bytes)}),
-    importedLigatureAliases:mapped.added,
+    importedLigatureAliases:mapped.added,importWarnings:mapped.warnings||[],
     normalizedFormat:'truetype',importFormat:normalized.format,
     attachmentGeometry:geometry,metadata:fontNameMetadata(data),origin:'imported',
     outlinePreservation:normalized.format==='cff1'
@@ -3147,7 +3147,7 @@ async function importFontFile(file,licenceDocuments,acknowledgement){if(!file)re
   candidate.licensing.basis='user-acknowledged';
   candidate.licensing.importAcknowledgement=structuredClone(acknowledgement);
   project=candidate;history=[];redoStack=[];importedFamily=family;importedCmapCache=new Map();await saveNow();refreshIdentity();await refreshProjectPicker();await selectGlyph(slots.findIndex(x=>x.word==='jan'));
-  dialog('Font imported',`<p><strong>${escapeHtml(file.name)}</strong> is now the source of a new project. The original font and licence are retained unchanged in IndexedDB.</p><p>${normalized.format==='cff1'?'The original cubic outlines were converted once into a stored TrueType source.':'The original TrueType outlines are used directly.'} ${mapped.added?`${mapped.added} sitelen pona glyphs were matched from the imported font’s own word ligatures.`:''} Unmodified source outlines remain vector artwork in both exported TTF fonts; user-edited contours override them.</p><div class="check-list"><label><input type="checkbox" id="importAll" checked> Populate all template slots with supported UCSUR glyphs</label></div><div class="modal-actions"><button class="btn" id="importSkip">Do later</button><button class="btn primary" id="importProceed">Populate drawings</button></div>`);
+  dialog('Font imported',`<p><strong>${escapeHtml(file.name)}</strong> is now the source of a new project. The original font and licence are retained unchanged in IndexedDB.</p><p>${normalized.format==='cff1'?'The original cubic outlines were converted once into a stored TrueType source.':'The original TrueType outlines are used directly.'} ${mapped.added?`${mapped.added} sitelen pona glyphs were matched from the imported font’s own word ligatures.`:''} Unmodified source outlines remain vector artwork in both exported TTF fonts; user-edited contours override them.</p>${(mapped.warnings||[]).length?`<p><strong>Import notice:</strong> ${mapped.warnings.map(w=>escapeHtml(w)).join(' ')}</p>`:''}<div class="check-list"><label><input type="checkbox" id="importAll" checked> Populate all template slots with supported UCSUR glyphs</label></div><div class="modal-actions"><button class="btn" id="importSkip">Do later</button><button class="btn primary" id="importProceed">Populate drawings</button></div>`);
   $('importSkip').onclick=()=>{closeModal();status('Font source retained; individual glyphs can be restored on demand');};
   $('importProceed').onclick=async()=>{const all=$('importAll').checked;closeModal();if(all)await populateSourceFont(mapped.bytes,family);else await restoreSelectedFontGlyph();};
 }catch(e){status('Font import failed: '+e.message,true);}}

@@ -100,7 +100,10 @@ function ligatureRules(gsub,subtable,rules){
     if(!valid(gsub,set+2,count*2))throw Error('Invalid ligature set');
     for(let j=0;j<count;j++){
       const lig=set+read16(gsub,set+2+j*2),result=read16(gsub,lig),parts=read16(gsub,lig+2);
-      if(parts<2||parts>100||!valid(gsub,lig+4,(parts-1)*2))throw Error('Invalid ligature components');
+      // Some valid-in-practice fonts (including Nishiki) encode one-component
+      // LigatureSubst entries. Treat these as single-glyph substitutions rather
+      // than rejecting the entire font; still reject zero/oversized/truncated data.
+      if(parts<1||parts>100||!valid(gsub,lig+4,(parts-1)*2))throw Error('Invalid ligature components');
       const sequence=[cov[i]];for(let k=0;k<parts-1;k++)sequence.push(read16(gsub,lig+4+2*k));
       rules.set(sequence.join(','),result);
     }
@@ -188,11 +191,25 @@ function assemble(tables){
  * a NEW TrueType source; the caller retains the original independently.
  * Returns the unchanged bytes if no aliases are required.
  */
-export function mapImportedLigaturesToUcsur(normalizedBytes,slots){
+export function mapImportedLigaturesToUcsur(normalizedBytes,slots,{strict=false}={}){
   const bytes=normalizedBytes instanceof Uint8Array?normalizedBytes:new Uint8Array(normalizedBytes);
   const tables=directory(bytes),cmap=tables.get('cmap'),gsub=tables.get('GSUB');
-  if(!cmap||!gsub)return {bytes,added:0,examples:[],unmapped:[]};
-  const cmapParsed=readCmap(cmap),unicode=cmapParsed.glyphMap,rules=readLigatures(gsub);
+  if(!cmap)throw Error('Imported font is missing a Unicode cmap');
+  if(!tables.has('maxp'))throw Error('Imported font is missing maxp');
+  const cmapParsed=readCmap(cmap),unicode=cmapParsed.glyphMap;
+  if(!gsub)return {bytes,added:0,examples:[],unmapped:[],warnings:[]};
+  // UCSUR alias discovery is optional. A valid source can have a GSUB lookup
+  // we do not understand (or a damaged, unrelated lookup) and still contain
+  // perfectly usable direct Unicode glyphs. Never reject the source merely
+  // because the convenience alias pass cannot interpret that lookup.
+  let rules;
+  try{rules=readLigatures(gsub);}
+  catch(e){
+    if(strict)throw e;
+    return {bytes,added:0,examples:[],unmapped:[],warnings:[
+      `Optional UCSUR ligature aliases were skipped: ${String(e.message||e)}. Original GSUB and glyph outlines are retained.`
+    ]};
+  }
   const maxGlyph=read16(tables.get('maxp'),4),newMappings=new Map(),examples=[],unmapped=[];
   for(const slot of slots){
     const cp=Number(slot.codepoint),word=String(slot.word??'');
@@ -205,8 +222,8 @@ export function mapImportedLigaturesToUcsur(normalizedBytes,slots){
     newMappings.set(cp,gid);
     if(examples.length<20)examples.push({word,codepoint:cp,gid});
   }
-  if(!newMappings.size)return {bytes,added:0,examples,unmapped};
+  if(!newMappings.size)return {bytes,added:0,examples,unmapped,warnings:[]};
   const merged=new Map(unicode);for(const [cp,gid] of newMappings)merged.set(cp,gid);
   tables.set('cmap',newCmap(cmap,cmapParsed,merged));
-  return {bytes:assemble(tables),added:newMappings.size,examples,unmapped};
+  return {bytes:assemble(tables),added:newMappings.size,examples,unmapped,warnings:[]};
 }
