@@ -4,6 +4,7 @@ import {attachPaletteDragging} from './palette-drag.js';
  * their identity, event listeners and tests. The palette floats over the artboard.
  */
 const PALETTE_KEY='spfm-drawing-palette';
+const helpTargets={brush:'brush',edit:'editing',path:'paths',layers:'layers',info:'inspect'};
 const captions={brush:'Brush & smoothing',edit:'Selection & editing',path:'Bézier paths',layers:'Glyph layers',info:'Glyph inspector'};
 export function setupEditorPalettes({renderLayers}){
   const byId=id=>document.getElementById(id);
@@ -24,16 +25,26 @@ export function setupEditorPalettes({renderLayers}){
     const group=document.createElement('div');group.id='palette-'+id;group.className='palette-group';group.setAttribute('aria-label',label);group.hidden=true;root.appendChild(group);groups[id]=group;
   }
   const put=(id,parent='edit')=>{const el=byId(id);if(el)groups[parent].appendChild(el);};
-  for(const id of ['brushSize','strokeSmoothing']){
+  for(const id of ['brushSize','strokeSmoothing','lineCapStyle','tipShape']){
     const control=byId(id)?.closest('.drawing-control');if(control)groups.brush.appendChild(control);
   }
-  for(const id of ['btnSmoothExisting','autoShape','filledShape']){
+  for(const id of ['btnSmoothExisting','autoShape','filledShape','drawShapesFromCentre']){
     const el=byId(id);if(el)groups.brush.appendChild(el.closest('label')||el);
   }
   for(const id of ['btnCopyGlyph','btnPasteGlyph','btnReplaceGlyph','btnUndo','btnRedo','btnClearGlyph','selectionActions'])put(id,'edit');
   for(const id of ['btnCloseBezier','btnCloseBezierHole','btnCancelBezier','btnDeleteBezier','bezierPickerWrapper','bezierRoleWrapper','btnBezierPreview'])put(id,'path');
+  // The grid is only a visual/interaction aid, not glyph geometry or font data.
+  const gridDetails=document.createElement('details');gridDetails.id='paletteGridSettings';gridDetails.className='palette-grid-settings';
+  const gridSummary=document.createElement('summary');gridSummary.textContent='Grid & snapping';gridDetails.appendChild(gridSummary);
+  const gridBody=document.createElement('div');gridBody.className='grid-settings-body';
+  const gridSpacingLabel=document.createElement('label');gridSpacingLabel.htmlFor='gridSpacing';gridSpacingLabel.textContent='Grid spacing (editor units)';
+  const gridSpacing=document.createElement('input');gridSpacing.id='gridSpacing';gridSpacing.type='number';gridSpacing.min='5';gridSpacing.max='100';gridSpacing.step='5';gridSpacing.value='20';
+  const snapLabel=document.createElement('label');snapLabel.className='check';snapLabel.htmlFor='snapToGrid';
+  const snap=document.createElement('input');snap.id='snapToGrid';snap.type='checkbox';snapLabel.append(snap,document.createTextNode(' Snap to grid'));
+  const note=document.createElement('small');note.className='grid-settings-note';note.textContent='The grid is an alignment guide, not part of the font. Snapping is independent of grid visibility and does not affect freehand drawing.';
+  gridBody.append(gridSpacingLabel,gridSpacing,snapLabel,note);gridDetails.append(gridBody);groups.info.appendChild(gridDetails);
   const inspector=document.querySelector('#pane-glyph .inspector');if(inspector)groups.info.appendChild(inspector);
-  const layerText=document.createElement('p');layerText.className='palette-status';layerText.textContent='Each glyph has independent layers. Eye = view, lock = protect, checkbox = include in font export. Click a layer to edit; double-click its name to rename. The imported base is a protected guide.';
+  const layerText=document.createElement('p');layerText.className='palette-status';layerText.textContent='Each glyph has independent layers. Eye = view, lock = protect, checkbox = include in export; + Add, − Cut, ∩ Keep or Guide control how it combines. Click a layer to edit; double-click its name to rename. The imported base is a protected guide.';
   groups.layers.append(layerText);
   const layerList=document.createElement('div');layerList.id='glyphLayerList';layerList.className='palette-layer-list';groups.layers.append(layerList);
   const add=document.createElement('button');add.className='btn compact';add.id='btnAddGlyphLayer';add.textContent='+ Layer';
@@ -53,6 +64,7 @@ export function setupEditorPalettes({renderLayers}){
     byId('editorPaletteWindow').hidden=!active;
     if(active) placement.reposition();
     byId('editorPaletteTitle').textContent=captions[active]||'Tools';
+    const paletteHelp=byId('btnPaletteHelp');if(paletteHelp){paletteHelp.href='./file-maker/help/guide.html#'+(helpTargets[active]||'overview');paletteHelp.setAttribute('aria-label','Help: '+(captions[active]||'Font Maker'));}
     for(const b of document.querySelectorAll('[data-palette]'))b.setAttribute('aria-expanded',String(b.dataset.palette===active));
     try{localStorage.setItem(PALETTE_KEY,active||'closed');}catch(_){/* browser policy */}
     if(active==='layers')renderLayers();

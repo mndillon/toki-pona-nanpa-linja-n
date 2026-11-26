@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 450" role="img" aria-labelledby="ttl desc">
+<title id="ttl">Brush palette: three line end caps and two Pencil/Eraser tip types</title>
+<desc id="desc">A diagram compares round, flat and square 20-unit line caps against dashed purple endpoint markers. Underneath, a black round dot and a black square dot illustrate the Pencil/Eraser tip shape options. The controls are shared by all glyphs in one project.</desc>
+<rect width="920" height="450" fill="#fffaf2" rx="16"/>
+<text x="36" y="45" font-size="27" font-family="Arial,sans-serif" font-weight="bold" fill="#353044">Line / Curve end caps</text>
+<text x="40" y="77" font-size="16" font-family="Arial,sans-serif" fill="#61566f">Dashed vertical lines show the actual anchor positions</text>
+<g font-family="Arial,sans-serif" font-size="21" font-weight="bold" fill="#4a365f"><text x="108" y="123">Round</text><text x="402" y="123">Flat</text><text x="694" y="123">Square</text></g>
+<g stroke="#bd9fda" stroke-width="1.7" stroke-dasharray="5 5">
+ <path d="M92 145V214 M230 145V214 M386 145V214 M524 145V214 M680 145V214 M818 145V214"/>
+</g>
+<g stroke="#24212b" stroke-width="22" fill="none"><path d="M92 180H230" stroke-linecap="round"/><path d="M386 180H524" stroke-linecap="butt"/><path d="M680 180H818" stroke-linecap="square"/></g>
+<g font-family="Arial,sans-serif" fill="#635972" font-size="15" text-anchor="middle"><text x="161" y="240">Curved ends</text><text x="455" y="240">Ends at anchors</text><text x="749" y="240">Extends half the width</text></g>
+<path d="M35 275H885" stroke="#dbd2e1" stroke-width="2"/>
+<text x="36" y="312" font-size="25" font-family="Arial,sans-serif" font-weight="bold" fill="#353044">Pencil / Eraser tip</text>
+<circle cx="192" cy="368" r="28" fill="#24212b"/>
+<rect x="520" y="340" width="56" height="56" fill="#24212b"/>
+<g font-family="Arial,sans-serif" font-size="19" fill="#4a365f"><text x="244" y="375">Round stamp</text><text x="595" y="375">Square stamp</text></g>
+<text x="36" y="433" font-family="Arial,sans-serif" font-size="15" fill="#6b6172">All Brush choices are saved with the project and restored when you reopen it. Already drawn lines retain their original caps.</text>
+</svg>

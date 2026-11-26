@@ -1,23 +1,26 @@
 import {ARTBOARD_WIDTH,ARTBOARD_HEIGHT,fitScale,clampOffset,zoomAt,artboardPoint} from './canvas-view.js';
+import {DEFAULT_GRID_SPACING,GRID_STORAGE_KEY,normalizeGridSpacing,snapGridPoint,shouldSnapDrawingTool,drawGridOverlay} from './editor-grid.js?v=0.3.51';
 import {computeEditorShift,fontToPixel} from './font-coordinates.js';
 import {referenceSilhouettePixels} from './reference-silhouette.js';
 import {loadFairfaxReferenceFont,referenceGlyphBounds} from './reference-fonts.js?v=0.3.41.1';
 import {validTokiPonaCustomName} from './toki-pona-name.js';
 import {svgFromTrace} from './tracer.js';
-import {makeBezierAnchor,moveBezierAnchor,dragBezierTangent,dragBezierClosingTangent,bezierPath,bezierDraftPath,combineGlyphPaths,inferRasterPath} from './bezier.js';
+import {makeBezierAnchor,moveBezierAnchor,dragBezierTangent,dragBezierClosingTangent,bezierPath,bezierDraftPath,combineGlyphPaths,inferRasterPath} from './bezier.js?v=0.3.42.2';
 import {applyDraftPoint,saveDraft,readDraft} from './bezier-history.js';
-import {automaticBezierRole} from './bezier-auto-hole.js';
+import {automaticBezierRole} from './bezier-auto-hole.js?v=0.3.42.2';
 import {bezierRadiusOnCanvas,closingBezierAnchor,hitBezierNode} from './bezier-hit.js?v=0.3.41.close1';
 import {selectionRect as makeSelectionRect,nonemptySelection,chosenContourIndices,translateContour,classifyContour,translatedRect,contourBounds,polygonBounds,pointInPolygon,contourWithinPolygon,movePolygon} from './glyph-selection.js';
-import {shapeContours,curveContour,affineContour,affineRotate,affineScale,rectAfterTransform,smoothStroke,recogniseStroke} from './drawing-tools.js';
-import {smoothRasterInk,smoothBezierOutline,rasterInkContours,selectionSmoothingWeights,blendSelectedRasterSmoothing,smoothSelectedBezierOutline} from './outline-smoothing.js';
-import {drawBrushGeometry,brushSvgPath,rasterizeVectorsCrossedByEraser} from './vector-eraser.js';
+import {shapeBounds,shapeContours,curveContour,affineContour,affineRotate,affineScale,rectAfterTransform,smoothStroke,recogniseStroke} from './drawing-tools.js?v=0.3.52.0';
+import {DEFAULT_DRAWING_PREFERENCES,normalizeDrawingPreferences,shapeFromCenter} from './drawing-preferences.js?v=0.3.53.0';
+import {smoothRasterInk,smoothBezierOutline,rasterInkContours,selectionSmoothingWeights,blendSelectedRasterSmoothing,smoothSelectedBezierOutline} from './outline-smoothing.js?v=0.3.42.2';
+import {drawBrushGeometry,drawSquareBrushGeometry,brushSvgPath,vectorBrushFootprint,rasterizeVectorsCrossedByEraser,rasterizeVectorsCrossedByMask} from './vector-eraser.js?v=0.3.53.0';
 import {defaultCurveBend,curveBendFromPointer,curveControlPoint} from './curve-guides.js';
+import {isStroke,newStroke,addSegment,strokeEndpoints,strokeNodeHit,smoothStrokeJunction,strokeBendHit,nearestStrokeBody,segmentBend,setSegmentBend,joinOpenStrokes,closeOpenStroke} from './connected-strokes.js?v=0.3.53.0';
 import {historyGlyphIndex,historyWouldSwitchGlyph} from './history-navigation.js';
 import {enclosedFillPixels,selectedFillPixels,fillWithAntialiasFringe,FILL_INK_ALPHA} from './fill-regions.js?v=0.3.41.aa1';
-import {resizeSelectedInk,offsetSelectedContour} from './selection-width.js?v=0.3.41.3';
+import {resizeSelectedInk,offsetSelectedContour} from './selection-width.js?v=0.3.42.2';
 import {selectionHandlePoints,hitSelectionHandle,hitSelectionBody,resizeSelectionByHandle,transformSelectionPolygon,SELECTION_HANDLE_CURSORS} from './selection-handles.js?v=0.3.41.2';
-import {importedGlyphContours} from './imported-outline.js';
+import {importedGlyphContours} from './imported-outline.js?v=0.3.42.2';
 import {initializeGeometry,traceGlyph,usingWasm,compileBoth,inspectImportedFont,inspectAttachmentGeometry} from './wasm-bridge.js?v=0.3.41.1';
 import {listProjects,loadProject,saveWorkspace,loadProjectHistory,deleteProject} from './storage.js';
 import {makeZip} from './zip.js';
@@ -25,14 +28,22 @@ import {useFontOnThisSite,getSiteFontForProject} from './site-font-publisher.js?
 import {createPortableFontPairZip,readPortableFontPairZip} from './portable-font-pair.js?v=0.3.41';
 import {readPortableFontProjectZip} from './portable-project-import.js?v=0.3.41';
 import {verifyPortableFontPairFaces} from './portable-font-validity.js?v=0.3.41';
+import {inspectProjectQuality} from './font-quality.js?v=0.3.50';
+import {typographyOf,checkTypography,isProtectedSpacingSlot,setGlyphMetrics,setKerningPair,resolveKerningPairs} from './font-typography.js?v=0.3.50';
 import {fontHasCodepoint,registerFont,rasterizeFontGlyph,rasterizeFontGlyphAligned} from './font-import.js';
 import {compoundPreviewKind,compoundPreviewStatus} from './compound-preview.js';
 import {normalizeImportedFont} from './otf-to-ttf.js';
 import {mapImportedLigaturesToUcsur} from './ucsur-ligature-import.js';
 import {IMPORT_ACK,defaultLicensing,fontNameMetadata,evaluateExport,licenceFiles,readLicenceDocument} from './licensing.js';
-import {ensureGlyphLayers,activeLayer,layerCanEdit,selectLayer,addLayer,duplicateLayer,removeLayer,moveLayer,updateLayer,updateLayerPath,otherLayerPaths} from './glyph-layers.js';
-import {setupEditorPalettes} from './editor-palettes.js';
-import {initializeEditorGeometry,analyzeContours,editorGeometryStatus,adjustBezierNode} from './editor-wasm.js';
+import {ensureGlyphLayers,activeLayer,layerCanEdit,selectLayer,addLayer,duplicateLayer,removeLayer,moveLayer,updateLayer,updateLayerPath,otherLayerPaths,compositeLayerPath,hasCompositingModes,rawExportLayerPaths,originalVisibleLayerPaths,LAYER_MODES} from './glyph-layers.js?v=0.3.48.0';
+import {setupEditorPalettes} from './editor-palettes.js?v=0.3.43.0';
+import {createLinkedComponentLayer,normalizeComponent,resolveLinkedGlyphPaths,linkedDependents,transformSvgPath,hasLinkedComponents} from './linked-components.js?v=0.3.48.0';
+import {initializeEditorGeometry,analyzeContours,editorGeometryStatus,adjustBezierNode,validateGlyphContours,splitEditableBezier,addContourExtrema} from './editor-wasm.js?v=0.3.46.0';
+import {booleanPaths,regularizeSelfIntersections} from './vector-boolean.js?v=0.3.45.0';
+import {cleanContoursExact,findTinySpikes,removeTinySpikes,findTinyBezierLoops,removeTinyBezierLoop} from './contour-repair.js?v=0.3.46.0';
+import {deleteBezierNode,splitStrokeAtNode,simplifyPolygonNodes,nearestContourSegment} from './vector-path-tools.js?v=0.3.44.0';
+import {editableObjectBounds,hitEditableObject} from './object-selection.js?v=0.3.48.0';
+import {resolveLayerEffects,previewLayerEffectChange,makeRectangleClip,makePolygonClip,EFFECT_OPERATIONS} from './layer-effects.js?v=0.3.48.0';
 
 const $=id=>document.getElementById(id);
 let storageAvailable=true;
@@ -41,8 +52,12 @@ let glyphCategory='all';
 let history=[],redoStack=[],historyActionBusy=false,historyNavigationPending=false,saveTimer=0,traceTimer=0,canvasZoom=1,importedFamily=null,pendingSave=Promise.resolve();
 let canvasFit=1,canvasScale=1,canvasOffset={x:0,y:0},fitMode=true,viewportReady=false,panDrag=null,spacePan=false;
 let strokeBefore=null,strokeStartRaster=null,strokeBaseCanvas=null,strokePoints=[],strokeAnchor=null,strokeEnd=null,strokeConstrain=false,curvePending=null,compoundDragBefore=null;
+let strokeFromCenter=false,displayedDrawingProject=null;
+let strokeJoinStart=null,strokeInteraction=null,selectedStroke=-1,joinEndpoints=[];
 let expandedEditor=false;
 let editorPaletteManager=null;
+let gridSpacing=DEFAULT_GRID_SPACING,snapToGrid=false;
+let outlineValidationMarkers=[];
 let bezierDraft=[],bezierInteraction=null,bezierHover=null,selectedBezierContour=-1,selectedBezierNode=-1,bezierPreview=false;
 // The compiled preview fonts are memory-only; never store blobs in IndexedDB.
 let compiledPreview=null,previewRevision=0,previewBuildSerial=0,previewBusy=false;
@@ -75,6 +90,8 @@ function clearCompiledPreview(){
 let importedCmapCache=new Map();
 let deletingProject=false;
 let marquee=null,selection=null,selectionDrag=null,selectionClipboard=null,marqueePolygon=null,selectionPolygon=null;
+// Optional object-level selection; null retains the original marquee semantics.
+let selectedObjectIndices=null,isolatedLayerId=null;
 let selectedWidthSession=null,selectedWidthStart=9;
 const MAX_HISTORY_BYTES=16*1024*1024,MAX_HISTORY_ACTIONS=250;
 let compoundKey=null,compoundSelection=0,compDragging=false,compLast=null;
@@ -92,8 +109,8 @@ function saveStatus(msg){$('saveLabel').textContent=msg;}
 function uid(){return globalThis.crypto?.randomUUID?.()||`project-${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 function cloned(v){return v==null?null:structuredClone(v);}
 function recordChange(target,key,before,after,details=null){
-  if(['glyph','selectedWidth','selectionFill','selectionSmooth','selectionTransform'].includes(target)&&project?.glyphs?.[key]?.layerStack){
-    updateLayerPath(project.glyphs[key]);after=project.glyphs[key];
+  if(['glyph','selectedWidth','selectionFill','selectionErase','selectionSmooth','selectionTransform'].includes(target)&&project?.glyphs?.[key]?.layerStack){
+    updateLayerPath(project.glyphs[key],project);after=project.glyphs[key];
   }
   const a=cloned(before),b=cloned(after);
   if(JSON.stringify(a)===JSON.stringify(b))return;
@@ -104,20 +121,25 @@ function recordChange(target,key,before,after,details=null){
   history.push(change);redoStack=[];
   let bytes=history.reduce((n,c)=>n+JSON.stringify(c).length*2,0);
   while(history.length>MAX_HISTORY_ACTIONS||bytes>MAX_HISTORY_BYTES){const old=history.shift();bytes-=JSON.stringify(old).length*2;}
+  if(project&&linkedDependents(project,key).length){
+    try{resolveLinkedGlyphPaths(project,{commit:true});}
+    catch(error){status('Linked component needs attention: '+String(error.message||error),true);}
+  }
   invalidateCompiledPreview();saveSoon();
   return change;
 }
 async function applyChange(change,direction){
   const data=cloned(change[direction]);
   if(change.target==='glyphWithLicences'){
-    if(data.glyph==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data.glyph;
+    if(data.glyph==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data.glyph;
     project.licensing||=defaultLicensing();project.licensing.documents=data.documents||[];
     await selectGlyph(Number(change.key));
   }else if(change.target==='glyph'){
-    if(data==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data;
+    if(data==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data;
+    if(project&&hasLinkedComponents(project))resolveLinkedGlyphPaths(project,{commit:true});
     await selectGlyph(Number(change.key));
   }else if(change.target==='selectedWidth'){
-    if(data==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data;
+    if(data==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data;
     selectedWidthSession=null;
     await selectGlyph(Number(change.key));
     selection=cloned(change.selection);selectionPolygon=cloned(change.selectionPolygon);
@@ -126,14 +148,14 @@ async function applyChange(change,direction){
     selectedWidthStart=brushWidth();
     setTool(change.selectionTool||'select');
     renderSelectionOverlay();refreshSelectionToolbar();
-  }else if(change.target==='selectionFill'||change.target==='selectionSmooth'){
-    if(data==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data;
+  }else if(change.target==='selectionFill'||change.target==='selectionErase'||change.target==='selectionSmooth'){
+    if(data==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data;
     await selectGlyph(Number(change.key));
     selection=cloned(change.selection);selectionPolygon=cloned(change.selectionPolygon);
     selectedWidthStart=brushWidth();setTool(change.selectionTool||'select');
     renderSelectionOverlay();refreshSelectionToolbar();
   }else if(change.target==='selectionTransform'){
-    if(data==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data;
+    if(data==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data;
     await selectGlyph(Number(change.key));
     selection=cloned(direction==='before'?change.beforeSelection:change.afterSelection);
     selectionPolygon=cloned(direction==='before'?change.beforePolygon:change.afterPolygon);
@@ -152,9 +174,11 @@ async function applyChange(change,direction){
     project.settings.hinting=data;refreshHintingUI();
   }else if(change.target==='identity'){
     project.settings.fontIdentity=data;refreshIdentity();
+  }else if(change.target==='typography'){
+    project.settings.typography=data;refreshTypographyUI();
   }else if(change.target==='glyphBatch'){
     for(const [key,value] of Object.entries(data)){
-      if(value==null)delete project.glyphs[key];else project.glyphs[key]=value;
+      if(value==null){if(linkedDependents(project,key).length)project.glyphs[key]={modified:false};else delete project.glyphs[key];}else project.glyphs[key]=value;
     }
     await selectGlyph(slotIndex);
   }else if(change.target==='geometry'){
@@ -169,7 +193,7 @@ async function applyChange(change,direction){
     await selectGlyph(Number(change.key));
   }else if(change.target==='bezierFinish'){
     project.editorDrafts||={};
-    if(data.glyph==null)delete project.glyphs[change.key];else project.glyphs[change.key]=data.glyph;
+    if(data.glyph==null){if(linkedDependents(project,change.key).length)project.glyphs[change.key]={modified:false};else delete project.glyphs[change.key];}else project.glyphs[change.key]=data.glyph;
     saveDraft(project.editorDrafts,change.key,data.draft);
     await selectGlyph(Number(change.key));
   }
@@ -232,13 +256,167 @@ function saveAttachmentGeometry(){
   status('Reference attachment positions saved. Exported cartouche/long-pi geometry is controlled by Rails & spacing.');
 }
 function defaultIdentity(name,id){return {family:name,style:'Regular',version:'1.0.0',postScriptName:(name.replace(/[^a-zA-Z0-9-]/g,'').slice(0,47)||'SitelenPona')+'-Regular',projectId:id};}
-function newProject(name='Untitled font'){const id=uid();return {version:1,id,name,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),template:'sp-font-maker-v5',glyphs:{},compounds:{},editorDrafts:{},settings:{fontIdentity:defaultIdentity(name,id),tallyPitch:10,tallyStroke:3,tallyPadding:8,fractionalScales:[1,.75,2/3,.5,1/3,.25],previewAdjustments:{fractionalVerticalAlignment:100,glyphPadding:0,cartoucheTop:1000,cartoucheBottom:-210,cartoucheStroke:80,cartoucheLeftStroke:80,cartoucheRightStroke:80,cartoucheEndHeight:100,cartoucheEndY:0,cartoucheLeftX:0,cartoucheRightX:0,cartoucheEdgePadding:0,cartoucheContentOffset:0,longPiStartHeight:100,longPiStartY:0,longPiStartX:0,ordinaryPiStroke:80,longPiStroke:80,longPiRounded:false,tallyLength:250,tallyY:0,tallySpacing:160,verticalPaddingTop:0,verticalPaddingBottom:0}},sourceFont:null,licensing:defaultLicensing()};}
+function newProject(name='Untitled font'){const id=uid();return {version:1,id,name,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),template:'sp-font-maker-v5',glyphs:{},compounds:{},editorDrafts:{},settings:{drawing:{...DEFAULT_DRAWING_PREFERENCES},fontIdentity:defaultIdentity(name,id),tallyPitch:10,tallyStroke:3,tallyPadding:8,fractionalScales:[1,.75,2/3,.5,1/3,.25],previewAdjustments:{fractionalVerticalAlignment:100,glyphPadding:0,cartoucheTop:1000,cartoucheBottom:-210,cartoucheStroke:80,cartoucheLeftStroke:80,cartoucheRightStroke:80,cartoucheEndHeight:100,cartoucheEndY:0,cartoucheLeftX:0,cartoucheRightX:0,cartoucheEdgePadding:0,cartoucheContentOffset:0,longPiStartHeight:100,longPiStartY:0,longPiStartX:0,ordinaryPiStroke:80,longPiStroke:80,longPiRounded:false,tallyLength:250,tallyY:0,tallySpacing:160,verticalPaddingTop:0,verticalPaddingBottom:0}},sourceFont:null,licensing:defaultLicensing()};}
 function identity(){if(!project.settings)project.settings={};if(!project.settings.fontIdentity)project.settings.fontIdentity=defaultIdentity(project.name,project.id);return project.settings.fontIdentity;}
 function refreshIdentity(){if(!project)return;const i=identity();for(const [key,id] of [['family','fontFamily'],['style','fontStyle'],['version','fontVersion'],['postScriptName','fontPostScript'],['projectId','fontProjectId']])$(id).value=i[key]||'';}
 function saveIdentity(){if(!project)return false;
   const family=$('fontFamily').value.trim(),style=$('fontStyle').value.trim(),version=$('fontVersion').value.trim(),postScriptName=$('fontPostScript').value.trim(),projectId=$('fontProjectId').value.trim();
   if(!family||family.length>90||!style||!/^[a-zA-Z0-9.-]{1,32}$/.test(version)||!/^[a-zA-Z0-9_-]{1,55}$/.test(postScriptName)||!projectId||projectId.length>128){status('Font identity invalid: supply a family, style, version, PostScript name and project ID.',true);return false;}
   const before=cloned(project.settings.fontIdentity);project.settings.fontIdentity={family,style,version,postScriptName,projectId};recordChange('identity','fontIdentity',before,project.settings.fontIdentity);saveSoon();status('Font identity saved in project');return true;
+}
+// Typography editing lives in its own Metrics & kerning workspace.
+// This changes only font table data, never the editable glyph geometry.
+function typographyOptions(){return slots.map(s=>`<option value="${s.index}">${escapeHtml(glyphLibraryName(s,s.index,s))}</option>`).join('');}
+function typographySlotName(i){return glyphLibraryName(slots[i],i,slots[i]);}
+function refreshTypographyUI(){
+ if(!project||!slots.length||!$('typoGlyph'))return;
+ const ids=['typoGlyph','typoLeft','typoRight'];
+ for(const id of ids){const el=$(id);if(el.options.length!==slots.length){const keep=el.value;el.innerHTML=typographyOptions();el.value=keep||String(slotIndex);}}
+ const data=typographyOf(project),id=$('typoGlyph').value||String(slotIndex);
+ const metric=data.glyphs[id]||{};
+ $('typoAdvance').value=metric.advance??'';$('typoBearing').value=metric.leftBearing??'';
+ const s=slots[Number(id)],protectedSlot=isProtectedSpacingSlot(s);
+ $('typoAdvance').disabled=protectedSlot;$('typoBearing').disabled=protectedSlot;
+ $('btnSaveGlyphMetrics').disabled=protectedSlot;$('btnResetGlyphMetrics').disabled=protectedSlot;
+ $('typoGlyphStatus').textContent=protectedSlot?'Structural cartouche/spacing glyph — metrics are protected.':'Blank means keep native width or bearing. Set both independently.';
+ const pair=data.pairs[`${$('typoLeft').value}:${$('typoRight').value}`];
+ $('typoPairValue').value=pair??0;
+ const classes=Object.keys(data.classes).sort();
+ for(const id of ['typoClassLeft','typoClassRight']){
+  const el=$(id),old=el.value;el.replaceChildren();
+  for(const name of classes){const option=new Option(name,name);el.appendChild(option);}
+  if(classes.includes(old))el.value=old;
+ }
+ renderTypographyProof();renderLiveTypographyDiagrams();
+}
+function renderTypographyProof(){
+ if(!project||!$('typoProof'))return;
+ const a=slots[Number($('typoLeft').value)],b=slots[Number($('typoRight').value)],proof=$('typoProof');
+ proof.replaceChildren();
+ if(!a||!b)return;
+ const cps=[a.codepoint,b.codepoint];
+ proof.textContent=cps.every(cp=>Number.isInteger(cp))?String.fromCodePoint(...cps):`${a.word} ${b.word}`;
+ proof.style.fontSize='62px';
+ proof.style.fontFamily=compiledPreview?.normal?`"${compiledPreview.normal}"`:'sans-serif';
+ $('typoProofStatus').textContent=compiledPreview?.normal?'Showing last compiled Ligatures TTF; adjust values, then rebuild preview fonts to see the change.':'Build preview fonts to proof actual TTF kerning; this text is not a geometry simulation.';
+}
+// Immediate, non-destructive metric/kerning diagram. Source-font native metrics
+// are not available to JS: unspecified values use a clearly labelled schematic
+// reference, not an invented measurement of the exported font.
+const TYPO_SVG_NS='http://www.w3.org/2000/svg';
+function typographySvgNode(svg,tag,attrs={},label=''){
+ const node=document.createElementNS(TYPO_SVG_NS,tag);
+ for(const [name,value] of Object.entries(attrs))node.setAttribute(name,String(value));
+ if(label)node.textContent=label;
+ svg.appendChild(node);return node;
+}
+function typographyDiagram(svg){svg.replaceChildren();
+ typographySvgNode(svg,'line',{x1:22,y1:120,x2:695,y2:120,stroke:'#9aa4b4','stroke-dasharray':'5 4'});
+}
+function typographyDraftInt(id,stored,fallback,min,max){
+ const raw=$(id).value.trim();
+ if(!raw)return {value:stored??fallback,approx:stored==null};
+ const n=Number(raw);return Number.isInteger(n)&&n>=min&&n<=max?{value:n,approx:false}:{value:fallback,approx:true,invalid:true};
+}
+function typographySampleCharacter(i){
+ const slot=slots[Number(i)];if(!slot)return '?';
+ return Number.isInteger(slot.codepoint)?String.fromCodePoint(slot.codepoint):(slot.word||'?');
+}
+function renderLiveTypographyDiagrams(){
+ if(!project||!slots.length)return;
+ const t=typographyOf(project),metricSlot=$('typoGlyph').value||String(slotIndex);
+ const native=t.glyphs[metricSlot]||{};
+ const advance=typographyDraftInt('typoAdvance',native.advance,650,0,65535);
+ const bearing=typographyDraftInt('typoBearing',native.leftBearing,60,-32768,32767);
+ const m=$('typoMetricsDiagram');
+ if(m){
+  typographyDiagram(m);
+  // Scale the diagram to the selected advance without pretending to measure ink width.
+  const scale=Math.min(.56,560/Math.max(700,advance.value+Math.max(0,bearing.value)));
+  const x=78,edge=x+advance.value*scale,inkStart=x+bearing.value*scale;
+  const safeEnd=Math.max(inkStart+6,Math.min(inkStart+390*scale,685));
+  typographySvgNode(m,'rect',{x:inkStart,y:52,width:Math.max(4,safeEnd-inkStart),height:67,rx:4,fill:'#b8a3d5',opacity:.58});
+  for(const [at,color] of [[x,'#3579a4'],[edge,'#3579a4'],[inkStart,'#874ca5']])typographySvgNode(m,'line',{x1:at,y1:33,x2:at,y2:130,stroke:color,'stroke-width':2});
+  typographySvgNode(m,'line',{x1:x,y1:24,x2:edge,y2:24,stroke:'#3579a4','stroke-width':2});
+  typographySvgNode(m,'text',{x,y:16,'font-size':13,fill:'currentColor'},'Advance '+advance.value+(advance.approx?' (example)':''));
+  typographySvgNode(m,'text',{x:inkStart,y:145,'font-size':13,fill:'currentColor'},'Left bearing '+bearing.value+(bearing.approx?' (example)':''));
+  typographySvgNode(m,'text',{x:470,y:164,'font-size':12,fill:'currentColor'},'Illustrative ink box, not measured outline');
+  $('typoMetricsLiveStatus').textContent=(advance.invalid||bearing.invalid?'Invalid draft value. ':'')+
+   ((advance.approx||bearing.approx)?'Unspecified native metrics are represented by example values. ':'')+
+   'Diagram updates as you type; Save spacing persists the override.';
+ }
+ const a=$('typoLeft').value,b=$('typoRight').value;
+ const pairInput=typographyDraftInt('typoPairValue',t.pairs[`${a}:${b}`]??0,0,-32768,32767);
+ const leftMetric=t.glyphs[a]||{},rightMetric=t.glyphs[b]||{};
+ const leftWidth=leftMetric.advance??650,rightWidth=rightMetric.advance??650;
+ const pair=$('typoPairDiagram');if(!pair)return;
+ typographyDiagram(pair);
+ const scale=Math.min(.35,500/Math.max(1300,leftWidth+rightWidth+Math.max(0,pairInput.value)));
+ const x1=85,x2=x1+(leftWidth+pairInput.value)*scale;
+ const width1=Math.max(4,Math.min(390,leftWidth*scale)),width2=Math.max(4,Math.min(390,rightWidth*scale));
+ for(const [x,w,fill,char] of [[x1,width1,'#a8c8e2',typographySampleCharacter(a)],[x2,width2,'#d4b9e6',typographySampleCharacter(b)]]){
+  typographySvgNode(pair,'rect',{x,y:42,width:w,height:85,fill,opacity:.43,stroke:'#718096'});
+  typographySvgNode(pair,'text',{x:x+Math.max(3,w/2),y:107,'font-size':40,'text-anchor':'middle',fill:'#29252f','font-family':compiledPreview?.normal||'sans-serif'},char);
+  typographySvgNode(pair,'line',{x1:x,y1:34,x2:x,y2:133,stroke:'#347aa6','stroke-width':2});
+ }
+ typographySvgNode(pair,'text',{x:85,y:20,'font-size':14,fill:'currentColor'},'Kerning adjustment: '+pairInput.value+' font units');
+ typographySvgNode(pair,'text',{x:85,y:157,'font-size':12,fill:'currentColor'},'Separate glyph cells illustrate the spacing shift, not shaped TTF output');
+ $('typoPairLiveStatus').textContent=(pairInput.invalid?'Invalid draft adjustment. ':'')+
+  ((leftMetric.advance==null||rightMetric.advance==null)?'Missing native advances use 650-unit example widths. ':'')+
+  'Pair diagram updates as you type; Save pair persists the override.';
+}
+function parseOptionalFontInteger(id,lo,hi){
+ const raw=$(id).value.trim();if(!raw)return null;
+ const value=Number(raw);
+ if(!Number.isInteger(value)||value<lo||value>hi)throw Error(`${id} must be an integer from ${lo} to ${hi}`);
+ return value;
+}
+function editTypography(fn,message){
+ try{
+  const before=cloned(typographyOf(project)),after=structuredClone(before);
+  fn(after);checkTypography(after,slots);
+  project.settings.typography=after;
+  recordChange('typography','typography',before,after);
+  refreshTypographyUI();status(message);
+ }catch(error){status('Spacing/kerning unchanged: '+String(error?.message||error),true);refreshTypographyUI();}
+}
+function wireTypographyControls(){
+ $('btnRefreshMetricsProof').onclick=()=>buildPreviewFonts();
+ $('typoGlyph').onchange=refreshTypographyUI;
+ $('btnOpenCurrentMetrics').onclick=()=>{$('typoGlyph').value=String(slotIndex);refreshTypographyUI();};
+ for(const id of ['typoAdvance','typoBearing','typoPairValue'])$(id).addEventListener('input',renderLiveTypographyDiagrams);
+ for(const id of ['typoLeft','typoRight'])$(id).onchange=refreshTypographyUI;
+ $('btnSaveGlyphMetrics').onclick=()=>{
+  const slot=Number($('typoGlyph').value);
+  editTypography(t=>setGlyphMetrics(t,slot,parseOptionalFontInteger('typoAdvance',0,65535),parseOptionalFontInteger('typoBearing',-32768,32767)),`Spacing saved for ${typographySlotName(slot)}.`);
+ };
+ $('btnResetGlyphMetrics').onclick=()=>{const id=Number($('typoGlyph').value);editTypography(t=>setGlyphMetrics(t,id,null,null),'Original spacing restored.');};
+ $('btnSavePairKern').onclick=()=>{
+  const a=Number($('typoLeft').value),b=Number($('typoRight').value);
+  editTypography(t=>setKerningPair(t,a,b,parseOptionalFontInteger('typoPairValue',-32768,32767)),'Pair kerning saved.');
+ };
+ $('btnRemovePairKern').onclick=()=>editTypography(t=>setKerningPair(t,$('typoLeft').value,$('typoRight').value,null),'Pair kerning removed.');
+ $('btnSaveKernClass').onclick=()=>{
+  const name=$('typoClassName').value.trim(),tokens=$('typoClassMembers').value.split(',').map(x=>x.trim()).filter(Boolean);
+  editTypography(t=>{
+   const members=tokens.map(token=>{if(/^[0-9]+$/.test(token))return Number(token);
+     const matches=slots.filter(s=>s.word===token);if(matches.length!==1)throw Error(`Ambiguous/unknown glyph ${token}`);return matches[0].index;
+   });
+   t.classes[name]=members;
+  },`Class ${name} saved.`);
+ };
+ $('btnRemoveKernClass').onclick=()=>{
+  const name=$('typoClassName').value.trim();editTypography(t=>{
+   delete t.classes[name];for(const key of Object.keys(t.classPairs))if(key.split(':').includes(name))delete t.classPairs[key];
+  },`Class ${name} removed.`);
+ };
+ $('btnSaveClassPair').onclick=()=>{
+  const a=$('typoClassLeft').value,b=$('typoClassRight').value;
+  editTypography(t=>{if(!a||!b)throw Error('Create classes first');const v=parseOptionalFontInteger('typoClassValue',-32768,32767);if(!v)delete t.classPairs[`${a}:${b}`];else t.classPairs[`${a}:${b}`]=v;
+   resolveKerningPairs(t,slots.length);
+  },'Class pair kerning saved.');
+ };
+ $('btnRemoveClassPair').onclick=()=>editTypography(t=>{delete t.classPairs[`${$('typoClassLeft').value}:${$('typoClassRight').value}`];},'Class pair removed.');
 }
 function customManifest(p=project){const mappings={};for(const s of slots.filter(s=>s.customSlot)){const g=p.glyphs[s.index]||{};const name=(g.word||s.word).trim();if(!name.startsWith('custom-'))mappings[name]=`U+${s.codepoint.toString(16).toUpperCase()}`;}
  return {schema:'sp-font-maker-custom-names-v1',fontFamily:p.settings.fontIdentity.family,projectId:p.settings.fontIdentity.projectId,mappings};
@@ -467,6 +645,7 @@ async function buildPreviewFonts(){
     renderCompiledPreview();
     geometryBuildMessage('Latest font settings applied to both TTFs.');
     showPreviewState('Both TTF fonts compiled and loaded. Preview is ready.');
+    renderTypographyProof();renderLiveTypographyDiagrams();
   }catch(e){showPreviewState('Preview build failed: '+String(e?.message||e));status('Preview build failed: '+String(e?.message||e),true);}
   finally{
     previewBusy=false;
@@ -518,6 +697,34 @@ function wireCompiledPreviewControls(){
     renderCompiledPreview();
   });
 }
+/** On-demand, non-destructive project inspection; stays inside Build & export. */
+function showQualityReport(result){
+ const panel=$('fontQualityPanel'),summary=$('fontQualitySummary'),list=$('fontQualityFindings');
+ if(!summary||!list)return;
+ list.replaceChildren();
+ if(!result){summary.textContent='Not checked yet.';return;}
+ summary.textContent=`${result.inspectedGlyphs||0} edited glyphs inspected · ${result.errors} errors · ${result.warnings} warnings · ${result.notes} notes`;
+ for(const issue of result.issues.slice(0,80)){
+  const item=document.createElement('div');item.className='font-quality-finding';
+  const label=document.createElement('span');label.textContent=`${issue.severity.toUpperCase()} — ${issue.message}`;
+  if(issue.glyphId!=null){
+   const button=document.createElement('button');button.type='button';button.className='mini';
+   const slot=slots.find(x=>String(x.index)===String(issue.glyphId));
+   button.textContent=slot?.word||`Glyph ${issue.glyphId}`;
+   button.title='Open this glyph in the drawing editor';
+   button.onclick=()=>{const i=slots.findIndex(x=>String(x.index)===String(issue.glyphId));if(i>=0){switchTab('glyph');void selectGlyph(i);}};
+   item.appendChild(button);
+  }
+  item.appendChild(label);list.appendChild(item);
+ }
+ if(result.issues.length>80){const more=document.createElement('p');more.className='small muted';more.textContent=`Showing the first 80 of ${result.issues.length} findings.`;list.appendChild(more);}
+ if(result.errors||result.warnings)panel.open=true;
+}
+function runProjectQualityCheck({show=true}={}){
+ const result=inspectProjectQuality(project);
+ if(show)showQualityReport(result);
+ return result;
+}
 async function buildFonts(){
  if(fontActionBusy)return;
  if(!usingWasm()){status('Font export is unavailable. Please reload the page or contact the maintainer.',true);return;}
@@ -527,13 +734,25 @@ async function buildFonts(){
  try{
   clearTimeout(saveTimer);await saveNow();
   const snapshot=structuredClone(project);
+  const preflight=inspectProjectQuality(snapshot);
+  showQualityReport(preflight);
+  if(!preflight.valid)throw new Error(`Project quality check found ${preflight.errors} blocking error(s). Open Font quality checks for details.`);
   const result=await compileBoth(snapshot,slots);
+  // Browser-side font loading tests a separate engine from the Rust compiler.
+  await verifyPortableFontPairFaces(result.normal,result.literal);
   const review=evaluateExport(snapshot);
   const filename=safename(snapshot.settings.fontIdentity.postScriptName);
-  const otherFiles=[['custom-names.json',JSON.stringify(customManifest(snapshot),null,2)],...licenceFiles(snapshot,review,{includeFairfax:true})];
+  const qualityEvidence={schema:'spfm-font-quality-v1',createdAt:new Date().toISOString(),
+    project:{editedGlyphs:preflight.inspectedGlyphs,errors:preflight.errors,warnings:preflight.warnings,notes:preflight.notes,findings:preflight.issues},
+    fontStructure:'passed: browser-side SFNT directory, checksums, glyph offsets, cmap table and metrics',
+    browserFontFace:'passed: both fonts loaded by the browser',
+    independentFontTools:'not run as part of browser export',
+    harfBuzzAndLibreOffice:'not run as part of browser export'};
+  const otherFiles=[['custom-names.json',JSON.stringify(customManifest(snapshot),null,2)],
+    ['quality-report.json',JSON.stringify(qualityEvidence,null,2)],...licenceFiles(snapshot,review,{includeFairfax:true})];
   const portable=await createPortableFontPairZip({project:snapshot,normal:result.normal,literal:result.literal,filename,otherFiles});
   if(project?.id!==snapshot.id)throw new Error('Project changed during font export. Try again.');
-  download(portable.blob,`${filename}-font-pair.zip`);status('Portable font ZIP ready, including manifest.json and SHA-256 checksums.');
+  download(portable.blob,`${filename}-font-pair.zip`);status(`Portable font ZIP ready · compiled TTF checks passed · ${preflight.warnings} advisory project warnings. Quality report included.`);
  }catch(e){status('Font export failed: '+String(e?.message||e),true);}finally{setFontActionBusy(false);}
 }
 async function publishFontOnSite(){
@@ -544,7 +763,10 @@ async function publishFontOnSite(){
  try{
   clearTimeout(saveTimer);await saveNow();
   const snapshot=structuredClone(project),revision=previewRevision;
+  const preflight=inspectProjectQuality(snapshot);
+  if(!preflight.valid){showQualityReport(preflight);throw new Error(`Project quality check found ${preflight.errors} blocking error(s).`);}
   const result=await compileBoth(snapshot,slots);
+  await verifyPortableFontPairFaces(result.normal,result.literal);
   if(project?.id!==snapshot.id || previewRevision!==revision){
     throw new Error('Project or glyph settings changed during compilation. Try again to publish the latest version.');
   }
@@ -689,16 +911,19 @@ const glyphKey=i=>String(i);
 const currentEntry=()=>project.glyphs[glyphKey(slotIndex)]||{};
 function commitGlyph(){
   if(!project)return;
+  outlineValidationMarkers=[];
   const k=glyphKey(slotIndex),g=ensureEditorShift({...(project.glyphs[k]||{})});
   g.raster=canvas.toDataURL('image/png');
   const t=traceGlyph(canvas,Number($('traceThreshold').value),Number($('traceSimplify').value));
   g.rasterPath=t.path;g.path=combineGlyphPaths(g.rasterPath,g.bezierContours||[]);
-  g.contours=t.contours;g.modified=true;project.glyphs[k]=g;updateLayerPath(g);
+  g.contours=t.contours;g.modified=true;project.glyphs[k]=g;updateLayerPath(g,project);
   saveSoon();updateProgress();updateTrace();
 }
 function scheduleTrace(){clearTimeout(traceTimer);traceTimer=setTimeout(()=>{traceTimer=0;commitGlyph();},140);}
 function saveSoon(){if(!project||deletingProject)return;invalidateCompiledPreview();saveStatus('Unsaved changes…');clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,420);}
-async function saveNow(){if(!project||deletingProject)return;for(const g of Object.values(project.glyphs||{}))if(g?.layerStack)updateLayerPath(g);const snapshot=structuredClone(project);snapshot.updatedAt=new Date().toISOString();project.updatedAt=snapshot.updatedAt;
+async function saveNow(){if(!project||deletingProject)return;
+  if(hasLinkedComponents(project))resolveLinkedGlyphPaths(project,{commit:true});
+  else for(const g of Object.values(project.glyphs||{}))if(g?.layerStack)updateLayerPath(g);const snapshot=structuredClone(project);snapshot.updatedAt=new Date().toISOString();project.updatedAt=snapshot.updatedAt;
   const undo=structuredClone(history),redo=structuredClone(redoStack);
   pendingSave=pendingSave.then(()=>saveWorkspace(snapshot,{undo,redo}));try{await pendingSave;saveStatus(`Autosaved ${new Date(snapshot.updatedAt).toLocaleTimeString()}`);}catch(e){saveStatus('Autosave failed');status('IndexedDB save failed: '+e.message,true);}
 }
@@ -845,25 +1070,87 @@ function renderGlyphList(){
   b.appendChild(title);b.addEventListener('click',()=>selectGlyph(i));frag.appendChild(b);
  });dest.appendChild(frag);
 }
-async function selectGlyph(i){if(!project||!slots[i])return;selectedWidthSession=null;marquee=null;selection=null;marqueePolygon=null;selectionPolygon=null;selectionDrag=null;renderSelectionOverlay();const changedGlyph=slotIndex!==i;bezierInteraction=null;bezierHover=null;selectedBezierContour=-1;selectedBezierNode=-1;clearTimeout(traceTimer);if(drawing){restoreStrokeBase();clearDrawingGesture();}if(curvePending)cancelCurve();slotIndex=i;project.editorDrafts||={};bezierDraft=readDraft(project.editorDrafts,glyphKey(i));
+async function selectGlyph(i){if(!project||!slots[i])return;restoreProjectDrawingPreferences();outlineValidationMarkers=[];selectedWidthSession=null;marquee=null;selection=null;marqueePolygon=null;selectionPolygon=null;selectionDrag=null;selectedObjectIndices=null;isolatedLayerId=null;renderSelectionOverlay();const changedGlyph=slotIndex!==i;bezierInteraction=null;bezierHover=null;selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;joinEndpoints=[];strokeJoinStart=null;clearTimeout(traceTimer);if(drawing){restoreStrokeBase();clearDrawingGesture();}if(curvePending)cancelCurve();slotIndex=i;project.editorDrafts||={};bezierDraft=readDraft(project.editorDrafts,glyphKey(i));
   const meta=slotMeta(i),base=slots[i];$('glyphTitle').textContent=base.kind==='ascii'?`ASCII ${JSON.stringify(base.display)}`:glyphLibraryName(base,i,meta);
   $('glyphDescription').textContent=`Entry ${i+1}/${slots.length} · ${meta.kind||base.kind||'glyph'} · ${base.rotate?'directional variant source':''}`;
   $('glyphCp').textContent=capCp(base.codepoint);$('glyphWord').value=meta.word||base.word;
   $('glyphWord').readOnly=base.kind==='ascii'||!base.customSlot;
   $('glyphWord').title=base.customSlot?'Custom name: 2–32 lowercase Toki Pona letters forming (C)V(N) syllables':'Standard assignments are fixed in this catalogue';
   $('glyphCodepoint').value=meta.codepoint==null?'':Number(meta.codepoint).toString(16).toUpperCase();$('glyphAliases').value=(meta.aliases||[]).join('\n');
-  const current=project.glyphs[glyphKey(i)]||{};ensureGlyphLayers(current);project.glyphs[glyphKey(i)]=current;updateLayerPath(current);
+  const current=project.glyphs[glyphKey(i)]||{};ensureGlyphLayers(current);project.glyphs[glyphKey(i)]=current;updateLayerPath(current,project);
  const displayed=project.glyphs[i];await drawImageUrl((displayed?.modified||displayed?.rasterCopyForEditing)?(displayed?.raster||''):'');await renderOriginalGuide();drawMetricGuides();refreshAttachmentUI();renderBezierOverlay();refreshGlyphLayerPalette();updateTrace();updateProgress();
   if(changedGlyph||!viewportReady)fitCanvas();
   $('importState').textContent=project.sourceFont?`${project.sourceFont.name}. Select “Restore selected glyph from font” to rasterize it into an editable drawing.`:'No imported source font; blank projects need glyph drawings or a separately imported Latin font for full ASCII coverage.';
 }
+function gridPrefs(){return {spacing:gridSpacing,snap:snapToGrid,visible:$('toggleGrid').checked};}
+function persistGridPrefs(){try{localStorage.setItem(GRID_STORAGE_KEY,JSON.stringify(gridPrefs()));}catch(_){} }
+function showArtboardGrid(){drawGridOverlay($('editorGridOverlay'),{visible:$('toggleGrid').checked,spacing:gridSpacing,width:ARTBOARD_WIDTH,height:ARTBOARD_HEIGHT});}
+function initializeGridSettings(){
+  try{const value=JSON.parse(localStorage.getItem(GRID_STORAGE_KEY)||'null');
+    if(value&&typeof value==='object'){
+      gridSpacing=normalizeGridSpacing(value.spacing);snapToGrid=value.snap===true;
+      if(typeof value.visible==='boolean')$('toggleGrid').checked=value.visible;
+    }
+  }catch(_){}
+  $('gridSpacing').value=String(gridSpacing);$('snapToGrid').checked=snapToGrid;
+  $('gridSpacing').addEventListener('change',()=>{
+    gridSpacing=normalizeGridSpacing($('gridSpacing').value);$('gridSpacing').value=String(gridSpacing);
+    showArtboardGrid();persistGridPrefs();
+  });
+  $('snapToGrid').addEventListener('change',()=>{snapToGrid=$('snapToGrid').checked;persistGridPrefs();});
+  showArtboardGrid();
+}
+function snapCanvasPoint(p){return snapToGrid&&shouldSnapDrawingTool(tool)?snapGridPoint(p,gridSpacing,ARTBOARD_WIDTH,ARTBOARD_HEIGHT):p;}
+function drawingPos(ev){return snapCanvasPoint(canvasPos(ev));}
 function canvasPos(ev){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(ARTBOARD_WIDTH-1,(ev.clientX-r.left)/r.width*ARTBOARD_WIDTH)),y:Math.max(0,Math.min(ARTBOARD_HEIGHT-1,(ev.clientY-r.top)/r.height*ARTBOARD_HEIGHT))};}
+function restoreProjectDrawingPreferences(){
+ if(!project||displayedDrawingProject===project)return;
+ displayedDrawingProject=project;
+ const prefs=normalizeDrawingPreferences(project.settings?.drawing);
+ $('brushSize').value=String(prefs.width);$('brushSizeLabel').textContent=String(prefs.width);
+ $('strokeSmoothing').value=String(prefs.smoothing);$('strokeSmoothingLabel').textContent=prefs.smoothing+'%';
+ $('autoShape').checked=prefs.autoShape;$('filledShape').checked=prefs.filledShape;
+ $('drawShapesFromCentre').checked=prefs.fromCenter;
+ $('lineCapStyle').value=prefs.lineCap;$('tipShape').value=prefs.tipShape;
+}
+function persistProjectDrawingPreferences(){
+ if(!project)return;
+ project.settings||={};
+ project.settings.drawing=normalizeDrawingPreferences({
+  width:$('brushSize').value,smoothing:$('strokeSmoothing').value,
+  autoShape:$('autoShape').checked,filledShape:$('filledShape').checked,
+  fromCenter:$('drawShapesFromCentre').checked,
+  lineCap:$('lineCapStyle').value,tipShape:$('tipShape').value
+ });
+ // A brush preference is not font ink. Save it without invalidating an already
+ // compiled preview or creating a glyph Undo step.
+ saveStatus('Unsaved drawing preferences…');clearTimeout(saveTimer);
+ saveTimer=setTimeout(saveNow,420);
+}
 function brushWidth(){return Math.max(1,Number($('brushSize').value)||9);}
+function lineCapStyle(){return $('lineCapStyle').value;}
+function brushTipShape(){return $('tipShape').value;}
 function setBrush(){ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=brushWidth();ctx.strokeStyle='#111119';ctx.fillStyle='#111119';ctx.globalCompositeOperation=tool==='eraser'?'destination-out':'source-over';}
 function restoreStrokeBase(){clearCanvas();if(strokeBaseCanvas)ctx.drawImage(strokeBaseCanvas,0,0);}
 function strokePath(points){
- if(!points.length)return;setBrush();drawBrushGeometry(ctx,points);
- ctx.stroke();ctx.globalCompositeOperation='source-over';
+ if(!points.length)return;setBrush();
+ if(brushTipShape()==='square')drawSquareBrushGeometry(ctx,points,brushWidth());
+ else{drawBrushGeometry(ctx,points);ctx.stroke();}
+ ctx.globalCompositeOperation='source-over';
+}
+function drawShapeConstructionGuide(start,end){
+ const bounds=shapeBounds(start,end,{constrain:strokeConstrain,fromCenter:strokeFromCenter});
+ if(!bounds||bounds.x1-bounds.x0<1||bounds.y1-bounds.y0<1)return;
+ ctx.save();ctx.globalCompositeOperation='source-over';
+ ctx.strokeStyle='#7953a9';ctx.lineWidth=1;ctx.setLineDash([4,5]);
+ ctx.strokeRect(bounds.x0,bounds.y0,bounds.x1-bounds.x0,bounds.y1-bounds.y0);
+ ctx.setLineDash([]);
+ if(strokeFromCenter){
+  ctx.strokeStyle='#7953a9';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(start.x-6,start.y);ctx.lineTo(start.x+6,start.y);
+  ctx.moveTo(start.x,start.y-6);ctx.lineTo(start.x,start.y+6);ctx.stroke();
+ }
+ ctx.restore();
 }
 function showStrokePreview(p){
  restoreStrokeBase();
@@ -871,7 +1158,7 @@ function showStrokePreview(p){
   const points=smoothStroke(strokePoints,Number($('strokeSmoothing').value));strokePath(points);
   if(tool==='eraser')renderBezierOverlay(); // live eraser preview masks the vector overlay too
  }else if(tool==='curve'){
-  ctx.lineWidth=brushWidth();ctx.strokeStyle='#111119';ctx.lineCap='round';ctx.beginPath();ctx.moveTo(strokeAnchor.x,strokeAnchor.y);
+  ctx.lineWidth=brushWidth();ctx.strokeStyle='#111119';ctx.lineCap=lineCapStyle()==='flat'?'butt':lineCapStyle();ctx.beginPath();ctx.moveTo(strokeAnchor.x,strokeAnchor.y);
   if(curvePending){
    // An endpoint drag immediately previews a real curve, not a straight line.
    // The purple bend marker can be clicked or dragged in the second gesture.
@@ -885,10 +1172,13 @@ function showStrokePreview(p){
    ctx.setLineDash([]);ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bend.x,bend.y,5,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
   }else{ctx.lineTo(p.x,p.y);ctx.stroke();}
  }else if(tool==='line'){
-  strokePath([strokeAnchor,p]);
+  ctx.save();ctx.globalCompositeOperation='source-over';ctx.strokeStyle='#111119';ctx.lineWidth=brushWidth();
+  ctx.lineCap=lineCapStyle()==='flat'?'butt':lineCapStyle();ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(strokeAnchor.x,strokeAnchor.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.restore();
  }else if(tool==='ellipse'||tool==='rect'){
-  const paths=shapeContours(tool,strokeAnchor,p,brushWidth(),{filled:$('filledShape').checked,constrain:strokeConstrain});
+  const paths=shapeContours(tool,strokeAnchor,p,brushWidth(),{filled:$('filledShape').checked,constrain:strokeConstrain,fromCenter:strokeFromCenter});
   const path=bezierPath(paths);if(path){const drawing=new Path2D(path);ctx.fillStyle='#111119';ctx.fill(drawing,'nonzero');}
+  drawShapeConstructionGuide(strokeAnchor,p);
  }
 }
 function finishVectorShape(contours,before){
@@ -897,15 +1187,115 @@ function finishVectorShape(contours,before){
  const key=glyphKey(slotIndex),g=bezierEntry();g.bezierContours.push(...contours);
  commitBezier(before);status('Editable vector shape added. Select it to move, rotate, copy or resize.');
 }
-function clearDrawingGesture(){drawing=false;strokeBefore=null;strokeStartRaster=null;strokeBaseCanvas=null;strokePoints=[];strokeAnchor=null;strokeEnd=null;}
-function cancelCurve(){if(curvePending){restoreStrokeBase();curvePending=null;strokeBaseCanvas=null;strokeBefore=null;status('Curve cancelled.');}}
+function placeConnectedStroke(start,end,kind,bend,before,connection=null){
+ const key=glyphKey(slotIndex),g=bezierEntry(),contours=g.bezierContours;
+ const endTarget=strokeEndpoints(contours,end,bezierPointerRadius(14),connection);
+ const to=endTarget?{x:endTarget.point.x,y:endTarget.point.y}:end;
+ let active=-1;
+ if(connection && endTarget && connection.ci===endTarget.ci){
+  // Connecting the opposite ends of one path closes it, without duplicating
+  // an endpoint (duplicated nodes create degenerate curves and bad TTF ink).
+  const stroke=contours[connection.ci];
+  if(connection.ni===endTarget.ni || stroke.points.length<3){status('Close needs two distinct endpoints and at least three nodes.',true);return;}
+  if(kind==='curve')setSegmentBend(stroke,stroke.points.length-1,bend);
+  else{const first=stroke.points[0],last=stroke.points.at(-1);first.in=[first.x,first.y];last.out=[last.x,last.y];}
+  stroke.closed=true;stroke.widths=[...(stroke.widths||Array(stroke.points.length-1).fill(stroke.width)),brushWidth()];active=connection.ci;
+ }else if(connection && isStroke(contours[connection.ci]) && !contours[connection.ci].closed){
+  active=connection.ci;
+  const stroke=contours[active];
+  // Starting at the first endpoint extends the same path backwards.
+  addSegment(stroke,to,kind,bend,connection.ni===0,brushWidth());
+ }else if(endTarget && isStroke(contours[endTarget.ci])){
+  // Drawn towards an existing endpoint: prepend/append the new segment.
+  active=endTarget.ci;
+  addSegment(contours[active],start,kind,bend,endTarget.ni===0,brushWidth());
+ }else{
+  active=contours.push(newStroke(start,to,brushWidth(),kind,bend,lineCapStyle()))-1;
+ }
+ // If the new segment connects two different strokes, merge them without
+ // rasterizing or discarding their original Bézier handles.
+ if(connection && endTarget && connection.ci!==endTarget.ci){
+  const target=contours[connection.ci];
+  const freeEnd=connection.ni===0?0:target.points.length-1;
+  const merged=joinOpenStrokes(target,freeEnd,contours[endTarget.ci],endTarget.ni);
+  const keep=connection.ci,drop=endTarget.ci;
+  contours[keep]=merged;contours.splice(drop,1);active=drop<keep?keep-1:keep;
+ }
+ selectedStroke=active;selectedBezierContour=active;
+ // Retain the joined anchor as the active point. It is now an interior node,
+ // but it must still be selectable and editable like the two outer endpoints.
+ selectedBezierNode=connection&&endTarget&&connection.ci!==endTarget.ci
+  ?(strokeNodeHit([contours[active]],to,bezierPointerRadius(20))?.ni??-1)
+  :-1;
+ joinEndpoints=[];
+ commitBezier(before);
+ status('Editable connected path updated. Click a purple interior junction to move or smooth it; endpoints remain available for extension.');
+}
+function selectStrokeBody(p){
+ const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
+ const hit=nearestStrokeBody(contours,p,bezierPointerRadius(11));
+ selectedStroke=hit?.ci??-1;selectedBezierContour=selectedStroke;selectedBezierNode=-1;
+ renderBezierOverlay();
+ if(hit)status('Path selected. Drag the purple bend handle to reshape a curve, or use Edit path to move its endpoints.');
+ return !!hit;
+}
+function editStrokeBendDown(p,ev){
+ if(tool!=='curve')return false;
+ const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
+ const hit=strokeBendHit(contours,p,bezierPointerRadius(12));
+ if(!hit||selectedStroke!==hit.ci)return false;
+ strokeInteraction={kind:'bend',ci:hit.ci,i:hit.i,before:cloned(project.glyphs[glyphKey(slotIndex)])};
+ canvas.setPointerCapture(ev.pointerId);return true;
+}
+function clearDrawingGesture(){drawing=false;strokeJoinStart=null;strokeInteraction=null;strokeBefore=null;strokeStartRaster=null;strokeBaseCanvas=null;strokePoints=[];strokeAnchor=null;strokeEnd=null;strokeFromCenter=false;strokeConstrain=false;}
+function cancelCurve(){if(curvePending){restoreStrokeBase();curvePending=null;strokeJoinStart=null;strokeBaseCanvas=null;strokeBefore=null;status('Curve cancelled.');renderBezierOverlay();}}
+function selectedStrokeTangentHit(contours,p,radius){
+ const stroke=contours[selectedStroke],node=stroke?.points?.[selectedBezierNode];
+ if(!isStroke(stroke)||!node)return null;
+ let result=null,nearest=radius;
+ for(const which of ['in','out']){
+  const h=node[which];if(!Array.isArray(h)||Math.hypot(h[0]-node.x,h[1]-node.y)<.5)continue;
+  const d=Math.hypot(h[0]-p.x,h[1]-p.y);
+  if(d<=nearest){nearest=d;result={ci:selectedStroke,ni:selectedBezierNode,which};}
+ }
+ return result;
+}
 function pointerDown(ev){
  if(!project)return;if(wantsPan(ev)){startPan(ev);return;}if(ev.button!==0)return;
  if(!['select','lasso'].includes(tool)&&!editableLayerOrWarn())return;
  if(tool==='select'||tool==='lasso'){selectionPointerDown(ev);return;}if(tool==='bezier'){bezierPointerDown(ev);return;}
  if(tool==='fill'){ev.preventDefault();fillRasterRegion(canvasPos(ev));return;}
- ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
  const p=canvasPos(ev);
+ if(['line','curve'].includes(tool) && !curvePending){
+  const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
+  // A joined interior anchor must remain editable with Line and Curve. First
+  // test visible tangent handles, then interior anchors, then bend handles.
+  const tangent=selectedStrokeTangentHit(contours,p,bezierPointerRadius(ev.pointerType==='touch'?17:10));
+  if(tangent){
+   ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
+   strokeInteraction={kind:'tangent',...tangent,before:cloned(project.glyphs[glyphKey(slotIndex)])};
+   return;
+  }
+  const nodeHit=strokeNodeHit(contours,p,bezierPointerRadius(ev.pointerType==='touch'?21:13));
+  if(nodeHit&&!nodeHit.endpoint){
+   ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
+   selectedStroke=nodeHit.ci;selectedBezierContour=nodeHit.ci;selectedBezierNode=nodeHit.ni;joinEndpoints=[];
+   strokeInteraction={kind:'junction',ci:nodeHit.ci,ni:nodeHit.ni,before:cloned(project.glyphs[glyphKey(slotIndex)])};
+   renderBezierOverlay();return;
+  }
+  if(editStrokeBendDown(p,ev)){ev.preventDefault();return;}
+  strokeJoinStart=strokeEndpoints(contours,p,bezierPointerRadius(ev.pointerType==='touch'?21:13));
+  if(ev.altKey&&strokeJoinStart){
+   ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
+   strokeInteraction={kind:'endpoint',ci:strokeJoinStart.ci,ni:strokeJoinStart.ni,before:cloned(project.glyphs[glyphKey(slotIndex)])};
+   selectedStroke=strokeJoinStart.ci;selectedBezierContour=strokeJoinStart.ci;selectedBezierNode=strokeJoinStart.ni;strokeJoinStart=null;renderBezierOverlay();return;
+  }
+  if(!strokeJoinStart){
+   const body=nearestStrokeBody(contours,p,bezierPointerRadius(8));
+   if(body){ev.preventDefault();canvas.setPointerCapture(ev.pointerId);strokeInteraction={kind:'select',point:p,ci:body.ci};return;}
+  }
+ }
+ ev.preventDefault();canvas.setPointerCapture(ev.pointerId);
  if(tool==='curve'&&curvePending){
   // The first drag establishes the endpoints; the second edits the visible bend.
   strokeAnchor={...curvePending.start};strokeEnd={...curvePending.end};
@@ -913,18 +1303,35 @@ function pointerDown(ev){
   strokeBefore=cloned(project.glyphs[glyphKey(slotIndex)]);
   strokeBaseCanvas=newRasterCanvas(ARTBOARD_WIDTH,ARTBOARD_HEIGHT);
   strokeBaseCanvas.getContext('2d').drawImage(canvas,0,0);
-  strokeAnchor=p;strokeEnd=p;
+  strokeAnchor=strokeJoinStart?{x:strokeJoinStart.point.x,y:strokeJoinStart.point.y}:snapCanvasPoint(p);strokeEnd=snapCanvasPoint(p);
  }
- drawing=true;strokePoints=[p];strokeConstrain=ev.shiftKey;
- showStrokePreview(p);
+ drawing=true;strokePoints=[snapCanvasPoint(p)];strokeConstrain=ev.shiftKey;
+ strokeFromCenter=['rect','ellipse'].includes(tool)&&shapeFromCenter($('drawShapesFromCentre').checked,ev.altKey);
+ showStrokePreview(snapCanvasPoint(p));
 }
 function pointerMove(ev){
  if(panDrag)return;if(tool==='select'||tool==='lasso'){selectionPointerMove(ev);return;}if(tool==='bezier'){bezierPointerMove(ev);return;}
+ if(strokeInteraction){
+  ev.preventDefault();
+  if(strokeInteraction.kind==='bend'){
+   const g=project.glyphs[glyphKey(slotIndex)],stroke=g?.bezierContours?.[strokeInteraction.ci];
+   if(stroke){setSegmentBend(stroke,strokeInteraction.i,canvasPos(ev));selectedStroke=strokeInteraction.ci;renderBezierOverlay();}
+  }else if(strokeInteraction.kind==='endpoint'||strokeInteraction.kind==='junction'){
+   const stroke=project.glyphs[glyphKey(slotIndex)]?.bezierContours?.[strokeInteraction.ci];
+   const node=stroke?.points?.[strokeInteraction.ni];
+   if(node){const p=canvasPos(ev);moveBezierAnchor(node,snapCanvasPoint(p).x,snapCanvasPoint(p).y);renderBezierOverlay();}
+  }else if(strokeInteraction.kind==='tangent'){
+   const node=project.glyphs[glyphKey(slotIndex)]?.bezierContours?.[strokeInteraction.ci]?.points?.[strokeInteraction.ni];
+   if(node){const p=canvasPos(ev);dragBezierTangent(node,p.x,p.y,strokeInteraction.which,false);renderBezierOverlay();}
+  }
+  return;
+ }
  if(!drawing){
   if(tool==='curve'&&curvePending){ev.preventDefault();showStrokePreview(curveBendFromPointer(curvePending,canvasPos(ev)));}
   return;
- }ev.preventDefault();const p=canvasPos(ev);
+ }ev.preventDefault();const p=drawingPos(ev);
  strokeConstrain=ev.shiftKey;
+ if(tool==='rect'||tool==='ellipse')strokeFromCenter=shapeFromCenter($('drawShapesFromCentre').checked,ev.altKey);
  if(tool==='pen'||tool==='eraser'){
   if(Math.hypot(p.x-strokePoints.at(-1).x,p.y-strokePoints.at(-1).y)>=.3)strokePoints.push(p);
  }else strokeEnd=p;
@@ -932,17 +1339,37 @@ function pointerMove(ev){
 }
 function pointerUp(ev){
  if(panDrag)return;if(tool==='select'||tool==='lasso'){selectionPointerUp(ev);return;}if(tool==='bezier'){bezierPointerUp(ev);return;}
+ if(strokeInteraction){
+  const interaction=strokeInteraction;strokeInteraction=null;
+  if(interaction.kind==='bend'){
+   const g=project.glyphs[glyphKey(slotIndex)],stroke=g?.bezierContours?.[interaction.ci];
+   if(stroke){setSegmentBend(stroke,interaction.i,canvasPos(ev));commitBezier(interaction.before);status('Curve bend changed. Undo restores the previous shape.');}
+  }else if(['endpoint','junction','tangent'].includes(interaction.kind)){
+   const g=project.glyphs[glyphKey(slotIndex)],node=g?.bezierContours?.[interaction.ci]?.points?.[interaction.ni];
+   if(node){
+    const p=canvasPos(ev);
+    if(interaction.kind==='tangent')dragBezierTangent(node,p.x,p.y,interaction.which,false);
+    else moveBezierAnchor(node,snapCanvasPoint(p).x,snapCanvasPoint(p).y);
+    if(JSON.stringify(g)!==JSON.stringify(interaction.before)){
+     commitBezier(interaction.before);
+     status(interaction.kind==='tangent'?'Junction tangent adjusted.':interaction.kind==='junction'?'Junction moved.':'Endpoint moved.');
+    }else renderBezierOverlay();
+   }
+  }else selectStrokeBody(interaction.point);
+  if(canvas.hasPointerCapture(ev.pointerId))canvas.releasePointerCapture(ev.pointerId);
+  return;
+ }
  if(!drawing)return;
- const p=canvasPos(ev),before=strokeBefore,key=glyphKey(slotIndex);
+ const p=drawingPos(ev),before=strokeBefore,key=glyphKey(slotIndex);
+ if(tool==='rect'||tool==='ellipse'){strokeConstrain=ev.shiftKey;strokeFromCenter=shapeFromCenter($('drawShapesFromCentre').checked,ev.altKey);}
  drawing=false;clearTimeout(traceTimer);
  if(tool==='curve'){
   if(!curvePending){
    if(Math.hypot(p.x-strokeAnchor.x,p.y-strokeAnchor.y)<2){restoreStrokeBase();clearDrawingGesture();status('Drag to choose the curve endpoints.');}
-   else{curvePending={start:{...strokeAnchor},end:{...p},bend:defaultCurveBend(strokeAnchor,p)};showStrokePreview(null);status('A curved preview is ready. Click the purple bend point to accept it, or drag/click elsewhere to reshape it. Escape cancels.');}
+   else{curvePending={start:{...strokeAnchor},end:{...p},bend:defaultCurveBend(strokeAnchor,p),connection:strokeJoinStart,before};showStrokePreview(null);status('Curved segment preview ready. Drag the purple bend point, then release to keep the curve.');}
   }else{
    const through=curveBendFromPointer(curvePending,p);
-   const g=curveContour(curvePending.start,curvePending.end,through,brushWidth());
-   finishVectorShape([g],before);curvePending=null;clearDrawingGesture();
+   const pending=curvePending;restoreStrokeBase();placeConnectedStroke(pending.start,pending.end,'curve',through,pending.before,pending.connection);curvePending=null;clearDrawingGesture();
   }
  }else if(tool==='pen'||tool==='eraser'){
   strokePoints.push(p);const points=smoothStroke(strokePoints,Number($('strokeSmoothing').value));
@@ -956,13 +1383,24 @@ function pointerUp(ev){
    // contours to the editable bitmap before subtracting the brush footprint.
    const oldContours=tool==='eraser'?(project.glyphs[key]?.bezierContours||[]):[];
    const converted=tool==='eraser'?rasterizeVectorsCrossedByEraser(
-    oldContours,points,brushWidth(),ARTBOARD_WIDTH,ARTBOARD_HEIGHT,newRasterCanvas):{indices:[],layer:null};
+    oldContours,points,brushWidth(),ARTBOARD_WIDTH,ARTBOARD_HEIGHT,newRasterCanvas,brushTipShape()):{indices:[],layer:null};
    restoreStrokeBase();
-   if(converted.layer){
-    ctx.drawImage(converted.layer,0,0);
-    const removed=new Set(converted.indices),g=bezierEntry();
-    g.bezierContours=g.bezierContours.filter((_,i)=>!removed.has(i));
-    selectedBezierContour=-1;selectedBezierNode=-1;
+   if(converted.indices.length){
+    const g=bezierEntry(),removed=new Set(converted.indices);
+    const source=bezierPath(converted.indices.map(i=>g.bezierContours[i]));
+    try{
+     const footprint=vectorBrushFootprint(points,brushWidth(),brushTipShape());
+     const result=booleanPaths(source,footprint,'subtract',{tolerance:.3});
+     const first=converted.indices[0];
+     g.bezierContours=g.bezierContours.filter((_,i)=>!removed.has(i));
+     g.bezierContours.splice(first,0,...result.contours);
+     selectedBezierContour=-1;selectedBezierNode=-1;
+    }catch(error){
+     // Never silently rasterise a failed geometry operation: preserve
+     // editable curves, abort this stroke and let the user simplify it.
+     restoreStrokeBase();clearDrawingGesture();renderBezierOverlay();
+     status('Vector erasing failed; artwork preserved: '+String(error.message||error),true);return;
+    }
    }
    strokePath(points);
    let rasterChanged=true;
@@ -976,14 +1414,18 @@ function pointerUp(ev){
    }
    if(rasterChanged||converted.indices.length){
     commitGlyph();recordChange('glyph',key,before,project.glyphs[key]);
-    if(converted.indices.length)status(`Erased editable vector ink; ${converted.indices.length} touched outline${converted.indices.length===1?'':'s'} converted to pixels. Undo restores the original curves. Grey reference guides remain unchanged.`);
+    if(converted.indices.length)status(`Erased editable vector ink; ${converted.indices.length} touched outline${converted.indices.length===1?'':'s'} remains editable as vector geometry. Undo restores original control points.`);
    }else if(tool==='eraser'){
     status('No editable ink under the eraser. The grey source font is only a reference guide; switch off Original to hide it.');
    }
   }
   clearDrawingGesture();renderBezierOverlay();
+ }else if(tool==='line'){
+  restoreStrokeBase();if(bezierDist(strokeAnchor,p)>2)placeConnectedStroke(strokeAnchor,p,'line',null,before,strokeJoinStart);
+  else status('Drag to draw a line from a point or an existing path endpoint.');
+  clearDrawingGesture();
  }else{
-  const contours=shapeContours(tool,strokeAnchor,p,brushWidth(),{filled:$('filledShape').checked,constrain:strokeConstrain});
+  const contours=shapeContours(tool,strokeAnchor,p,brushWidth(),{filled:$('filledShape').checked,constrain:strokeConstrain,fromCenter:strokeFromCenter});
   finishVectorShape(contours,before);clearDrawingGesture();
  }
  if(canvas.hasPointerCapture(ev.pointerId))canvas.releasePointerCapture(ev.pointerId);
@@ -1078,9 +1520,65 @@ function fillSelectedRegion(){
  const holes=vectorHolesAtFill(pixels.length?pixels:Array.from(inside.keys()).filter(i=>inside[i]));
  return applyFilledPixels(pixels,'Selected area filled.',true,holes,alpha,clipFringe);
 }
-// Fill is an action for an active Select/Lasso selection; the tool and zoom stay unchanged.
+// Delete the selected ink on the active editable layer. A vector contour that
+// crosses the selection is transferred to this layer's raster ink before the
+// mask is subtracted. Other vector contours stay editable, and the original
+// imported-font reference is not part of this operation.
+function eraseSelectedRegion(){
+ if(!nonemptySelection(selection)||!['select','lasso'].includes(tool))return false;
+ if(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null){deleteSelectedArtwork();return true;}
+ if(!editableLayerOrWarn())return false;
+ if(drawing||selectionDrag||bezierInteraction||curvePending||bezierDraft.length){
+  status('Finish the current drawing gesture before erasing the selection.',true);return false;
+ }
+ const w=ARTBOARD_WIDTH,h=ARTBOARD_HEIGHT,key=glyphKey(slotIndex);
+ const mask=newRasterCanvas(w,h),mc=mask.getContext('2d');
+ mc.fillStyle='#000';
+ if(selectionPolygon?.length>=3){
+  mc.beginPath();selectionPolygon.forEach((p,i)=>i?mc.lineTo(p.x,p.y):mc.moveTo(p.x,p.y));mc.closePath();mc.fill();
+ }else mc.fillRect(selection.x,selection.y,selection.width,selection.height);
+ const rgba=mc.getImageData(0,0,w,h).data;
+ const raster=ctx.getImageData(0,0,w,h).data;
+ let rasterChanged=false;
+ for(let i=3;i<rgba.length;i+=4){if(rgba[i]&&raster[i]){rasterChanged=true;break;}}
+ const contours=project.glyphs[key]?.bezierContours||[];
+ const converted=rasterizeVectorsCrossedByMask(contours,mask,w,h,newRasterCanvas);
+ if(!rasterChanged&&!converted.indices.length){status('No editable ink inside the selection. Other layers and the imported reference were not changed.');return false;}
+ const before=cloned(project.glyphs[key]);
+ if(converted.indices.length){
+  const removed=new Set(converted.indices),g=bezierEntry();
+  const selectedContours=converted.indices.map(i=>g.bezierContours[i]);
+  const vertices=selectionPolygon?.length>=3?selectionPolygon:[
+   {x:selection.x,y:selection.y},{x:selection.x+selection.width,y:selection.y},
+   {x:selection.x+selection.width,y:selection.y+selection.height},{x:selection.x,y:selection.y+selection.height}
+  ];
+  const selectionPath=`M ${vertices.map(p=>`${p.x} ${p.y}`).join(' L ')} Z`;
+  try{
+   const result=booleanPaths(bezierPath(selectedContours),selectionPath,'subtract',{tolerance:.3});
+   const first=converted.indices[0];
+   g.bezierContours=g.bezierContours.filter((_,i)=>!removed.has(i));
+   g.bezierContours.splice(first,0,...result.contours);
+   selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;joinEndpoints=[];
+  }catch(error){status('Selection eraser preserved the artwork because vector geometry failed: '+String(error.message||error),true);return false;}
+ }
+ // destination-out uses the mask's antialiased edges, keeping the selection
+ // boundary and ALL pixels outside it untouched.
+ ctx.save();ctx.globalCompositeOperation='destination-out';ctx.drawImage(mask,0,0);ctx.restore();
+ commitGlyph();
+ recordChange('selectionErase',key,before,project.glyphs[key],{
+  selection:cloned(selection),selectionPolygon:cloned(selectionPolygon),selectionTool:tool
+ });
+ renderBezierOverlay();renderSelectionOverlay();refreshSelectionToolbar();
+ status(`Erased selected editable ink. Undo restores it.${converted.indices.length?' Remaining vector contours stay editable.':''}`);
+ return true;
+}
+// With an active selection, Fill and Eraser are actions rather than mode
+// changes; the same selection, handles and canvas camera remain visible.
 function chooseTool(next){
- if(next==='fill'&&nonemptySelection(selection)&&['select','lasso'].includes(tool)){fillSelectedRegion();return;}
+ if(next==='fill'&&nonemptySelection(selection)&&['select','lasso'].includes(tool)){
+  if(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null){status('This selects a vector object, not a fill area. Drag a Select rectangle or Lasso to fill a region.');return;}
+  fillSelectedRegion();return;}
+ if(next==='eraser'&&nonemptySelection(selection)&&['select','lasso'].includes(tool)){eraseSelectedRegion();return;}
  setTool(next);
 }
 // Paint-style marquee selection for previously drawn raster and editable
@@ -1112,14 +1610,16 @@ function refreshSelectionToolbar(){
  if($('btnReplaceGlyph'))$('btnReplaceGlyph').disabled=!selectionClipboard;
  const fillButton=document.querySelector('[data-tool="fill"]');
  if(fillButton){const canFillSelection=active&&nonemptySelection(selection);fillButton.title=canFillSelection?'Fill the selected area without deselecting; enclosed gaps inside the selection are filled first':'Click inside a closed pencil or vector outline to fill it';fillButton.setAttribute('aria-label',canFillSelection?'Fill selected area':'Fill enclosed region');}
+ const eraseButton=document.querySelector('[data-tool="eraser"]');
+ if(eraseButton){const canEraseSelection=selected;eraseButton.title=canEraseSelection?'Erase editable ink within the selected area; keep the selection and allow Undo':'Drag over editable ink to erase it';eraseButton.setAttribute('aria-label',canEraseSelection?'Erase selected area':'Freehand eraser');}
 }
 function newRasterCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
 function selectedArtwork(){
  if(!nonemptySelection(selection))return null;
  const r=selection,bitmap=newRasterCanvas(r.width,r.height);
- bitmap.getContext('2d').drawImage(canvas,r.x,r.y,r.width,r.height,0,0,r.width,r.height);
+ if(typeof selectedObjectIndices==='undefined'||selectedObjectIndices===null)bitmap.getContext('2d').drawImage(canvas,r.x,r.y,r.width,r.height,0,0,r.width,r.height);
  const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
- const chosen=selectionPolygon?contours.map((c,i)=>contourWithinPolygon(c,selectionPolygon)?i:-1).filter(i=>i>=0):chosenContourIndices(contours,r);
+ const chosen=(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null)?selectedObjectIndices.filter(i=>i>=0&&i<contours.length):selectionPolygon?contours.map((c,i)=>contourWithinPolygon(c,selectionPolygon)?i:-1).filter(i=>i>=0):chosenContourIndices(contours,r);
  if(selectionPolygon){
   const bc=bitmap.getContext('2d');bc.save();bc.globalCompositeOperation='destination-in';
   bc.beginPath();selectionPolygon.forEach((p,i)=>i?bc.lineTo(p.x-r.x,p.y-r.y):bc.moveTo(p.x-r.x,p.y-r.y));
@@ -1145,7 +1645,8 @@ function smoothExistingOutline(){
  const selectMode=!!region&&['select','lasso'].includes(tool);
  const weights=selectMode?selectionSmoothingWeights(ARTBOARD_WIDTH,ARTBOARD_HEIGHT,region,selectionPolygon):null;
  const picked=(tool==='bezier'&&selectedBezierContour>=0)?[selectedBezierContour]:
-     selectMode?contours.map((_,i)=>i):contours.map((_,i)=>i);
+     selectMode&&selectedObjectIndices!==null?selectedObjectIndices.slice():
+     contours.map((_,i)=>i);
  let vectors=0;
  for(const idx of picked){
   const old=contours[idx];if(!old)continue;
@@ -1371,9 +1872,9 @@ function selectionPointerDown(ev){
  // Only a deliberate click/drag away from the current selection starts a new
  // marquee; never clear selection merely because a move failed to start.
  canvas.setPointerCapture(ev.pointerId);
- selectedWidthSession=null;selection=null;selectionPolygon=null;marquee=makeSelectionRect(p,p,ARTBOARD_WIDTH,ARTBOARD_HEIGHT);
+ selectedWidthSession=null;selection=null;selectionPolygon=null;selectedObjectIndices=null;marquee=makeSelectionRect(p,p,ARTBOARD_WIDTH,ARTBOARD_HEIGHT);
  marqueePolygon=tool==='lasso'?[p]:null;
- selectionDrag={pointerId:ev.pointerId,start:p,mode:tool==='lasso'?'lasso':'marquee'};
+ selectionDrag={pointerId:ev.pointerId,start:p,mode:tool==='lasso'?'lasso':'marquee',clickPoint:p};
  renderSelectionOverlay();refreshSelectionToolbar();
 }
 function selectionPointerMove(ev){
@@ -1409,16 +1910,26 @@ function selectionPointerUp(ev){
   const isLasso=selectionDrag.mode==='lasso';
   selection=nonemptySelection(marquee)&&(!isLasso||marqueePolygon?.length>=3)?marquee:null;
   selectionPolygon=selection&&isLasso?marqueePolygon:null;
+  // A click selects the topmost editable object; a drag still draws the
+  // original marquee. This makes ordinary Select behaviour discoverable.
+  if(!selection&&!isLasso&&tool==='select'){
+   const g=project?.glyphs?.[glyphKey(slotIndex)],hit=hitEditableObject(g?.bezierContours||[],selectionDrag.clickPoint,{
+    edgeTolerance:Math.max(4,7*ARTBOARD_WIDTH/Math.max(1,canvas.getBoundingClientRect().width))
+   });
+   if(hit){const bounds=editableObjectBounds(g.bezierContours[hit.index]);
+    if(bounds){selection=bounds;selectedObjectIndices=[hit.index];status('Object selected. Drag to move, resize with handles, or press Delete.');}
+   }
+  }
   if(selection)selectedWidthStart=brushWidth();
   marquee=null;marqueePolygon=null;selectionDrag=null;
   renderSelectionOverlay();refreshSelectionToolbar();
-  if(selection)status('Selected. Press Fill to paint this area, drag inside to move, or drag a handle to resize.');
+  if(selection&&selectedObjectIndices===null)status('Selected. Press Fill to paint this area, drag inside to move, or drag a handle to resize.');
  }else finishSelectionDrag();
  if(canvas.hasPointerCapture(ev.pointerId))canvas.releasePointerCapture(ev.pointerId);
 }
-function cancelSelection(){selectedWidthSession=null;marquee=null;selection=null;marqueePolygon=null;selectionPolygon=null;selectionDrag=null;canvas.style.cursor='';renderSelectionOverlay();refreshSelectionToolbar();}
+function cancelSelection(){selectedWidthSession=null;marquee=null;selection=null;marqueePolygon=null;selectionPolygon=null;selectionDrag=null;selectedObjectIndices=null;canvas.style.cursor='';renderSelectionOverlay();refreshSelectionToolbar();}
 function selectAllArtwork(){
- if(!project)return;selectedWidthSession=null;selection=editableInkBounds();marquee=null;selectionPolygon=null;marqueePolygon=null;
+ if(!project)return;selectedWidthSession=null;selectedObjectIndices=null;selection=editableInkBounds();marquee=null;selectionPolygon=null;marqueePolygon=null;
  if(!selection){status('There is no editable artwork to select. Use Copy glyph to copy the original imported vector.',true);return;}
  selectedWidthStart=brushWidth();setTool('select');renderSelectionOverlay();refreshSelectionToolbar();
  status('Whole glyph drawing selected (original grey guide excluded).');
@@ -1429,11 +1940,12 @@ function deleteSelectedArtwork(){
  const art=selectedArtwork();if(!art)return;
  if(!art.hasPixels&&!art.contours.length){status('Selection contains no editable artwork.',true);return;}
  const key=glyphKey(slotIndex),before=cloned(project.glyphs[key]);
- eraseSelectedRaster(art.rect,selectionPolygon);
+ if(typeof selectedObjectIndices==='undefined'||selectedObjectIndices===null)eraseSelectedRaster(art.rect,selectionPolygon);
  const g=project.glyphs[key];if(g?.bezierContours?.length){
   const chosen=new Set(art.indices);g.bezierContours=g.bezierContours.filter((_,i)=>!chosen.has(i));
  }
  commitGlyph();recordChange('glyph',key,before,project.glyphs[key]);
+ if(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null)selectedObjectIndices=[];
  renderBezierOverlay();renderSelectionOverlay();status('Deleted selected drawing. Undo restores it.');
 }
 function cutSelection(){if(!copySelection())return;deleteSelectedArtwork();status('Cut selection to the editor clipboard.');}
@@ -1455,11 +1967,13 @@ function cropSelection(){
  renderBezierOverlay();renderSelectionOverlay();status('Cropped editable artwork to selection. Font metrics and original reference remain unchanged.');
 }
 function partialVectorInSelection(){
+ if(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null)return false;
  return !!(selection&&(project?.glyphs?.[slotIndex]?.bezierContours||[]).some(c=>{
   const t=classifyContour(c,selection);return t!=='outside'&& (t==='partial'||selectionPolygon&&!contourWithinPolygon(c,selectionPolygon));
  }));
 }
 function eraseSelectedRaster(rect,polygon){
+ if(typeof selectedObjectIndices!=='undefined'&&selectedObjectIndices!==null)return; // Object mode edits only its own vector contour.
  if(!polygon?.length){ctx.clearRect(rect.x,rect.y,rect.width,rect.height);return;}
  ctx.save();ctx.globalCompositeOperation='destination-out';ctx.beginPath();
  polygon.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fill();ctx.restore();
@@ -1544,7 +2058,7 @@ function pasteSelection({replace=false,offset=true}={}){
   recordChange('glyphWithLicences',key,{glyph:old,documents:oldDocuments},{glyph:project.glyphs[key],documents:project.licensing.documents});
  }else recordChange('glyph',key,old,project.glyphs[key]);
  setTool('select');
- selection=translatedRect(clip.rect,dx,dy);selectedWidthStart=brushWidth();selectionPolygon=movePolygon(clip.polygon,dx,dy);renderBezierOverlay();renderSelectionOverlay();refreshSelectionToolbar();
+ selectedObjectIndices=null;selection=translatedRect(clip.rect,dx,dy);selectedWidthStart=brushWidth();selectionPolygon=movePolygon(clip.polygon,dx,dy);renderBezierOverlay();renderSelectionOverlay();refreshSelectionToolbar();
  status(`${replace?'Replaced':'Pasted'} glyph vector/paint artwork. Undo restores the previous design.`);
 }
 function duplicateSelection(){if(copySelection())pasteSelection();}
@@ -1590,9 +2104,10 @@ function bezierEntry(){const k=glyphKey(slotIndex),old=project.glyphs[k]||{};
  project.glyphs[k]=g;return g;
 }
 function commitBezier(before){
+ outlineValidationMarkers=[];
  const key=glyphKey(slotIndex),g=bezierEntry();
  g.path=combineGlyphPaths(g.rasterPath,g.bezierContours);g.modified=true;
- project.glyphs[key]=g;updateLayerPath(g);recordChange('glyph',key,before,g);
+ project.glyphs[key]=g;updateLayerPath(g,project);recordChange('glyph',key,before,g);
  updateTrace();updateProgress();renderBezierOverlay();
 }
 function addSvgEl(type,attrs,parent){const el=document.createElementNS('http://www.w3.org/2000/svg',type);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,String(v));parent.appendChild(el);return el;}
@@ -1633,15 +2148,17 @@ function renderBezierHelp(){
  $('bezierState').textContent=message;
  $('bezierCount').textContent=count?`${count} point${count===1?'':'s'} in current outline`:'Ready to draw a new outline';
  const selectedContour=project?.glyphs?.[slotIndex]?.bezierContours?.[selectedBezierContour];
+ if(isStroke(selectedContour)&&!bezierDraft.length){$('btnCloseBezier').textContent='Close selected path';$('btnCloseBezierHole').disabled=true;}
  $('btnCloseBezier').textContent=count?'Close outline (automatic)':'Make selected outline filled';
  $('btnCloseBezierHole').textContent=count?'Close hole (Shift+Enter)':'Make selected outline a hole';
- $('btnCloseBezier').disabled=bezierPreview||(count<3 && (!selectedContour||selectedContour.role!=='hole'));
- $('btnCloseBezierHole').disabled=bezierPreview||(count<3 && (!selectedContour||selectedContour.role==='hole'));
+ if(isStroke(selectedContour)&&!count)$('btnCloseBezier').textContent='Close selected path';
+ $('btnCloseBezier').disabled=bezierPreview||(count<3 && (!selectedContour||(isStroke(selectedContour)?(selectedContour.closed||selectedContour.points.length<3):selectedContour.role!=='hole')));
+ $('btnCloseBezierHole').disabled=bezierPreview||(count<3 && (!selectedContour||isStroke(selectedContour)||selectedContour.role==='hole'));
  $('btnCancelBezier').disabled=!count||bezierPreview;
  $('btnDeleteBezier').disabled=count>0||selectedBezierContour<0||bezierPreview;
  const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
  const picker=$('bezierContourPicker');
- const descriptions=contours.map((c,i)=>`Outline ${i+1} (${c.role==='hole'?'Hole':'Filled'})`);
+ const descriptions=contours.map((c,i)=>isStroke(c)?`Path ${i+1} (${c.closed?'Closed':'Open'})`:`Outline ${i+1} (${c.role==='hole'?'Hole':'Filled'})`);
  if(picker.options.length!==descriptions.length+1 || descriptions.some((name,i)=>picker.options[i+1]?.textContent!==name)){
    picker.replaceChildren(new Option('Choose outline…',''),...descriptions.map((name,i)=>new Option(name,String(i))));
  }
@@ -1658,11 +2175,35 @@ function renderOtherGlyphLayers(){
  if(!under||!over)return;
  under.replaceChildren();over.replaceChildren();
  const g=project?.glyphs?.[slotIndex];if(!g?.layerStack)return;
- const others=otherLayerPaths(g);
+ if(typeof isolatedLayerId!=='undefined'&&isolatedLayerId&&isolatedLayerId===activeLayer(g)?.id){
+  const layer=activeLayer(g);if(layer?.component){
+   const p=resolveLinkedGlyphPaths(project)[String(layer.component.sourceGlyphId)]||'';
+   if(p)addSvgEl('path',{d:transformSvgPath(p,layer.component),fill:'#191921','fill-rule':'nonzero'},over);
+  }
+  return;
+ }
+ if(hasCompositingModes(g)){
+  // Show the actual composited glyph (without modifying any editable layer).
+  // White knockout regions hide only ink cut away by subtract/intersect layers.
+  try{
+   const whole=originalVisibleLayerPaths(g,project),final=compositeLayerPath(g,{visibleOnly:true,project});
+   const cut=whole?booleanPaths(whole,final,'subtract').path:'';
+   if(cut)addSvgEl('path',{d:cut,fill:'#fffdf7','fill-rule':'nonzero',class:'layer-knockout'},over);
+   if(final)addSvgEl('path',{d:final,fill:'#191921','fill-rule':'nonzero',class:'layer-composite'},over);
+  }catch(error){status('Cannot preview layer geometry: '+String(error.message||error),true);}
+  return;
+ }
+ const others=otherLayerPaths(g,project);
+ const linkedActive=activeLayer(g);
+ if(linkedActive?.component&&linkedActive.visible){
+  const p=resolveLinkedGlyphPaths(project)[String(linkedActive.component.sourceGlyphId)]||'';
+  if(p)addSvgEl('path',{d:transformSvgPath(p,linkedActive.component),fill:linkedActive.mode==='guide'||!linkedActive.enabled?'#805ca8':'#191921',opacity:linkedActive.mode==='guide'||!linkedActive.enabled?0.3:1,'fill-rule':'nonzero','data-layer-id':linkedActive.id},over);
+ }
  for(const [root,paths] of [[under,others.below],[over,others.above]]){
   for(const item of paths){
    const path=addSvgEl('path',{d:item.path,'fill-rule':'nonzero','data-layer-id':item.id},root);
-   path.setAttribute('fill','#191921');
+   path.setAttribute('fill',item.mode==='guide'?'#805ca8':'#191921');
+   if(item.mode==='guide')path.setAttribute('opacity','0.3');
   }
  }
 }
@@ -1671,7 +2212,7 @@ function editableLayerOrWarn(){
  if(!project)return false;
  const g=project.glyphs[glyphKey(slotIndex)]||{};
  if(!layerCanEdit(g)){
-  status('This drawing layer is locked or hidden. Select an unlocked, visible layer before editing.',true);
+  status('This layer is locked, hidden or a live linked component. Select an editable layer to draw; edit the source glyph to change the linked outline.',true);
   return false;
  }
  return true;
@@ -1684,12 +2225,17 @@ function mutateGlyphLayers(action,label){
  const key=glyphKey(slotIndex),g=project.glyphs[key]||{};
  ensureGlyphLayers(g);project.glyphs[key]=g;
  const before=cloned(g),previousId=g.layerStack.activeId;
- try{action(g);}catch(e){status(String(e.message||e),true);return;}
+ try{action(g);updateLayerPath(g,project);}catch(e){
+  project.glyphs[key]=before;
+  try{if(hasLinkedComponents(project))resolveLinkedGlyphPaths(project,{commit:true});}catch(_){/* preserve the original error */}
+  refreshGlyphLayerPalette();
+  status('Layer operation not applied: '+String(e.message||e),true);return;
+ }
  if(g.layerStack.activeId!==previousId){
-  cancelSelection();selectedBezierContour=-1;selectedBezierNode=-1;
+  cancelSelection();isolatedLayerId=null;selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;joinEndpoints=[];
   selectedWidthSession=null;
  }
- updateLayerPath(g);recordChange('glyph',key,before,g);
+ recordChange('glyph',key,before,g);
  // Raster and contours belong to the active layer only; changing layers
  // swaps the backing art, not the canvas coordinates or project identity.
  drawImageUrl((g.modified||g.rasterCopyForEditing)?(g.raster||''):'').then(()=>{
@@ -1713,7 +2259,8 @@ function renderGlyphLayerPalette(){
    updateLayer(glyph,layer.id,{[key]:!layer[key]});
   },`Layer ${title.toLowerCase()}.`));
   row.append(toggle('visible',layer.visible?'◉':'○',layer.visible?'Hide layer':'Show layer'));
-  row.append(toggle('locked',layer.locked?'🔒':'♧',layer.locked?'Unlock layer':'Lock layer'));
+  if(layer.component){const lock=document.createElement('span');lock.textContent='🔗';lock.title='Live linked glyph: edit the source glyph or select a different layer to draw';row.append(lock);}
+  else row.append(toggle('locked',layer.locked?'🔒':'♧',layer.locked?'Unlock layer':'Lock layer'));
   const name=button(layer.name,'Select layer '+layer.name,()=>{
    if(layer.id===stack.activeId)return;
    mutateGlyphLayers(glyph=>selectLayer(glyph,layer.id),'Selected layer '+layer.name+'.');
@@ -1722,6 +2269,15 @@ function renderGlyphLayerPalette(){
    const candidate=window.prompt('Rename layer',layer.name);
    if(candidate!=null)mutateGlyphLayers(glyph=>updateLayer(glyph,layer.id,{name:candidate}),'Layer renamed.');
   };row.append(name);
+  const modeSelect=document.createElement('select');modeSelect.className='layer-mode';
+  modeSelect.title='How this layer combines with the layers below: Add ink, Cut out ink, Keep shared ink, or Guide (not exported)';
+  modeSelect.setAttribute('aria-label','Layer mode for '+layer.name);
+  for(const [mode,label] of [['add','+ Add'],['subtract','− Cut'],['intersect','∩ Keep'],['guide','✎ Guide']]){
+   const option=document.createElement('option');option.value=mode;option.textContent=label;modeSelect.append(option);
+  }
+  modeSelect.value=layer.mode||'add';
+  modeSelect.onchange=()=>mutateGlyphLayers(glyph=>updateLayer(glyph,layer.id,{mode:modeSelect.value}),'Layer mode: '+modeSelect.options[modeSelect.selectedIndex].textContent+'.');
+  row.append(modeSelect);
   const included=document.createElement('input');included.type='checkbox';included.className='layer-export';included.checked=layer.enabled;
   included.title='Use this layer in exported font';included.setAttribute('aria-label','Export layer '+layer.name);
   included.onchange=()=>mutateGlyphLayers(glyph=>updateLayer(glyph,layer.id,{enabled:included.checked}),'Updated layer export inclusion.');row.append(included);
@@ -1737,8 +2293,161 @@ function renderGlyphLayerPalette(){
  const title=document.createElement('span');title.className='palette-layer-name';title.textContent=project.sourceFont?'Imported font (base reference)':'Fairfax template (base reference)';base.append(title);
  const guide=document.createElement('small');guide.textContent='Guide only';guide.title='Original source remains available to the compiler for unmodified glyphs. Copy it to an editable layer to change it.';base.append(guide);root.append(base);
  $('btnDeleteGlyphLayer').disabled=stack.activeId==='artwork';
+ const source=$('linkComponentSource'),edit=$('linkedComponentTransform'),current=activeLayer(g);
+ if(source){
+  const previous=source.value;source.replaceChildren();
+  let choices=0;
+  for(const slot of slots){const id=String(slot.index),candidate=project.glyphs[id];
+   if(id===glyphKey(slotIndex)||!candidate?.path?.trim())continue;
+   const option=new Option(slotMeta(slot.index).word||slot.word||id,id);source.append(option);choices++;
+  }
+  if([...source.options].some(o=>o.value===previous))source.value=previous;
+  if($('btnAddLinkedGlyph'))$('btnAddLinkedGlyph').disabled=!choices;
+ }
+ if(edit){edit.hidden=!current?.component;
+  if(current?.component){for(const key of ['dx','dy','scale','rotation']){const field=$('linked-'+key);if(field)field.value=String(current.component[key]??(key==='scale'?1:0));}}
+ }
+ refreshLayerAdvancedControls(g);
+}
+// Advanced controls stay in a folded Layers subsection; ordinary drawing
+// needs no additional toolbar buttons, popups or canvas-space allocation.
+function refreshLayerAdvancedControls(g){
+ const root=$('layerModifierList'),selector=$('layerModifierSource');
+ if(!root||!selector)return;
+ const layer=activeLayer(g);root.replaceChildren();selector.replaceChildren();
+ if(!layer)return;
+ for(const other of g.layerStack.layers){
+  if(other.id===layer.id)continue;
+  const o=document.createElement('option');o.value=other.id;o.textContent=other.name;selector.append(o);
+ }
+ $('btnLayerModifierAdd').disabled=selector.options.length===0;
+ for(let i=0;i<(layer.modifiers||[]).length;i++){
+  const mod=layer.modifiers[i],entry=document.createElement('div');entry.className='layer-modifier-entry';
+  const source=g.layerStack.layers.find(x=>x.id===mod.sourceLayerId);
+  const title=document.createElement('span');title.textContent=`${mod.enabled===false?'Paused: ':''}${mod.operation} · ${source?.name||'missing source'}`;
+  entry.append(title);
+  const toggle=document.createElement('button');toggle.type='button';toggle.className='mini';toggle.textContent=mod.enabled===false?'Enable':'Pause';toggle.title='Toggle modifier without deleting its source';
+  toggle.onclick=()=>mutateGlyphLayers(glyph=>{
+   const selected=activeLayer(glyph),next=structuredClone(selected.modifiers||[]);
+   next[i].enabled=next[i].enabled===false;
+   updateLayer(glyph,selected.id,{modifiers:next});
+  },'Modifier toggled. Original source remains editable.');entry.append(toggle);
+  const remove=document.createElement('button');remove.type='button';remove.className='mini';remove.textContent='×';remove.title='Remove this modifier (Undo restores it)';
+  remove.onclick=()=>mutateGlyphLayers(glyph=>{
+   const selected=activeLayer(glyph),next=structuredClone(selected.modifiers||[]);next.splice(i,1);
+   updateLayer(glyph,selected.id,{modifiers:next});
+  },'Modifier removed. Source artwork unchanged.');entry.append(remove);root.append(entry);
+ }
+ const clip=layer.clip;const clipLabel=$('layerClipStatus');
+ if(clipLabel)clipLabel.textContent=clip?.path?(clip.enabled===false?'Clipping paused':'Clipping enabled · editable source retained'):'No clipping boundary';
+ const clear=$('btnLayerClearClip');if(clear)clear.disabled=!clip;
+ const isolate=$('btnLayerIsolate');if(isolate){const active=isolatedLayerId===layer.id;isolate.textContent=active?'Show all layers':'Isolate this layer';isolate.setAttribute('aria-pressed',String(active));}
+}
+function setupAdvancedLayerControls(panel){
+ const details=document.createElement('details');details.className='linked-components-details';details.id='layerEffectsDetails';
+ const summary=document.createElement('summary');summary.textContent='Clipping & shape modifiers (advanced)';details.append(summary);
+ const info=document.createElement('p');info.className='small muted';info.textContent='Optional and reversible. Edit the source layers normally; clips and boolean modifiers affect the preview/export without replacing source outlines. No change to the everyday Pencil, Select or Eraser tools.';details.append(info);
+ const row=document.createElement('div');row.className='linked-component-row';
+ const sourceLabel=document.createElement('label');sourceLabel.textContent='Combine with';sourceLabel.htmlFor='layerModifierSource';
+ const source=document.createElement('select');source.id='layerModifierSource';sourceLabel.append(source);row.append(sourceLabel);
+ const modeLabel=document.createElement('label');modeLabel.textContent='Operation';modeLabel.htmlFor='layerModifierOperation';
+ const mode=document.createElement('select');mode.id='layerModifierOperation';
+ for(const [operation,label] of [['union','Add'],['subtract','Cut'],['intersect','Keep'],['exclude','Exclude']]){const option=document.createElement('option');option.value=operation;option.textContent=label;mode.append(option);}
+ modeLabel.append(mode);row.append(modeLabel);
+ const add=document.createElement('button');add.id='btnLayerModifierAdd';add.type='button';add.className='btn compact';add.textContent='+ Modifier';row.append(add);details.append(row);
+ const list=document.createElement('div');list.id='layerModifierList';list.className='layer-modifier-list';details.append(list);
+ const clipActions=document.createElement('div');clipActions.className='palette-layer-foot';
+ const clip=document.createElement('button');clip.type='button';clip.id='btnLayerClipSelection';clip.className='btn compact';clip.textContent='Clip to selection';
+ clip.title='Use an existing rectangle or lasso as a live layer clipping boundary; original editable geometry stays intact';
+ const clear=document.createElement('button');clear.type='button';clear.id='btnLayerClearClip';clear.className='btn compact';clear.textContent='Clear clip';
+ const isolate=document.createElement('button');isolate.type='button';isolate.id='btnLayerIsolate';isolate.className='btn compact';isolate.textContent='Isolate this layer';
+ isolate.title='Temporarily show only the selected layer in the editor; does not change export or saved project';
+ clipActions.append(clip,clear,isolate);details.append(clipActions);
+ const clipStatus=document.createElement('p');clipStatus.id='layerClipStatus';clipStatus.className='small muted';details.append(clipStatus);
+ panel.append(details);
+ add.onclick=()=>mutateGlyphLayers(g=>{
+  const layer=activeLayer(g),mods=structuredClone(layer.modifiers||[]);
+  mods.push({operation:mode.value,sourceLayerId:source.value,enabled:true});
+  const preview=previewLayerEffectChange(g,layer.id,l=>{l.modifiers=mods;});
+  g.layerStack=preview;
+ },'Live modifier added. Undo restores the original composition.');
+ clip.onclick=()=>{
+  if(!nonemptySelection(selection)){status('First draw a rectangle with Select or a lasso, then choose Clip to selection.',true);return;}
+  const shape=selectionPolygon?.length>=3?makePolygonClip(selectionPolygon):makeRectangleClip(selection);
+  mutateGlyphLayers(g=>updateLayer(g,activeLayer(g).id,{clip:shape}),
+   'Live clip added. You can continue editing ink beyond the visible clip; Undo restores it.');
+ };
+ clear.onclick=()=>mutateGlyphLayers(g=>updateLayer(g,activeLayer(g).id,{clip:null}),
+  'Clipping boundary removed. All original ink is preserved.');
+ isolate.onclick=()=>{
+  const g=project?.glyphs?.[glyphKey(slotIndex)];if(!g)return;
+  const id=activeLayer(g)?.id;isolatedLayerId=isolatedLayerId===id?null:id;
+  renderOtherGlyphLayers();refreshLayerAdvancedControls(g);
+  status(isolatedLayerId?'Only this layer is shown for editing; export and other layer data remain unchanged.':'All layers shown.');
+ };
+}
+function joinSelectedStrokeEndpoints(action){
+ if(!editableLayerOrWarn()||bezierDraft.length||drawing||curvePending)return;
+ const key=glyphKey(slotIndex),g=bezierEntry(),contours=g.bezierContours;
+ const selected=joinEndpoints;
+ if(action==='close'){
+  const ci=selected[0]?.ci??selectedStroke,stroke=contours[ci];
+  if(!isStroke(stroke)||stroke.closed){status('Select an open line/curve path first.',true);return;}
+  if(stroke.points.length<3){status('To close this path, add at least one more segment first.',true);return;}
+  const before=cloned(g);contours[ci]=closeOpenStroke(stroke);selectedStroke=ci;joinEndpoints=[];
+  commitBezier(before);status('Path closed. Undo reopens it.');return;
+ }
+ if(selected.length!==2){status('Choose the first endpoint with Edit path, then Shift-click a second endpoint. Press Join endpoints or Join smoothly.',true);return;}
+ const [a,b]=selected,first=contours[a.ci],second=contours[b.ci];
+ if(!isStroke(first)||!isStroke(second)){status('Join requires two editable open line/curve strokes.',true);return;}
+ const before=cloned(g);
+ try{
+  if(a.ci===b.ci){
+   if(first.points.length<3||a.ni===b.ni)throw Error('Choose opposite endpoints of a path with at least three nodes.');
+   contours[a.ci]=closeOpenStroke(first,{smooth:action==='smooth'});selectedStroke=a.ci;
+  }else{
+   const merged=joinOpenStrokes(first,a.ni,second,b.ni,{smooth:action==='smooth'});
+   contours[a.ci]=merged;contours.splice(b.ci,1);selectedStroke=b.ci<a.ci?a.ci-1:a.ci;
+  }
+ }catch(error){status(error.message,true);return;}
+ selectedBezierContour=selectedStroke;
+ const junctionPoint={x:first.points[a.ni].x,y:first.points[a.ni].y};
+ selectedBezierNode=strokeNodeHit([contours[selectedStroke]],junctionPoint,bezierPointerRadius(25))?.ni??-1;
+ joinEndpoints=[];
+ commitBezier(before);status(action==='smooth'?'Paths joined smoothly. The purple junction remains editable.':'Paths joined. Select the purple junction and choose Smooth junction to remove any kink.');
 }
 function wireGlyphLayerActions(){
+ const layersPanel=document.getElementById('palette-layers');
+ const details=document.createElement('details');details.className='linked-components-details';
+ const summary=document.createElement('summary');summary.textContent='Linked components (advanced)';details.append(summary);
+ const help=document.createElement('p');help.className='small muted';help.textContent='Reuse an existing drawn glyph as a live, read-only layer. Edit its source glyph to update all links. Add another drawing layer for local modifications. Links are included in exported TTFs.';details.append(help);
+ const sourceRow=document.createElement('div');sourceRow.className='linked-component-row';
+ const label=document.createElement('label');label.textContent='Source glyph';label.htmlFor='linkComponentSource';
+ const source=document.createElement('select');source.id='linkComponentSource';label.append(source);sourceRow.append(label);
+ const add=document.createElement('button');add.id='btnAddLinkedGlyph';add.className='btn compact';add.type='button';add.textContent='+ Link glyph';sourceRow.append(add);details.append(sourceRow);
+ const edit=document.createElement('div');edit.id='linkedComponentTransform';edit.className='linked-component-transform';edit.hidden=true;
+ const heading=document.createElement('p');heading.textContent='Selected linked layer — transform';heading.className='small muted';edit.append(heading);
+ for(const [key,text,min,max,step] of [['dx','X','-4000','4000','1'],['dy','Y','-4000','4000','1'],['scale','Scale','0.05','8','0.05'],['rotation','Rotate °','-360','360','5']]){
+  const wrapper=document.createElement('label');wrapper.textContent=text;wrapper.htmlFor='linked-'+key;
+  const input=document.createElement('input');input.type='number';input.id='linked-'+key;input.min=min;input.max=max;input.step=step;input.value=key==='scale'?'1':'0';
+  wrapper.append(input);edit.append(wrapper);
+  input.addEventListener('change',()=>{
+   const active=activeLayer(project.glyphs[glyphKey(slotIndex)]||{});if(!active?.component)return;
+   mutateGlyphLayers(g=>{
+    const layer=activeLayer(g),next=normalizeComponent({...layer.component,[key]:Number(input.value)});
+    layer.component=next;
+    resolveLinkedGlyphPaths(project);
+   },'Linked glyph transform updated. Undo restores the previous position.');
+  });
+ }
+ details.append(edit);layersPanel.append(details);
+ setupAdvancedLayerControls(layersPanel);
+ add.onclick=()=>{const sourceId=source.value;if(!sourceId)return;
+  mutateGlyphLayers(g=>{
+   const targetId=glyphKey(slotIndex);const linked=createLinkedComponentLayer(project,targetId,sourceId);
+   selectLayer(g,linked.id);g.modified=true;
+  },'Linked glyph layer created. Source edits update this glyph automatically.');
+ };
  $('btnAddGlyphLayer').onclick=()=>mutateGlyphLayers(g=>addLayer(g),'Created editable layer.');
  $('btnDuplicateGlyphLayer').onclick=()=>mutateGlyphLayers(g=>duplicateLayer(g,activeLayer(g).id),'Duplicated active layer.');
  $('btnDeleteGlyphLayer').onclick=()=>{
@@ -1757,24 +2466,240 @@ function wireGlyphLayerActions(){
    const k=glyphKey(slotIndex),g=project.glyphs[k],contour=g?.bezierContours?.[selectedBezierContour];
    if(!contour||selectedBezierNode<0){status('Select an outline and click one of its purple anchor points first.',true);return;}
    const i=selectedBezierNode,n=contour.points.length;
-   if(n<3){status('An outline needs at least three nodes.',true);return;}
+   if(n<3){status('A smooth junction needs at least three nodes.',true);return;}
+   if(isStroke(contour)&&!contour.closed&&(i===0||i===n-1)){
+    status('Smooth point applies to a junction inside the open path. To adjust an endpoint, drag it or its tangent handle.',true);return;
+   }
    const before=cloned(g),node=contour.points[i];
    try{Object.assign(node,adjustBezierNode(node,contour.points[(i+n-1)%n],contour.points[(i+1)%n],mode));}
    catch(error){status('Cannot adjust selected node: '+error.message,true);return;}
    commitBezier(before);status(`Selected Bézier point is now ${mode}. Undo restores its handles.`);
   };
  }
- const validate=document.createElement('button');validate.className='btn compact';validate.type='button';validate.id='btnValidateGlyphOutline';validate.textContent='Check current outline';
- validate.title='Check Bézier point structure with the independent drawing WASM (or offline fallback)';
- document.getElementById('palette-path').append(validate);
- validate.onclick=()=>{
-  const g=project.glyphs[glyphKey(slotIndex)]||{},result=analyzeContours(g.bezierContours||[]);
-  status(`Outline check: ${result.contourCount} contour(s), ${result.pointCount} points, ${result.holes} holes`+
-   (result.warnings.length?`; ${result.warnings.join('; ')}`:'; no structural errors detected.')+
-   (editorGeometryStatus().ready?' (drawing WASM)':' (offline JavaScript fallback)'),!!result.warnings.length);
+ const joinToolbar=document.createElement('div');joinToolbar.className='palette-join-actions';
+ for(const [label,action] of [['Join endpoints','join'],['Join smoothly','smooth'],['Close path','close']]){
+  const button=document.createElement('button');button.className='btn compact';button.type='button';button.textContent=label;
+  button.title='Choose open path endpoints using Edit path. Shift-click a second endpoint, then use Join. Each operation is one Undo step.';
+  button.addEventListener('click',()=>joinSelectedStrokeEndpoints(action));joinToolbar.append(button);
+ }
+ const smoothJunction=document.createElement('button');smoothJunction.className='btn compact';smoothJunction.type='button';smoothJunction.textContent='Smooth junction';
+ smoothJunction.title='Select a purple interior junction with Line, Curve, or Edit path, then align the two tangent handles without moving its anchor.';
+ smoothJunction.addEventListener('click',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)],stroke=g?.bezierContours?.[selectedStroke];
+  if(!isStroke(stroke)||selectedBezierContour!==selectedStroke||selectedBezierNode<0){status('Click a purple interior junction point first, then press Smooth junction.',true);return;}
+  const before=cloned(g);
+  if(smoothStrokeJunction(stroke,selectedBezierNode)){commitBezier(before);status('Junction tangents aligned. Undo restores the original curve.');}
+  else {renderBezierOverlay();status('Junction is already smooth or is not an interior point.');}
+ });
+ joinToolbar.append(smoothJunction);
+ const guide=document.createElement('small');guide.className='palette-status';guide.textContent='Click a purple interior junction to drag or select it; drag its smaller tangent controls for precise correction. Smooth junction removes kinks. Square endpoints still extend paths; Alt-drag moves them.';
+ pathPalette.append(joinToolbar,guide);
+ // Advanced operations are folded away by default to preserve canvas room.
+ const detail=(title)=>{const box=document.createElement('details');box.className='palette-subpanel';const head=document.createElement('summary');head.textContent=title;box.append(head);pathPalette.append(box);return box;};
+ const nodePanel=detail('Edit nodes');
+ const nodeButton=(label,action,title)=>{const b=document.createElement('button');b.type='button';b.className='btn compact';b.textContent=label;b.title=title;b.onclick=action;nodePanel.append(b);};
+ const mutateSelectedNode=(action,message)=>{
+  if(!editableLayerOrWarn())return;
+  const key=glyphKey(slotIndex),g=project.glyphs[key],c=g?.bezierContours?.[selectedBezierContour];
+  if(!c||selectedBezierNode<0){status('Select a node using Edit path or Curve first.',true);return;}
+  const before=cloned(g);
+  try{action(g,c,selectedBezierNode);}catch(error){status(String(error.message||error),true);return;}
+  commitBezier(before);status(message);
  };
+ nodeButton('Insert midpoint',()=>mutateSelectedNode((g,c,i)=>{
+  const result=splitEditableBezier(c,i,.5);g.bezierContours[selectedBezierContour]=result.contour;selectedBezierNode=result.index;
+ },'Inserted a point without changing the curve.'),'Insert an exact Bézier midpoint after the selected node');
+ nodeButton('Add curve extrema',()=>{
+  if(!editableLayerOrWarn())return;
+  const k=glyphKey(slotIndex),g=project.glyphs[k],ci=selectedBezierContour,c=g?.bezierContours?.[ci];
+  if(!c){status('Select an editable curve or filled outline first.',true);return;}
+  let result;
+  try{result=addContourExtrema(c);}catch(error){status('Could not add extrema: '+String(error.message||error),true);return;}
+  if(!result.inserted){status('This outline already has all necessary extrema.');return;}
+  const before=cloned(g);g.bezierContours[ci]=result.contour;selectedBezierNode=-1;
+  commitBezier(before);status(`Inserted ${result.inserted} exact extrema point(s); the curve is unchanged. Undo restores the original nodes.`);
+ },'Insert precise horizontal and vertical extrema into the selected curve without changing its shape');
+ nodeButton('Delete point',()=>mutateSelectedNode((g,c,i)=>{
+  g.bezierContours[selectedBezierContour]=deleteBezierNode(c,i);selectedBezierNode=Math.min(i,g.bezierContours[selectedBezierContour].points.length-1);
+ },'Removed one point. Undo restores the old curve.'),'Delete the chosen anchor, keeping remaining nodes editable');
+ nodeButton('Split at point',()=>mutateSelectedNode((g,c,i)=>{
+  const parts=splitStrokeAtNode(c,i);g.bezierContours.splice(selectedBezierContour,1,...parts);selectedBezierNode=parts[0].points.length-1;
+ },'Separated this centreline into two editable paths.'),'Split an open connected Line/Curve path at its selected interior node');
+ nodeButton('Simplify polygon',()=>{
+  if(!editableLayerOrWarn())return;
+  const k=glyphKey(slotIndex),g=project.glyphs[k],ci=selectedBezierContour,c=g?.bezierContours?.[ci];
+  if(!c||c.kind==='stroke'){status('Choose a filled outline in Edit path first.',true);return;}
+  const before=cloned(g),next=simplifyPolygonNodes(c,.6);
+  if(next.points.length===c.points.length){status('This outline has no redundant straight-edge points at the current tolerance.');return;}
+  g.bezierContours[ci]=next;commitBezier(before);status('Redundant polygon points removed. Original available through Undo.');
+ },'Remove low-deviation straight-edge nodes without affecting other contours');
+ const booleanPanel=detail('Combine shapes');
+ const shapeHelp=document.createElement('small');shapeHelp.className='palette-status';shapeHelp.textContent='Choose two CLOSED outlines on this layer. The result stays editable; the originals can be restored with Undo.';
+ booleanPanel.append(shapeHelp);
+ const shapeRow=document.createElement('div');shapeRow.className='palette-boolean-row';
+ const selectA=document.createElement('select'),selectB=document.createElement('select'),operation=document.createElement('select');
+ selectA.setAttribute('aria-label','First outline');selectB.setAttribute('aria-label','Second outline');
+ for(const [id,label] of [['union','Union'],['subtract','Subtract B from A'],['intersect','Intersect'],['exclude','Exclude overlap']]){
+  const opt=document.createElement('option');opt.value=id;opt.textContent=label;operation.append(opt);
+ }
+ const populate=()=>{
+  const contours=project?.glyphs?.[glyphKey(slotIndex)]?.bezierContours||[];
+  const choices=contours.map((c,i)=>({i,c})).filter(({c})=>c.kind!=='stroke'&&c.points?.length>=3);
+  const preferred=selectedBezierContour;
+  const redraw=select=>{const v=select.value;select.replaceChildren();for(const {i} of choices)select.add(new Option('Outline '+(i+1),String(i)));select.value=[...select.options].some(o=>o.value===v)?v:(select.options[0]?.value||'');};
+  redraw(selectA);redraw(selectB);
+  if(choices.some(c=>c.i===preferred))selectA.value=String(preferred);
+  if(selectB.value===selectA.value)selectB.value=choices.find(c=>String(c.i)!==selectA.value)?.i??'';
+ };
+ booleanPanel.addEventListener('toggle',()=>{if(booleanPanel.open)populate();});
+ for(const select of [selectA,selectB])select.addEventListener('focus',populate);
+ for(const input of [selectA,selectB,operation])shapeRow.append(input);
+ booleanPanel.append(shapeRow);
+ const execute=document.createElement('button');execute.type='button';execute.className='btn compact';execute.textContent='Apply to selected outlines';
+ booleanPanel.append(execute);
+ execute.onclick=()=>{
+  if(!editableLayerOrWarn())return;
+  const key=glyphKey(slotIndex),g=project.glyphs[key],a=Number(selectA.value),b=Number(selectB.value);
+  if(!Number.isInteger(a)||!Number.isInteger(b)||a===b||!g?.bezierContours?.[a]||!g.bezierContours[b]){status('Choose two different closed outlines.',true);return;}
+  const first=g.bezierContours[a],second=g.bezierContours[b];
+  if(first.kind==='stroke'||second.kind==='stroke'){status('Convert centrelines to closed outlines before combining.',true);return;}
+  let combined;
+  try{combined=booleanPaths(bezierPath([first]),bezierPath([second]),operation.value,{tolerance:.28});}
+  catch(error){status('Vector operation failed: '+String(error.message||error),true);return;}
+  const before=cloned(g),at=Math.min(a,b);
+  g.bezierContours=g.bezierContours.filter((_,i)=>i!==a&&i!==b);
+  g.bezierContours.splice(at,0,...combined.contours);
+  selectedBezierContour=combined.contours.length?at:-1;selectedBezierNode=-1;selectedStroke=-1;
+  commitBezier(before);populate();status(operation.options[operation.selectedIndex].textContent+' complete: '+combined.contours.length+' vector outline(s). Undo restores the original shapes.');
+ };
+ // Repair operations stay behind a closed disclosure, not in the primary
+ // tool row or on the canvas. Ordinary drawing requires no extra decisions.
+ const repairPanel=detail('Inspect & repair outlines');
+ const repairHelp=document.createElement('small');repairHelp.className='palette-status';
+ repairHelp.textContent='Ordinary drawing stays unchanged. Check marks possible defects without altering your work. Tiny-loop/spike trimming and topology repairs are separate, explicit Undo-able actions on the active editable layer.';
+ repairPanel.append(repairHelp);
+ const repairActions=document.createElement('div');repairActions.className='palette-repair-actions';repairPanel.append(repairActions);
+ const repairReport=document.createElement('div');repairReport.className='palette-repair-report';repairReport.setAttribute('aria-live','polite');repairPanel.append(repairReport);
+ const repairButton=(label,id,handler,tooltip)=>{
+  const b=document.createElement('button');b.type='button';b.className='btn compact';b.textContent=label;b.id=id;b.title=tooltip;b.onclick=handler;repairActions.append(b);return b;
+ };
+ function refreshOutlineRepairReport(){
+  const g=project?.glyphs?.[glyphKey(slotIndex)]||{},result=validateGlyphContours(g.bezierContours||[]);
+  outlineValidationMarkers=result.issues||[];renderBezierOverlay();repairReport.replaceChildren();
+  const summary=document.createElement('small');summary.className='palette-status';
+  summary.textContent=`${result.contourCount} contour(s), ${result.pointCount} points · ${result.issues.length} finding(s)`;
+  repairReport.append(summary);
+  if(!result.issues.length){
+   const clear=document.createElement('p');clear.className='palette-status';clear.textContent='No problems detected by these checks. This is not a full font-validation certificate.';repairReport.append(clear);
+  }else{
+   // Each finding is clickable: its location is highlighted and the affected
+   // contour is selected for regular Edit path interaction.
+   const issues=document.createElement('div');issues.className='palette-repair-issues';
+   for(const issue of result.issues.slice(0,18)){
+    const b=document.createElement('button');b.type='button';b.className='mini';
+    b.textContent=`Outline ${issue.contourIndex+1}: ${issue.message}`;
+    b.title='Highlight this finding and select its editable outline';
+    b.onclick=()=>{
+     if(bezierDraft.length){status('Finish or cancel your current Bézier draft before inspecting another contour.',true);return;}
+     selectedBezierContour=issue.contourIndex;selectedBezierNode=issue.nodeIndex>=0?issue.nodeIndex:-1;
+     selectedStroke=isStroke(g.bezierContours?.[issue.contourIndex])?issue.contourIndex:-1;
+     setTool('bezier');renderBezierOverlay();status(issue.message,true);
+    };
+    issues.append(b);
+   }
+   repairReport.append(issues);
+   if(result.issues.length>18){const more=document.createElement('small');more.textContent=`${result.issues.length-18} more finding(s); inspect the highlighted positions.`;repairReport.append(more);}
+  }
+  return result;
+ }
+ repairButton('Check outline','btnValidateGlyphOutline',()=>{
+  const result=refreshOutlineRepairReport();
+  status(result.issues.length?`Found ${result.issues.length} issue(s); click a finding below to inspect its contour.`:'No outline issues detected by these checks.',!!result.issues.length);
+ },'Diagnose and highlight self-crossings, duplicates, short spikes, orphan holes and malformed outlines');
+ repairButton('Safe cleanup','btnRepairOutlineSafe',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)];
+  if(!g?.bezierContours?.length){status('There are no editable contours on this layer.');return;}
+  const result=cleanContoursExact(g.bezierContours);
+  if(!result.changed){status(result.skipped?'No safe changes found; malformed contours must be repaired manually.':'No exact zero-length edges or winding corrections to make.');return;}
+  const before=cloned(g);g.bezierContours=result.contours;selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;
+  commitBezier(before);refreshOutlineRepairReport();
+  status(`Safe cleanup: removed ${result.removed} zero-length segment(s), normalised ${result.oriented} winding(s). Undo restores the exact originals.`);
+ },'Only remove provably zero-length cubic segments and match the font serializer’s existing winding; never flatten curves');
+ repairButton('Trim tiny spike','btnTrimTinySpikes',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)],ci=selectedBezierContour,c=g?.bezierContours?.[ci];
+  if(!c){status('First click a highlighted tiny-spike finding, or select its outline using Edit path.',true);return;}
+  const matches=findTinySpikes(c);
+  if(!matches.length){status('No short straight backtracking spike detected in the selected outline.');return;}
+  const result=removeTinySpikes(c);
+  if(!result.removed){status('This contour cannot be trimmed safely; inspect its anchor handles.');return;}
+  const before=cloned(g);g.bezierContours[ci]=result.contour;selectedBezierNode=-1;
+  commitBezier(before);refreshOutlineRepairReport();
+  status(`Trimmed ${result.removed} small backtracking spike(s) from the selected outline. Undo restores the original.`);
+ },'Remove only short, nearly retracing straight hairpins in the selected contour; intentional sharp corners are untouched');
+ repairButton('Trim tiny Bézier loop…','btnTrimTinyBezierLoop',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)],ci=selectedBezierContour,c=g?.bezierContours?.[ci];
+  if(!c||c.kind==='stroke'){
+   status('Select a closed outline with a tiny-loop finding in Check outline first.',true);return;
+  }
+  let loops;
+  try{loops=findTinyBezierLoops(c);}catch(error){status('Cannot inspect this outline: '+String(error.message||error),true);return;}
+  if(!loops.length){status('No tiny single-segment Bézier loop found in the selected outline. Other curves remain untouched.');return;}
+  const hit=loops[0];
+  if(!window.confirm(`Remove the tiny loop (about ${hit.diameter.toFixed(1)} units across, ${hit.area.toFixed(2)} square units) from the selected outline? This removes only the looping portion, keeps the surrounding cubic segments editable, and can be undone.`))return;
+  let change;
+  try{change=removeTinyBezierLoop(c);if(change.removed!==1)throw Error('The loop changed during inspection');}
+  catch(error){status('Loop trim refused: '+String(error.message||error),true);return;}
+  const before=cloned(g);g.bezierContours[ci]=change.contour;selectedBezierNode=-1;
+  commitBezier(before);refreshOutlineRepairReport();
+  status('Trimmed one tiny Bézier loop. The remaining curve is editable; Undo restores the original.');
+ },'Inspect and explicitly remove a microscopic self-loop within one cubic. Does not alter intentional corners, large loops or other layers.');
+ repairButton('Remove overlaps…','btnRepairOutlineOverlaps',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)],all=g?.bezierContours||[];
+  const editable=all.filter(c=>c.kind!=='stroke'&&c.points?.length>=3);
+  if(editable.length<2){status('At least two closed outlines are needed to remove overlaps.');return;}
+  let result;
+  try{
+   result=regularizeSelfIntersections(bezierPath(editable));
+   if(!result.contours.length||result.contours.reduce((n,c)=>n+c.points.length,0)>6000)throw Error('Repair produced unusable outlines');
+   if(validateGlyphContours(result.contours).issues.some(i=>i.type==='intersection'))throw Error('Self-intersections would remain');
+  }catch(error){status('Overlap repair refused: '+String(error.message||error),true);return;}
+  if(!window.confirm(`Regularise ${editable.length} closed outlines into ${result.contours.length} nonoverlapping editable outlines? The visible nonzero-fill silhouette is checked, but control points may change. Open Line/Curve strokes are preserved. Undo restores every original.`))return;
+  const before=cloned(g);
+  // Preserve every editable open centreline and its widths. Closed outlines
+  // are rebuilt as non-overlapping filled boundaries on this layer only.
+  g.bezierContours=[...result.contours,...all.filter(c=>c.kind==='stroke')];
+  selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;
+  commitBezier(before);refreshOutlineRepairReport();
+  status(`Removed overlapping boundaries: ${editable.length} old closed outlines → ${result.contours.length} editable outlines. Undo restores the original shapes.`);
+ },'Explicitly remove overlaps among all closed outlines on the active layer while preserving the nonzero-fill silhouette and open strokes');
+ repairButton('Resolve crossing…','btnResolveOutlineCrossings',()=>{
+  if(!editableLayerOrWarn())return;
+  const g=project?.glyphs?.[glyphKey(slotIndex)],ci=selectedBezierContour,c=g?.bezierContours?.[ci];
+  if(!c||c.kind==='stroke'){status('Choose a closed filled or hole outline using Edit path or a highlighted finding.',true);return;}
+  if(!validateGlyphContours([c]).issues.some(i=>i.type==='intersection')){
+   status('Selected outline has no detected self-intersection; no repair needed.');return;
+  }
+  let result;
+  try{
+   result=regularizeSelfIntersections(bezierPath([c]));
+   if(!result.contours.length||result.contours.some(r=>r.points.length<3)||result.contours.reduce((n,r)=>n+r.points.length,0)>6000)throw Error('Repair produced unusable contours');
+   if(validateGlyphContours(result.contours).issues.some(i=>i.type==='intersection'))throw Error('Some self-intersections would remain');
+  }catch(error){status('Crossing repair refused: '+String(error.message||error),true);return;}
+  if(!window.confirm(`Replace the selected crossing outline with ${result.contours.length} closed editable outline(s)? This uses sampled boundary geometry and can change Bézier control points. Undo restores the original.`))return;
+  const before=cloned(g);g.bezierContours.splice(ci,1,...result.contours);
+  selectedBezierContour=ci;selectedBezierNode=-1;selectedStroke=-1;
+  commitBezier(before);refreshOutlineRepairReport();
+  status(`Resolved the crossing into ${result.contours.length} closed editable outline(s). Undo restores the original Bézier geometry.`);
+ },'Explicit, reversible nonzero-fill topology repair for the selected self-crossing outline; uses sampled edges');
 }
 function renderBezierOverlay(){
+ const showingGuide=!!project?.glyphs?.[slotIndex]?.layerStack&&activeLayer(project.glyphs[slotIndex])?.mode==='guide';
+ if(canvas)canvas.style.opacity=showingGuide?'0.35':'1';
  renderOtherGlyphLayers();
  const root=$('bezierOverlay');if(!root)return;root.replaceChildren();
  const contours=project?.glyphs?.[slotIndex]?.bezierContours||[];
@@ -1786,11 +2711,40 @@ function renderBezierOverlay(){
   const defs=addSvgEl('defs',{},root),mask=addSvgEl('mask',{id:maskId,maskUnits:'userSpaceOnUse',x:0,y:0,width:ARTBOARD_WIDTH,height:ARTBOARD_HEIGHT},defs);
   addSvgEl('rect',{x:0,y:0,width:ARTBOARD_WIDTH,height:ARTBOARD_HEIGHT,fill:'white'},mask);
   const points=smoothStroke(strokePoints,Number($('strokeSmoothing').value));
-  const d=brushSvgPath(points);
-  addSvgEl('path',{d,fill:'none',stroke:'black','stroke-width':brushWidth(),'stroke-linecap':'round','stroke-linejoin':'round'},mask);
+  if(brushTipShape()==='square')addSvgEl('path',{d:vectorBrushFootprint(points,brushWidth(),'square'),fill:'black'},mask);
+  else addSvgEl('path',{d:brushSvgPath(points),fill:'none',stroke:'black','stroke-width':brushWidth(),'stroke-linecap':'round','stroke-linejoin':'round'},mask);
  }
- if(contours.length)addSvgEl('path',{d:bezierPath(contours),class:'vector-fill','fill-rule':'nonzero',...(maskId?{mask:`url(#${maskId})`}:{})},root);
+ if(contours.length)addSvgEl('path',{d:bezierPath(contours),class:'vector-fill'+(showingGuide?' vector-guide':''),'fill-rule':'nonzero',...(maskId?{mask:`url(#${maskId})`}:{})},root);
+ for(const issue of outlineValidationMarkers){if(issue.position){const {x,y}=issue.position;addSvgEl('circle',{cx:x,cy:y,r:7,class:'outline-warning-marker'},root);}}
  renderBezierHelp();
+ if(['line','curve','bezier'].includes(tool)&&!bezierPreview){
+  const highlighted=new Set([selectedStroke,...joinEndpoints.map(e=>e.ci)]);
+  for(const ci of highlighted){
+   const chosen=contours[ci];if(!isStroke(chosen))continue;
+   const coords=chosen.points;
+   addSvgEl('path',{d:coords.map((p,i)=>i?`C ${coords[i-1].out.join(' ')} ${p.in.join(' ')} ${p.x} ${p.y}`:`M ${p.x} ${p.y}`).join(' ')+(chosen.closed?` C ${coords.at(-1).out.join(' ')} ${coords[0].in.join(' ')} ${coords[0].x} ${coords[0].y} Z`:''),class:'vector-draft'},root);
+   if(ci===selectedStroke&&tool!=='line')for(let i=0;i<coords.length-(chosen.closed?0:1);i++){
+    const bend=segmentBend(coords[i],coords[(i+1)%coords.length]);
+    addSvgEl('circle',{cx:bend.x,cy:bend.y,r:6,class:'stroke-bend-handle'},root);
+   }
+   for(let ni=0;ni<coords.length;ni++){
+    const n=coords[ni],endpoint=!chosen.closed&&(ni===0||ni===coords.length-1);
+    const selected=joinEndpoints.some(e=>e.ci===ci&&e.ni===ni)||(ci===selectedStroke&&selectedBezierNode===ni);
+    if(endpoint){
+     addSvgEl('rect',{x:n.x-5.5,y:n.y-5.5,width:11,height:11,rx:1.5,class:'stroke-endpoint'+(selected?' selected':'')},root);
+    }else{
+     addSvgEl('circle',{cx:n.x,cy:n.y,r:selected?6.5:5.5,class:'stroke-junction'+(selected?' selected':'')},root);
+    }
+    if(selected&&ci===selectedStroke){
+     for(const which of ['in','out']){
+      const h=n[which];if(!h||Math.hypot(h[0]-n.x,h[1]-n.y)<.5)continue;
+      addSvgEl('line',{x1:n.x,y1:n.y,x2:h[0],y2:h[1],class:'vector-handle'},root);
+      addSvgEl('circle',{cx:h[0],cy:h[1],r:4.2,class:'vector-control'},root);
+     }
+    }
+   }
+  }
+ }
  if(tool!=='bezier'||bezierPreview)return;
  // The Outline menu shows which contour is selected without demanding
  // pixel-perfect anchor selection. This highlight is editor-only.
@@ -1835,6 +2789,18 @@ function bezierPointerDown(ev){
  if(ev.button!==0||bezierPreview||!editableLayerOrWarn())return;
  ev.preventDefault();const p=canvasPos(ev);
  bezierHover=null;
+ if(!bezierDraft.length&&selectedStroke>=0){
+  const bends=strokeBendHit(project?.glyphs?.[slotIndex]?.bezierContours||[],p,bezierPointerRadius(12));
+  const exactNode=bezierHit(p,ev.pointerType);
+  const hitTarget=exactNode&&project.glyphs[glyphKey(slotIndex)].bezierContours[exactNode.ci]?.points?.[exactNode.ni];
+  const nodeDistance=hitTarget?Math.hypot(hitTarget.x-p.x,hitTarget.y-p.y):Infinity;
+  const bendDistance=bends?Math.hypot(bends.bend.x-p.x,bends.bend.y-p.y):Infinity;
+  if(bends&&bends.ci===selectedStroke&&(!exactNode||(bendDistance<bezierPointerRadius(7)&&nodeDistance>bezierPointerRadius(7)))){
+   canvas.setPointerCapture(ev.pointerId);
+   bezierInteraction={kind:'stroke-bend',ci:bends.ci,i:bends.i,before:cloned(project.glyphs[glyphKey(slotIndex)])};
+   renderBezierOverlay();return;
+  }
+ }
  if(bezierDraft.length){
    // Both the first and the third/last point can finish a three-point hole.
    // Use a zoom-independent screen-pixel target, not the tiny visible dot.
@@ -1851,23 +2817,61 @@ function bezierPointerDown(ev){
    }
    canvas.setPointerCapture(ev.pointerId);
    if(bezierDraft.length>=1024){status('A single Bézier contour is limited to 1024 anchors. Close it or start another.',true);return;}
-   const node=makeBezierAnchor(p.x,p.y);bezierDraft.push(node);
+   const target=snapCanvasPoint(p);const node=makeBezierAnchor(target.x,target.y);bezierDraft.push(node);
    bezierInteraction={kind:'new',node,start:p,index:bezierDraft.length-1,key:glyphKey(slotIndex)};
    renderBezierOverlay();return;
+ }
+ // A click on an existing editable outline selects it, instead of
+ // accidentally beginning a new contour on top of that outline. Double-click
+ // the curve to insert a node at the actual pointer location.
+ if(!bezierDraft.length){
+  const candidate=nearestContourSegment(project.glyphs[glyphKey(slotIndex)]?.bezierContours||[],p,
+    bezierPointerRadius(ev.pointerType==='touch'?18:9));
+  if(candidate&&candidate.t>1e-4&&candidate.t<1-1e-4&&!bezierHit(p,ev.pointerType)){
+   selectedBezierContour=candidate.ci;selectedBezierNode=-1;
+   selectedStroke=isStroke(project.glyphs[glyphKey(slotIndex)].bezierContours[candidate.ci])?candidate.ci:-1;
+   renderBezierOverlay();return;
+  }
  }
  canvas.setPointerCapture(ev.pointerId);
  const hit=bezierHit(p,ev.pointerType);
  if(hit){
    const before=cloned(project.glyphs[glyphKey(slotIndex)]);
    selectedBezierContour=hit.ci;selectedBezierNode=hit.ni;
+   if(isStroke(project.glyphs[glyphKey(slotIndex)].bezierContours[hit.ci])){
+    selectedStroke=hit.ci;
+    const sc=project.glyphs[glyphKey(slotIndex)].bezierContours[hit.ci];
+    if(hit.part==='anchor'&&!sc.closed&&(hit.ni===0||hit.ni===sc.points.length-1)){
+     const chosen={ci:hit.ci,ni:hit.ni};
+     if(ev.shiftKey&&joinEndpoints.length){
+      if(!joinEndpoints.some(e=>e.ci===chosen.ci&&e.ni===chosen.ni))joinEndpoints=[joinEndpoints[0],chosen];
+     }else joinEndpoints=[chosen];
+    }
+   }else{selectedStroke=-1;joinEndpoints=[];}
    bezierInteraction={kind:'edit',hit,before,start:p,mirror:!ev.altKey};
  }else{
-   selectedBezierContour=-1;selectedBezierNode=-1;
-   const node=makeBezierAnchor(p.x,p.y);bezierDraft=[node];
+   selectedBezierContour=-1;selectedBezierNode=-1;selectedStroke=-1;joinEndpoints=[];
+   const target=snapCanvasPoint(p);const node=makeBezierAnchor(target.x,target.y);bezierDraft=[node];
    project.editorDrafts||={};project.editorDrafts[glyphKey(slotIndex)]=bezierDraft;
    bezierInteraction={kind:'new',node,start:p,index:0,key:glyphKey(slotIndex)};
  }
  renderBezierOverlay();
+}
+function insertBezierAtDoubleClick(ev){
+ if(tool!=='bezier'||ev.button!==0||bezierDraft.length||drawing||bezierInteraction||!editableLayerOrWarn())return;
+ const p=canvasPos(ev),g=project.glyphs[glyphKey(slotIndex)],hit=nearestContourSegment(g?.bezierContours||[],p,bezierPointerRadius(11));
+ if(!hit||hit.t<=.0001||hit.t>=.9999)return;
+ if(bezierHit(p,ev.pointerType))return; // Do not duplicate an existing anchor.
+ const before=cloned(g);
+ try{
+  const result=splitEditableBezier(g.bezierContours[hit.ci],hit.segment,hit.t);
+  g.bezierContours[hit.ci]=result.contour;
+  selectedBezierContour=hit.ci;selectedBezierNode=result.index;
+  selectedStroke=isStroke(result.contour)?hit.ci:-1;
+  joinEndpoints=[];
+  ev.preventDefault();commitBezier(before);
+  status('Inserted a precise editable point on the curve. Undo restores the original shape.');
+ }catch(error){status('Could not insert point: '+String(error.message||error),true);}
 }
 function bezierPointerMove(ev){
  if(!bezierInteraction){
@@ -1877,6 +2881,9 @@ function bezierPointerMove(ev){
  ev.preventDefault();const p=canvasPos(ev),act=bezierInteraction;
  if(act.kind==='new'){
    if(bezierDist(p,act.start)>1)dragBezierTangent(act.node,p.x,p.y,'out',true);
+ }else if(act.kind==='stroke-bend'){
+   const contour=project.glyphs[glyphKey(slotIndex)]?.bezierContours?.[act.ci];
+   if(contour)setSegmentBend(contour,act.i,p);
  }else if(act.kind==='close'){
    const delta={x:p.x-act.start.x,y:p.y-act.start.y};
    if(act.dragged||bezierDist(p,act.start)>=bezierPointerRadius(4)){
@@ -1885,7 +2892,7 @@ function bezierPointerMove(ev){
    }
  }else{
    const node=project.glyphs[glyphKey(slotIndex)].bezierContours[act.hit.ci].points[act.hit.ni];
-   if(act.hit.part==='anchor')moveBezierAnchor(node,p.x,p.y);
+   if(act.hit.part==='anchor'){const target=snapCanvasPoint(p);moveBezierAnchor(node,target.x,target.y);}
    else dragBezierTangent(node,p.x,p.y,act.hit.part,act.mirror);
    const g=project.glyphs[glyphKey(slotIndex)];g.path=combineGlyphPaths(g.rasterPath,g.bezierContours);
    updateTrace();
@@ -1906,8 +2913,14 @@ function bezierPointerUp(ev){
    return;
  }
  bezierInteraction=null;
- if(act.kind==='edit')commitBezier(act.before);
- else{
+ if(act.kind==='stroke-bend'){
+  const g=project.glyphs[glyphKey(slotIndex)],contour=g?.bezierContours?.[act.ci];
+  if(contour){setSegmentBend(contour,act.i,canvasPos(ev));commitBezier(act.before);status('Curve bend adjusted. Undo restores the previous shape.');}
+ }else if(act.kind==='edit'){
+  const current=project?.glyphs?.[glyphKey(slotIndex)];
+  if(JSON.stringify(current)!==JSON.stringify(act.before))commitBezier(act.before);
+  else renderBezierOverlay(); // Selecting endpoints must not consume Undo.
+ }else{
    // Each completed pointer gesture adds ONE independent, reversible anchor.
    // Capture its final handles after dragging; older anchors are not duplicated.
    recordChange('bezierPoint',`${act.key}:${act.index}`,null,cloned(act.node));
@@ -1919,6 +2932,7 @@ function closeBezier(role='auto',undoDraft=null){
  if(typeof editableLayerOrWarn==='function'&&!editableLayerOrWarn())return;
  if(bezierPreview)return;
  if(!bezierDraft.length&&selectedBezierContour>=0){
+   if(isStroke(project?.glyphs?.[glyphKey(slotIndex)]?.bezierContours?.[selectedBezierContour])){joinSelectedStrokeEndpoints('close');return;}
    if(role!=='auto')setSelectedContourRole(role);
    return;
  }
@@ -2102,7 +3116,7 @@ async function switchProject(id){const preservedGlyph=slotIndex;clearCompiledPre
 function toBase64(data){let s='';for(let i=0;i<data.length;i+=8192)s+=String.fromCharCode(...data.subarray(i,i+8192));return btoa(s);}
 function fromBase64(s){const binary=atob(s),out=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)out[i]=binary.charCodeAt(i);return out;}
 async function importProjectFile(file){clearCompiledPreview();try{const d=JSON.parse(await file.text());if(d.version!==1||!d.glyphs||!d.compounds||typeof d.name!=='string')throw new Error('Unsupported project file format');
-  d.editorDrafts||={};d.id=uid();d.name=`${d.name} (imported)`;d.createdAt=new Date().toISOString();clearTimeout(saveTimer);await saveNow();project=d;history=[];redoStack=[];await saveNow();await switchProject(d.id);status('Editable project imported successfully');}catch(e){status('Project import failed: '+e.message,true)}}
+  resolveLinkedGlyphPaths(d);d.editorDrafts||={};d.id=uid();d.name=`${d.name} (imported)`;d.createdAt=new Date().toISOString();clearTimeout(saveTimer);await saveNow();project=d;history=[];redoStack=[];await saveNow();await switchProject(d.id);status('Editable project imported successfully');}catch(e){status('Project import failed: '+e.message,true)}}
 async function importFontFile(file,licenceDocuments,acknowledgement){if(!file)return;try{
   if(!acknowledgement||!Array.isArray(licenceDocuments)||licenceDocuments.length===0)throw Error('A licence file and acknowledgement are required before importing a font.');const data=new Uint8Array(await file.arrayBuffer());if(data.length<100||data.length>20_000_000)throw new Error('Font must be between 100 B and 20 MB');
   const magic=new DataView(data.buffer).getUint32(0);if(![0x00010000,0x4f54544f,0x74727565].includes(magic))throw new Error('Unsupported SFNT header (TTF/OTF only; collections not supported).');
@@ -2244,7 +3258,7 @@ function stopPan(ev){
   panDrag=null;view.classList.remove('is-panning');
 }
 function wantsPan(ev){return tool==='pan'||spacePan||ev.button===1;}
-function switchTab(id){activeTab=id;document.querySelectorAll('.tab').forEach(b=>{const active=b.dataset.tab===id;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});document.querySelectorAll('.pane').forEach(e=>{const on=e.id===`pane-${id}`;e.classList.toggle('active',on);e.hidden=!on;});if(id==='glyph')requestAnimationFrame(trackCanvasSize);if(id==='compound'){refreshCompoundChoices();renderCompound();}if(id==='preview'){renderCompiledPreview();showPreviewState();}if(id==='build'){refreshIdentity();refreshHintingUI();refreshPreviewAdjusters();}}
+function switchTab(id){activeTab=id;document.querySelectorAll('.tab').forEach(b=>{const active=b.dataset.tab===id;b.classList.toggle('active',active);b.setAttribute('aria-selected',String(active));});document.querySelectorAll('.pane').forEach(e=>{const on=e.id===`pane-${id}`;e.classList.toggle('active',on);e.hidden=!on;});if(id==='glyph')requestAnimationFrame(trackCanvasSize);if(id==='compound'){refreshCompoundChoices();renderCompound();}if(id==='preview'){renderCompiledPreview();showPreviewState();}if(id==='typography'){if($('typoGlyph'))$('typoGlyph').value=String(slotIndex);refreshTypographyUI();}if(id==='build'){refreshIdentity();refreshHintingUI();refreshPreviewAdjusters();}}
 // Compound editor: symbolic composition with user-owned override geometry.
 function compoundValue(){return `${$('compoundLeft').value}${$('compoundOperator').value}${$('compoundRight').value}`;}
 function refreshCompoundChoices(){for(const id of ['compoundLeft','compoundRight']){const select=$(id),last=select.value;select.textContent='';slots.filter(s=>s.kind!=='ascii'&&(slotMeta(s.index).word||s.word)&&!(slotMeta(s.index).word||s.word).startsWith('custom-')).forEach(s=>{const o=document.createElement('option');o.value=slotMeta(s.index).word||s.word;o.textContent=slotMeta(s.index).word||s.word;select.appendChild(o);});select.value=last|| (id==='compoundLeft'?'toki':'pona');if(!select.value)select.selectedIndex=0;}}
@@ -2332,12 +3346,14 @@ async function init(){await initializeGeometry();const resp=await fetch('./file-
  ctx.lineCap='round';ctx.lineJoin='round';let last=null;try{last=localStorage.getItem('spfm-active-project');}catch(_){/* storage unavailable in opaque origins */}
  try{projects=await listProjects();if(last&&!projects.some(x=>x.id===last))last=null;if(!last&&projects.length)last=projects[0].id;if(last)await switchProject(last);else{project=newProject('My Sitelen Pona Font');await saveNow();await switchProject(project.id);}}
  catch(e){storageAvailable=false;status('Project storage unavailable: '+e.message,true);project=newProject('Unsaved font');await selectGlyph(slots.findIndex(s=>s.word==='jan'));}
- initEvents();editorPaletteManager=setupEditorPalettes({renderLayers:renderGlyphLayerPalette});wireGlyphLayerActions();void initializeEditorGeometry();$('btnDeleteProject').disabled=!storageAvailable;$('btnUseOnSite').disabled=!storageAvailable;refreshHintingUI();refreshIdentity();refreshCompoundChoices();renderOverrideList();showPreviewState();status(storageAvailable?'Font Maker ready · autosaving to IndexedDB':'Font Maker ready · IndexedDB unavailable; export a project file to preserve changes');}
+ initEvents();editorPaletteManager=setupEditorPalettes({renderLayers:renderGlyphLayerPalette});initializeGridSettings();wireGlyphLayerActions();void initializeEditorGeometry();$('btnDeleteProject').disabled=!storageAvailable;$('btnUseOnSite').disabled=!storageAvailable;refreshHintingUI();refreshIdentity();refreshCompoundChoices();renderOverrideList();showPreviewState();status(storageAvailable?'Font Maker ready · autosaving to IndexedDB':'Font Maker ready · IndexedDB unavailable; export a project file to preserve changes');}
 function initEvents(){
  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>chooseTool(b.dataset.tool));
+ canvas.addEventListener('dblclick',insertBezierAtDoubleClick);
  canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointermove',pointerMove);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',pointerUp);canvas.addEventListener('pointerleave',()=>{if(!bezierInteraction){bezierHover=null;renderBezierOverlay();}});
- $('brushSize').oninput=()=>{$('brushSizeLabel').textContent=$('brushSize').value;resizeActiveSelectionWidth();};
- $('strokeSmoothing').oninput=()=>{$('strokeSmoothingLabel').textContent=$('strokeSmoothing').value+'%';};
+ $('brushSize').oninput=()=>{$('brushSizeLabel').textContent=$('brushSize').value;resizeActiveSelectionWidth();persistProjectDrawingPreferences();};
+ $('strokeSmoothing').oninput=()=>{$('strokeSmoothingLabel').textContent=$('strokeSmoothing').value+'%';persistProjectDrawingPreferences();};
+ for(const id of ['autoShape','filledShape','drawShapesFromCentre','lineCapStyle','tipShape'])$(id).onchange=persistProjectDrawingPreferences;
  $('btnSmoothExisting').onclick=smoothExistingOutline;
  $('btnExpandEditor').onclick=()=>toggleExpandedEditor();
  $('btnCopyGlyph').onclick=copyWholeGlyph;
@@ -2358,8 +3374,8 @@ function initEvents(){
  $('btnHideBezierHelp').onclick=()=>setEditorHelpHidden(true);
  $('btnHideSelectionHelp').onclick=()=>setEditorHelpHidden(true);
  $('btnShowEditorHelp').onclick=()=>{if(editorHelpMode())setEditorHelpHidden(false);};
- $('btnCloseBezier').onclick=()=>closeBezier(bezierDraft.length?'auto':'fill');$('btnCloseBezierHole').onclick=()=>closeBezier('hole');$('btnCancelBezier').onclick=cancelBezier;$('btnDeleteBezier').onclick=deleteSelectedBezier;$('bezierContourRole').onchange=ev=>setSelectedContourRole(ev.target.value);$('bezierContourPicker').onchange=ev=>{selectedBezierContour=ev.target.value===''?-1:Number(ev.target.value);selectedBezierNode=-1;renderBezierOverlay();};$('btnBezierPreview').onclick=toggleBezierFillPreview;$('btnClearGlyph').onclick=()=>{if(!editableLayerOrWarn()||!confirm('Clear this glyph drawing?'))return;const k=glyphKey(slotIndex),before=cloned(project.glyphs[k]);clearCanvas();project.glyphs[k]={...(project.glyphs[k]||{}),bezierContours:[],rasterPath:''};saveDraft(project.editorDrafts,k,null);bezierDraft=[];commitGlyph();recordChange('glyph',k,before,project.glyphs[k]);renderBezierOverlay();};
- $('toggleGrid').onchange=()=>{$('canvasViewport').style.background=$('toggleGrid').checked?'repeating-linear-gradient(135deg,#f4eee4,#f4eee4 14px,#f7f3e9 14px,#f7f3e9 28px)':'#f7f3e9';};
+ $('btnCloseBezier').onclick=()=>closeBezier(bezierDraft.length?'auto':'fill');$('btnCloseBezierHole').onclick=()=>closeBezier('hole');$('btnCancelBezier').onclick=cancelBezier;$('btnDeleteBezier').onclick=deleteSelectedBezier;$('bezierContourRole').onchange=ev=>setSelectedContourRole(ev.target.value);$('bezierContourPicker').onchange=ev=>{selectedBezierContour=ev.target.value===''?-1:Number(ev.target.value);selectedStroke=isStroke(project?.glyphs?.[glyphKey(slotIndex)]?.bezierContours?.[selectedBezierContour])?selectedBezierContour:-1;selectedBezierNode=-1;joinEndpoints=[];renderBezierOverlay();};$('btnBezierPreview').onclick=toggleBezierFillPreview;$('btnClearGlyph').onclick=()=>{if(!editableLayerOrWarn()||!confirm('Clear this glyph drawing?'))return;const k=glyphKey(slotIndex),before=cloned(project.glyphs[k]);clearCanvas();project.glyphs[k]={...(project.glyphs[k]||{}),bezierContours:[],rasterPath:''};saveDraft(project.editorDrafts,k,null);bezierDraft=[];commitGlyph();recordChange('glyph',k,before,project.glyphs[k]);renderBezierOverlay();};
+ $('toggleGrid').onchange=()=>{showArtboardGrid();persistGridPrefs();};
  $('toggleOriginal').onchange=()=>renderOriginalGuide();$('originalOpacity').oninput=()=>{$('originalOpacityLabel').textContent=$('originalOpacity').value+'%';renderOriginalGuide();};$('toggleMetrics').onchange=drawMetricGuides;
  $('btnZoomIn').onclick=()=>setZoom(canvasZoom*1.2);$('btnZoomOut').onclick=()=>setZoom(canvasZoom/1.2);
  $('btnFitCanvas').onclick=fitCanvas;
@@ -2382,6 +3398,8 @@ function initEvents(){
  wireCompiledPreviewControls();
  wirePreviewAdjusters();
  $('hintRasterization').onchange=e=>setHintMode(e.target.value);
+ $('btnRunFontQuality').onclick=()=>runProjectQualityCheck();
+ wireTypographyControls();
  $('btnSaveIdentity').onclick=saveIdentity;$('btnExportRegistry').onclick=exportRegistry;$('btnBuildFonts').onclick=buildFonts;$('btnUseOnSite').onclick=publishFontOnSite;
  $('btnImportFontZip').onclick=requestSiteFontZipImport;
  $('btnImportProjectFontZip').onclick=requestEditableFontPairZipImport;
@@ -2410,7 +3428,7 @@ function initEvents(){
   if(activeTab==='glyph'&&e.key==='Escape'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&expandedEditor&&tool!=='select'&&tool!=='bezier'){e.preventDefault();toggleExpandedEditor(false);return;}
   if(activeTab==='glyph'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey){
    const tools={p:'pen',e:'eraser',l:'line',c:'ellipse',r:'rect',v:'select',h:'pan',b:'bezier'};
-   if(tools[e.key.toLowerCase()]){e.preventDefault();setTool(tools[e.key.toLowerCase()]);return;}
+   if(tools[e.key.toLowerCase()]){e.preventDefault();chooseTool(tools[e.key.toLowerCase()]);return;}
   }
   if(activeTab==='glyph'&&(tool==='select'||tool==='lasso')){const key=e.key.toLowerCase();
    if((e.ctrlKey||e.metaKey)&&!e.altKey){

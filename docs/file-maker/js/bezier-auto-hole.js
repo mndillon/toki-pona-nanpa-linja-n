@@ -32,10 +32,10 @@ function insidePolygon(p, polygon) {
 // Unlike an SVG's isolated negative contour, a negative TrueType contour is
 // only a visible hole when it lies inside a positive filled outline.
 export function automaticBezierRole(points,existingContours) {
-  if(!Array.isArray(existingContours)||!existingContours.some(c=>c.role!=='hole'))return 'fill';
+  if(!Array.isArray(existingContours)||!existingContours.some(c=>c.role!=='hole'&&c.kind!=='stroke'))return 'fill';
   const candidate=flattenedPoints(points);
   if(candidate.length<3)return 'fill';
-  const contours=existingContours.map(c=>({...c,flat:flattenedPoints(c.points)})).filter(c=>c.flat.length>=3);
+  const contours=existingContours.filter(c=>c.kind!=='stroke').map(c=>({...c,flat:flattenedPoints(c.points)})).filter(c=>c.flat.length>=3);
   // Bound the work for unusually complex outlines; in normal glyphs every
   // subdivided cubic sample is checked. Skip irrelevant bounding boxes first.
   for(const c of contours){

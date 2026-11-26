@@ -1,3 +1,4 @@
+import {strokeOutlinePath} from './connected-strokes.js?v=0.3.42.2';
 /* MIT — Native, editable cubic Bézier contours for glyphs.
  * Stored as anchors with absolute in/out control points.  No raster tracing
  * is involved; the resulting M/L/C/Z SVG path is retained in the project.
@@ -55,7 +56,7 @@ export function orientedContourPoints(contour){
 export function bezierPath(contours){
   if(!Array.isArray(contours))return '';
   const paths=[];
-  for(const item of contours){const pts=orientedContourPoints(item);if(pts.length<3)continue;
+  for(const item of contours){if(item?.kind==='stroke'){const d=strokeOutlinePath(item);if(d)paths.push(d);continue;}const pts=orientedContourPoints(item);if(pts.length<3)continue;
     const commands=[`M ${number(pts[0].x)} ${number(pts[0].y)}`];
     for(let i=0;i<pts.length;i++)commands.push(joinSegment(pts[i],pts[(i+1)%pts.length]));
     commands.push('Z');paths.push(commands.join(' '));

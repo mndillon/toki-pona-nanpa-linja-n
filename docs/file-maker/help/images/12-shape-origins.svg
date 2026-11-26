@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 315" width="1000" height="315" role="img" aria-labelledby="title desc">
+<title id="title">Four ways to draw circles and rectangles</title><desc id="desc">The first two examples show a rectangle drawn from a corner and from its centre. The following two show an ellipse drawn from a corner and a perfect circle drawn from the centre by holding Shift and Alt or using the centre setting.</desc>
+<rect width="1000" height="315" rx="14" fill="#fffaf2"/>
+<g font-family="system-ui,sans-serif" fill="#262335"><text x="28" y="30" font-size="19" font-weight="700">Origin and shape controls — purple dashed bounds are temporary</text></g>
+<g stroke="#d5cbdb" fill="white">
+<rect x="15" y="46" width="229" height="247" rx="12"/><rect x="262" y="46" width="229" height="247" rx="12"/><rect x="509" y="46" width="229" height="247" rx="12"/><rect x="756" y="46" width="229" height="247" rx="12"/>
+</g>
+<g font-family="system-ui,sans-serif" fill="#30233c" font-size="15"><text x="31" y="75" font-weight="700">Drag: corner rectangle</text><text x="278" y="75" font-weight="700">Alt: centre rectangle</text><text x="525" y="75" font-weight="700">Drag: corner ellipse</text><text x="772" y="75" font-weight="700">Alt + Shift: circle</text></g>
+<g fill="none" stroke="#9274bb" stroke-width="1.6" stroke-dasharray="5 4">
+<rect x="47" y="103" width="158" height="115"/><rect x="293" y="103" width="158" height="115"/><rect x="540" y="103" width="158" height="115"/><rect x="790" y="99" width="160" height="160"/>
+</g>
+<g stroke="#242331" stroke-width="7" fill="none">
+<rect x="49" y="105" width="154" height="111"/><rect x="295" y="105" width="154" height="111"/><ellipse cx="619" cy="161" rx="76" ry="55"/><circle cx="870" cy="179" r="77"/>
+</g>
+<g stroke="#7049a8" fill="#dfcff5" stroke-width="2.5">
+<circle cx="47" cy="103" r="7"/><circle cx="372" cy="161" r="7"/><circle cx="540" cy="103" r="7"/><circle cx="870" cy="179" r="7"/>
+</g>
+<g stroke="#7855a6" stroke-width="1.6" stroke-linecap="round" fill="none">
+<path d="M372 144v34 M356 161h32 M870 161v36 M852 179h36"/><path d="M54 103l11 8 M537 103l11 8"/>
+</g>
+<g font-family="system-ui,sans-serif" fill="#4b3963" font-size="13"><text x="31" y="252">● Start at top-left corner</text><text x="278" y="252">● Start at centre</text><text x="525" y="252">● First click is a corner</text><text x="772" y="277">● Centre + equal radii</text><text x="31" y="274">Release at bottom-right</text><text x="278" y="274">Drag outward to size</text><text x="525" y="274">Shift makes it circular</text></g>
+</svg>

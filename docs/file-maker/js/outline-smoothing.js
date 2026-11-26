@@ -165,12 +165,40 @@ function exactPrimitive(points){
   return Math.abs(h0-k)<.01&&Math.abs(h1-k)<.01;
  });
 }
+// Editable, open Line/Curve centrelines must never be passed to a closed-ring
+// Fourier fitter. Smooth their interior anchors and handles while preserving
+// both endpoints. A selection never changes nodes in its protected edge band.
+function smoothConnectedStroke(contour,strength,weights=null,width=0,height=0){
+ const original=contour?.points||[],amount=clamp(Number(strength)||0,0,100);
+ const copy=structuredClone(contour);
+ if(!amount||original.length<3)return copy;
+ const n=original.length,factor=amount/100;
+ for(let i=0;i<n;i++){
+  if(!contour.closed&&(i===0||i===n-1))continue;
+  const prev=original[(i+n-1)%n],node=original[i],next=original[(i+1)%n];
+  if(weights&&[prev,node,next].some(pt=>maskWeight(weights,width,height,pt)<.99))continue;
+  const to={x:(prev.x+2*node.x+next.x)/4,y:(prev.y+2*node.y+next.y)/4};
+  const dx=(to.x-node.x)*factor*.65,dy=(to.y-node.y)*factor*.65;
+  const x=node.x+dx,y=node.y+dy;
+  const vx=next.x-prev.x,vy=next.y-prev.y,mag=Math.hypot(vx,vy)||1;
+  const incoming=Math.hypot(node.x-node.in[0],node.y-node.in[1])||distance(prev,node)/3;
+  const outgoing=Math.hypot(node.out[0]-node.x,node.out[1]-node.y)||distance(next,node)/3;
+  const idealIn={x:x-vx/mag*incoming,y:y-vy/mag*incoming};
+  const idealOut={x:x+vx/mag*outgoing,y:y+vy/mag*outgoing};
+  const mix=(a,b)=>num(a*(1-factor)+b*factor);
+  copy.points[i]={...copy.points[i],x:num(x),y:num(y),
+   in:[mix(node.in[0]+dx,idealIn.x),mix(node.in[1]+dy,idealIn.y)],
+   out:[mix(node.out[0]+dx,idealOut.x),mix(node.out[1]+dy,idealOut.y)]};
+ }
+ return copy;
+}
 // Preserves contour role (filled / transparent hole), and uses *fewer* cubic
 // nodes rather than accumulating more points. The exported outline is smooth
 // in SVG and TTF, not merely visually filtered in the preview canvas.
 export function smoothBezierOutline(contour,strength){
  const amount=clamp(Number(strength)||0,0,100);
  if(!contour?.points?.length||!amount)return structuredClone(contour);
+ if(contour.kind==='stroke')return smoothConnectedStroke(contour,amount);
  // Four-point true cubic ellipses already have ideal curves. Same for native
  // rectangles: avoid damaging precise geometric primitives when smoothing.
  if(exactPrimitive(contour.points))return structuredClone(contour);
@@ -308,6 +336,7 @@ function sliceCubic(p,t0,t1){
 export function smoothSelectedBezierOutline(contour,strength,weights,width,height){
  const amount=clamp(Number(strength)||0,0,100),nodes=contour?.points||[];
  if(!amount||nodes.length<3||!weights?.length||exactPrimitive(nodes))return structuredClone(contour);
+ if(contour.kind==='stroke')return smoothConnectedStroke(contour,amount,weights,width,height);
  const n=nodes.length,steps=[],source=[],spans=[],cum=[0];
  for(let i=0;i<n;i++){
   const a=nodes[i],b=nodes[(i+1)%n];

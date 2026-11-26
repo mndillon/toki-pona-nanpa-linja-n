@@ -4,7 +4,7 @@
  * Handles quadratic off-curve points, nested component transforms and holes.
  */
 import {fontToPixel} from './font-coordinates.js';
-import {anchor,closedContour} from './drawing-tools.js';
+import {anchor,closedContour} from './drawing-tools.js?v=0.3.42.2';
 const U16=(v,o)=>v.getUint16(o),S16=(v,o)=>v.getInt16(o),U32=(v,o)=>v.getUint32(o);
 const between=(len,off,size)=>Number.isSafeInteger(off)&&off>=0&&size>=0&&off+size<=len;
 const check=(len,off,size)=>{if(!between(len,off,size))throw Error('Invalid imported TrueType glyph geometry');};

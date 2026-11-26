@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>nanpa-linja-n sitelen pona Font Maker v0.3.42</title>
-  <link rel="stylesheet" href="./file-maker/style.css?v=0.3.42.1">
+  <title>nanpa-linja-n sitelen pona Font Maker v0.3.53</title>
+  <link rel="stylesheet" href="./file-maker/style.css?v=0.3.52.0">
 </head>
 <body>
 <header class="masthead">
@@ -42,6 +42,7 @@
     <nav class="tabs" aria-label="Studio mode">
       <button class="tab active" data-tab="glyph" aria-selected="true">Draw glyph</button>
       <button class="tab" data-tab="compound" aria-selected="false">Compounds</button>
+      <button class="tab" data-tab="typography" aria-selected="false">Metrics &amp; kerning</button>
       <button class="tab" data-tab="preview" aria-selected="false">Preview</button>
       <button class="tab" data-tab="build" aria-selected="false">Build & export</button>
     </nav>
@@ -55,13 +56,15 @@
           <button type="button" class="mini" data-palette="path" aria-expanded="false" aria-controls="editorPaletteWindow">Paths</button>
           <button type="button" class="mini" data-palette="layers" aria-expanded="false" aria-controls="editorPaletteWindow">Layers</button>
           <button type="button" class="mini" data-palette="info" aria-expanded="false" aria-controls="editorPaletteWindow">Inspect</button>
+          <a id="btnFontMakerFaq" class="mini editor-help-link" href="./file-maker/help/guide.html#faq" target="_blank" rel="noopener" title="Quick answers to common Font Maker problems">FAQ</a>
+          <a id="btnFontMakerHelp" class="mini editor-help-link" href="./file-maker/help/guide.html#overview" target="_blank" rel="noopener" title="Open illustrated Font Maker user guide">ⓘ Help</a>
         </div>
         <button type="button" class="mini editor-palette-close" id="btnCloseAllPalettes" title="Close the tool palette" aria-label="Close tool palette">×</button>
       </div>
       <aside id="editorPaletteWindow" class="editor-palette-window" aria-label="Drawing tools palette" hidden>
         <div class="editor-palette-header" id="editorPaletteDragHandle" tabindex="0" role="group" aria-label="Move tools palette: drag this header, or focus it and use arrow keys. Double-click to reset its position." title="Drag to move · Arrow keys to nudge · Double-click to reset">
           <span class="editor-palette-drag-title"><span class="editor-palette-grip" aria-hidden="true">⠿</span><strong id="editorPaletteTitle">Tools</strong></span>
-          <button type="button" id="btnHidePalette" class="mini" title="Hide tools; drawing canvas stays in place">× Hide</button>
+          <span class="editor-palette-header-actions"><a id="btnPaletteHelp" class="mini editor-help-link" href="./file-maker/help/guide.html#overview" target="_blank" rel="noopener" title="Help for this palette" aria-label="Help for current palette">?</a><button type="button" id="btnHidePalette" class="mini" title="Hide tools; drawing canvas stays in place">× Hide</button></span>
         </div>
         <div id="editorPaletteContent"></div>
       </aside>
@@ -71,10 +74,10 @@
           <button class="tool" data-tool="lasso" aria-pressed="false" title="Draw a freehand selection around editable artwork">◌ Lasso</button>
           <button class="tool active" data-tool="pen" aria-pressed="true">✎ Pencil</button>
           <button class="tool" data-tool="eraser" aria-pressed="false">◫ Eraser</button>
-          <button class="tool" data-tool="line" aria-pressed="false">╱ Line</button>
+          <button class="tool" data-tool="line" aria-pressed="false" title="Drag a line; start at an existing endpoint to continue an editable path">╱ Line</button>
           <button class="tool" data-tool="ellipse" aria-pressed="false">◯ Circle</button>
           <button class="tool" data-tool="rect" aria-pressed="false">▢ Rectangle</button>
-          <button class="tool" data-tool="curve" aria-pressed="false" title="Drag the curve endpoints; click or drag the visible purple bend handle to finish">⌒ Curve</button>
+          <button class="tool" data-tool="curve" aria-pressed="false" title="Drag endpoints, then adjust the purple bend. Start at a highlighted square endpoint to extend an existing path; use Edit path to move its endpoints.">⌒ Curve</button>
           <button class="tool" data-tool="fill" aria-pressed="false" title="Click within an enclosed region, or select an area first and press Fill">▰ Fill</button>
           <button class="tool" data-tool="bezier" aria-pressed="false">⌁ Edit path</button>
           <button class="tool" data-tool="pan" aria-pressed="false" title="Drag the canvas without drawing (or hold Space)">✥ Pan</button>
@@ -100,8 +103,11 @@
         <div class="drawing-control"><label class="small-label" for="brushSize">Width <output id="brushSizeLabel">9</output></label><input id="brushSize" type="range" min="1" max="100" value="9"></div>
         <div class="drawing-control"><label class="small-label" for="strokeSmoothing">Smooth <output id="strokeSmoothingLabel">55%</output></label><input id="strokeSmoothing" type="range" min="0" max="100" step="5" value="55" title="Smooth strength: affects pencil strokes while drawing; click Smooth outline to apply to existing artwork"></div>
         <button type="button" id="btnSmoothExisting" class="btn compact" title="Smooth existing outlines. With Select or Lasso active, smooth only inside the selection; leave a protected band unchanged near its edges. Undo restores the original.">〰 Smooth outline</button>
+        <div class="drawing-control brush-choice"><label class="small-label" for="lineCapStyle">Line / Curve end caps</label><select id="lineCapStyle" aria-label="Line and Curve end cap style"><option value="round">Round</option><option value="flat">Flat</option><option value="square">Square</option></select></div>
+        <div class="drawing-control brush-choice"><label class="small-label" for="tipShape">Pencil / Eraser tip</label><select id="tipShape" aria-label="Pencil and Eraser brush tip"><option value="round">Round</option><option value="square">Square</option></select></div>
         <label class="check"><input id="autoShape" type="checkbox"> Auto-straighten / circle</label>
         <label class="check" title="For circle and rectangle tools"><input id="filledShape" type="checkbox"> Solid shape</label>
+        <label class="check" title="Start circles and rectangles at their centre rather than at a corner. Alt/Option temporarily reverses this choice; useful on Linux where Alt-drag may move windows."><input id="drawShapesFromCentre" type="checkbox"> Draw shapes from centre</label>
         <button type="button" class="btn compact" id="btnCopyGlyph" title="Copy the whole editable glyph or the imported vector reference">Copy glyph</button>
         <button type="button" class="btn compact" id="btnPasteGlyph" disabled title="Add the copied glyph artwork into this glyph">Paste into glyph</button>
         <button type="button" class="btn compact" id="btnReplaceGlyph" disabled title="Replace current editable artwork with the copied glyph, after confirmation">Replace glyph</button>
@@ -123,7 +129,7 @@
           <span><b>3</b> Drag handles to resize it</span>
           <span><b>4</b> Use the selection action buttons to edit it</span>
         </div>
-        <p>Select editable ink or complete vector contours. Drag inside the selection to move it; drag the eight handles to resize. Corner handles preserve proportions (hold Shift to resize freely); side handles change one dimension. Select an area and press <strong>Fill</strong> to fill it without losing the selection.</p>
+        <p>Select editable ink or complete vector contours. Drag inside the selection to move it; drag the eight handles to resize. Corner handles preserve proportions (hold Shift to resize freely); side handles change one dimension. Select an area and press <strong>Fill</strong> to add ink or <strong>Eraser</strong> to remove ink immediately. The selection stays active for further editing.</p>
         <p><strong>More:</strong> Copy, cut, paste, duplicate, delete, rotate, flip and scale selected artwork. Arrow keys nudge by 1 unit (Shift: 10). Width changes affect only selected ink. Each completed drag is one Undo step. The faint grey source font is an uneditable guide; use <strong>Copy glyph</strong> to copy the original outlines. To change individual Bézier points, switch to <strong>Edit path</strong>.</p>
         <small>Press <strong>✕ Hide help</strong> to clear this panel. Reopen it anytime with <strong>ⓘ Help</strong> beside Drawing canvas.</small>
       </section>
@@ -144,9 +150,9 @@
       </div>
       <div class="editor-layout">
         <div class="canvas-card">
-          <div class="canvas-bar"><div class="canvas-title"><strong>Drawing canvas</strong><button id="btnShowEditorHelp" type="button" class="mini canvas-help-toggle" hidden aria-expanded="false" aria-controls="bezierHelp" title="Show instructions for the current tool">ⓘ Show help</button></div><div class="bar-right"><label class="check"><input id="toggleGrid" type="checkbox" checked> Grid</label><label class="check"><input id="toggleMetrics" type="checkbox" checked> Metrics</label><button id="btnFitCanvas" class="mini" title="Show the complete drawing and metric guides (F)">Fit</button><button id="btnZoomOut" class="mini" title="Zoom out">−</button><output id="zoomLabel" title="Zoom relative to fit-to-canvas">100%</output><button id="btnZoomIn" class="mini" title="Zoom in">+</button></div></div>
-          <div class="canvas-viewport" id="canvasViewport"><div class="canvas-plane" id="canvasPlane"><canvas id="originalGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="inactiveLayerUnder" viewBox="0 0 400 430" aria-hidden="true"></svg><canvas id="glyphCanvas" width="400" height="430" aria-label="Draw the selected glyph" tabindex="0"></canvas><canvas id="metricGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="bezierOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="inactiveLayerOver" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="selectionOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg></div></div>
-          <p class="canvas-help">Mouse-wheel or pinch to zoom · Space + drag to pan · F to fit · Shift constrains circles and squares · Select artwork to copy, paste, move, resize with handles, rotate, flip or scale · Fill: click inside a closed shape or select an area and press Fill · Curve: drag endpoints, then click or drag the purple bend handle to finish · Undo/redo stays on your glyph or asks before returning to another glyph. Smooth: set the strength, then click <strong>Smooth outline</strong> to reduce bumps in existing curves. <strong>To smooth only part of a drawing, select that area first:</strong> the edges of your selection remain unchanged, and the result blends gradually into the surrounding ink. Undo reverses it. The slider also smooths Pencil strokes while drawing. The faint original glyph remains an uneditable reference.</p>
+          <div class="canvas-bar"><div class="canvas-title"><strong>Drawing canvas</strong><button id="btnShowEditorHelp" type="button" class="mini canvas-help-toggle" hidden aria-expanded="false" aria-controls="bezierHelp" title="Show instructions for the current tool">ⓘ Show help</button></div><div class="bar-right"><label class="check"><input id="toggleGrid" type="checkbox" checked title="Show alignment grid on the drawing canvas; adjust spacing and snapping in Inspect"> Grid</label><label class="check"><input id="toggleMetrics" type="checkbox" checked> Metrics</label><button id="btnFitCanvas" class="mini" title="Show the complete drawing and metric guides (F)">Fit</button><button id="btnZoomOut" class="mini" title="Zoom out">−</button><output id="zoomLabel" title="Zoom relative to fit-to-canvas">100%</output><button id="btnZoomIn" class="mini" title="Zoom in">+</button></div></div>
+          <div class="canvas-viewport" id="canvasViewport"><div class="canvas-plane" id="canvasPlane"><svg id="editorGridOverlay" viewBox="0 0 400 430" aria-hidden="true" focusable="false"></svg><canvas id="originalGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="inactiveLayerUnder" viewBox="0 0 400 430" aria-hidden="true"></svg><canvas id="glyphCanvas" width="400" height="430" aria-label="Draw the selected glyph" tabindex="0"></canvas><canvas id="metricGuideCanvas" width="400" height="430" aria-hidden="true"></canvas><svg id="bezierOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="inactiveLayerOver" viewBox="0 0 400 430" aria-hidden="true"></svg><svg id="selectionOverlay" viewBox="0 0 400 430" aria-hidden="true"></svg></div></div>
+          <p class="canvas-help">Mouse-wheel or pinch to zoom · Space + drag to pan · F to fit · Shift constrains circles and squares · Select artwork to copy, paste, move, resize with handles, rotate, flip or scale · Fill: click inside a closed shape or select an area and press Fill · Eraser: select an area first to erase it immediately without losing the selection, or drag to erase freely · Curve: drag endpoints and adjust the purple bend handle; Line/Curve can start at a highlighted endpoint to extend the same path. Alt-drag an endpoint to move it, or use Edit path; Shift-select two endpoints and join them from the Paths palette · Undo/redo stays on your glyph or asks before returning to another glyph. Smooth: set the strength, then click <strong>Smooth outline</strong> to reduce bumps in existing curves. <strong>To smooth only part of a drawing, select that area first:</strong> the edges of your selection remain unchanged, and the result blends gradually into the surrounding ink. Undo reverses it. The slider also smooths Pencil strokes while drawing. The faint original glyph remains an uneditable reference.</p>
         </div>
         <div class="inspector">
           <div class="panel"><h3>Source glyph</h3><label for="glyphWord">Word / slot name</label><input id="glyphWord" type="text" spellcheck="false"><label for="glyphCodepoint">Unicode assignment (fixed catalogue)</label><input id="glyphCodepoint" type="text" spellcheck="false" readonly title="Unicode mappings are assigned by the glyph catalogue"><label for="glyphAliases">Additional input aliases (one per line)</label><textarea id="glyphAliases" rows="3" spellcheck="false"></textarea><button id="btnApplyMetadata" class="btn compact">Apply metadata</button></div>
@@ -194,7 +200,7 @@
 [nanpa1/2 :½ wan nanpa½]
 [jan¼ pona⅓ telo½ lili⅔ suli¾]
 [jan 1/4 pona 1/3 telo 1/2 lili 2/3 suli 3/4]
-[.½ . :1/2 : leko leko zz⅓ leko zz 2/3 leko zz leko]
+[.½ :1/2 lipu lipu zz⅓ lipu zz 2/3 lipu zz lipu lipu]
 [jan,, telo,,] [jan½,,]
 pi(telo lete) pi jan</textarea>
         <div id="compiledPreviewOutput" class="compiled-preview-output" aria-label="Compiled font preview" aria-live="polite"></div>
@@ -329,6 +335,49 @@ pi(telo lete) pi jan</textarea>
         </div>
       </div>
     </section>
+    <section id="pane-typography" class="pane" hidden>
+      <div class="pane-title"><div><h1>Metrics &amp; kerning</h1><p>Set glyph spacing, adjust pairs, and see the effect before compiling the font.</p></div><button class="btn compact" id="btnOpenCurrentMetrics" type="button">Use selected glyph</button></div>
+      <div class="panel typography-workspace">
+        <details id="fontTypographyPanel" class="font-typography-panel" open>
+          <summary>Font metrics and kerning controls</summary>
+          <p class="small muted">Edit spacing here while designing the font. Changes in the diagrams are immediate; click Save to store an override. Units are font units (1200 per em). Blank fields retain the imported/template font metrics.</p>
+          <div class="font-typography-group">
+            <strong>Glyph spacing</strong>
+            <label for="typoGlyph">Glyph</label><select id="typoGlyph" aria-label="Glyph to space"></select>
+            <div class="font-typography-fields">
+              <label>Advance width <input id="typoAdvance" type="number" min="0" max="65535" step="1" placeholder="Original"></label>
+              <label>Left bearing <input id="typoBearing" type="number" min="-32768" max="32767" step="1" placeholder="Original"></label>
+            </div>
+            <div class="wrap-row"><button type="button" class="btn compact" id="btnSaveGlyphMetrics">Save spacing</button><button type="button" class="btn compact" id="btnResetGlyphMetrics">Use original</button></div>
+            <div class="typography-live-block"><strong>Live metrics diagram</strong><svg id="typoMetricsDiagram" viewBox="0 0 720 166" role="img" aria-label="Glyph advance and side-bearing diagram" preserveAspectRatio="xMidYMid meet"></svg><small id="typoMetricsLiveStatus" class="small muted" role="status">Illustrative metrics; compiled TTF proof is authoritative.</small></div>
+            <small id="typoGlyphStatus" class="small muted" role="status"></small>
+          </div>
+          <div class="font-typography-group">
+            <strong>Pair kerning</strong>
+            <div class="font-typography-fields">
+              <label>First glyph <select id="typoLeft"></select></label>
+              <label>Following glyph <select id="typoRight"></select></label>
+              <label>Adjustment <input id="typoPairValue" type="number" min="-32768" max="32767" step="1" value="0"></label>
+            </div>
+            <div class="wrap-row"><button type="button" class="btn compact" id="btnSavePairKern">Save pair</button><button type="button" class="btn compact" id="btnRemovePairKern">Remove pair</button></div>
+            <div class="typography-live-block"><strong>Live pair spacing diagram</strong><svg id="typoPairDiagram" viewBox="0 0 720 170" role="img" aria-label="Two glyphs with adjustable spacing" preserveAspectRatio="xMidYMid meet"></svg><small id="typoPairLiveStatus" class="small muted" role="status">Live positioning sketch (not the compiled TTF).</small></div>
+            <button id="btnRefreshMetricsProof" class="btn compact" type="button">Build font proof</button>
+            <strong>Compiled-font proof</strong>
+            <div id="typoProof" class="font-typography-proof" aria-label="Kerning proof with last compiled font"></div>
+            <small id="typoProofStatus" class="small muted" role="status">Build preview fonts after saving to proof the real TTF.</small>
+          </div>
+          <details class="font-typography-classes">
+            <summary>Kerning classes (advanced)</summary>
+            <p class="small muted">Create reusable groups of glyphs. Enter comma-separated exact slot names or numeric slot indices. An explicit pair overrides a class adjustment.</p>
+            <div class="font-typography-fields"><label>Class name <input id="typoClassName" type="text" maxlength="32" placeholder="vowels"></label><label>Glyph members <input id="typoClassMembers" type="text" placeholder="a, e, i, o, u"></label></div>
+            <div class="wrap-row"><button type="button" class="btn compact" id="btnSaveKernClass">Save class</button><button type="button" class="btn compact" id="btnRemoveKernClass">Remove class</button></div>
+            <div class="font-typography-fields"><label>First class <select id="typoClassLeft"></select></label><label>Following class <select id="typoClassRight"></select></label><label>Adjustment <input id="typoClassValue" type="number" min="-32768" max="32767" step="1" value="0"></label></div>
+            <div class="wrap-row"><button type="button" class="btn compact" id="btnSaveClassPair">Save class pair</button><button type="button" class="btn compact" id="btnRemoveClassPair">Remove class pair</button></div>
+            <small id="typoClassStatus" class="small muted" role="status"></small>
+          </details>
+        </details>
+      </div>
+    </section>
     <section id="pane-build" class="pane" hidden>
       <div class="pane-title"><h1>Build & export</h1></div>
       <div class="rules-grid">
@@ -363,6 +412,13 @@ pi(telo lete) pi jan</textarea>
           <button id="btnImportFontZip" class="btn" type="button" title="Install a verified font-pair ZIP exported on this or another computer">Import font ZIP</button>
         </div>
         <p class="font-site-help">Use on this site installs the compiled font pair in this browser. Export fonts ZIP creates a portable ZIP with a verified manifest; Import font ZIP installs a saved pair on another device. Fonts remain local to this browser and website, not shared with other visitors.</p>
+        <details id="fontQualityPanel" class="font-quality-panel">
+          <summary>Font quality checks (optional)</summary>
+          <p class="small muted">Review editable outlines, layer dependencies and export readiness. Drawing is never changed by these checks. Compiled TTFs are also checked during font creation.</p>
+          <button id="btnRunFontQuality" type="button" class="btn compact">Check project</button>
+          <span id="fontQualitySummary" class="small muted" role="status" aria-live="polite">Not checked yet.</span>
+          <div id="fontQualityFindings" class="font-quality-findings" aria-label="Font quality findings"></div>
+        </details>
       </div>
     </section>
   </main>
@@ -378,7 +434,7 @@ pi(telo lete) pi jan</textarea>
 <input type="file" id="fileImportFont" accept=".ttf,.otf,font/ttf,font/otf" hidden>
 <input type="file" id="fileImportProjectFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
 <input type="file" id="fileImportFontZip" accept=".zip,application/zip,application/x-zip-compressed" hidden>
-<script type="module" src="./file-maker/js/app.js?v=0.3.42.1"></script>
+<script type="module" src="./file-maker/js/app.js?v=0.3.56.0"></script>
 <script>
   const productionHosts = new Set([
         'nanpa-linja-n.com',

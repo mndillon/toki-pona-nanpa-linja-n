@@ -1,0 +1,977 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Font Maker · Illustrated User Guide</title><style>
+:root{color-scheme:light;--ink:#242032;--muted:#665e70;--purple:#7652ae;--surface:#fffaf1;--border:#dacbb3}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:32px}body{font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:#faf4e9;margin:0}
+header{background:#fff9ec;border-bottom:1px solid #ddd2c5;padding:18px 20px;position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}header strong{font-size:1rem}header a{color:#59398c;text-decoration:none;font-size:.92rem}
+main{max-width:970px;margin:24px auto 85px;padding:28px 38px;background:white;border-radius:14px;box-shadow:0 5px 30px #3f2e2212}
+h1{font-size:2rem;line-height:1.25}h2{margin-top:2.8rem;border-bottom:2px solid #e9dff3;padding-bottom:6px}h3{margin-top:1.7rem}p,li{max-width:90ch}a{color:#5e378f}a:hover{text-decoration:underline}img{max-width:100%;height:auto;border-radius:10px;border:1px solid #ded1e2;display:block;margin:12px auto 4px;background:#fff}img+em{display:block;text-align:center;color:var(--muted);font-size:.86rem}
+code{background:#f4eef7;border-radius:4px;padding:2px 4px;font-size:.91em}pre{padding:13px;overflow:auto;background:#f6f0fb;border-radius:10px}pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;font-size:.91rem;display:block;overflow:auto}th,td{border:1px solid #e1d7cb;padding:8px 10px;vertical-align:top;text-align:left}th{background:#f5effa}blockquote{border-left:4px solid #9f86c1;padding:8px 16px;background:#f8f3fc;margin-left:0}blockquote p{margin:0}ul,ol{padding-left:25px}li{margin:4px 0}
+@media(max-width:600px){main{padding:17px 15px;margin:0;border-radius:0}header{position:static}}
+@media print{header{display:none}main{box-shadow:none;margin:0}h2{break-after:avoid}img{max-height:310px}}
+
+/* Offline full-guide search. Highlights are generated from text nodes, never HTML input. */
+.help-search{display:flex;flex-wrap:wrap;align-items:center;gap:7px;font-size:.9rem}
+.help-search input{width:min(240px,50vw);min-width:125px;border:1px solid #a797b3;border-radius:6px;padding:6px 9px;font:inherit;background:white;color:var(--ink)}
+.help-search button{border:1px solid #b9a9c9;border-radius:6px;padding:6px 9px;background:#f7f0ff;color:#493076;cursor:pointer;font:inherit}
+.help-search button:disabled{opacity:.45;cursor:default}
+.help-search output{min-width:65px;color:var(--muted);font-variant-numeric:tabular-nums}
+mark.help-hit{background:#ffe795;color:inherit;border-radius:2px}
+mark.help-hit-current{background:#f6b741;outline:2px solid #8e5900;outline-offset:1px}
+@media(max-width:600px){.help-search{order:3;width:100%}}
+@media print{mark.help-hit{background:transparent}}
+/* Chapter-only navigation near the start of the guide. */
+.chapter-toc{border:1px solid #e4d9eb;border-radius:10px;background:#fcf9ff;padding:13px 19px;margin:20px 0 26px}
+.chapter-toc strong{display:block;margin-bottom:5px}
+.chapter-toc ol{columns:2;column-gap:28px;margin:4px 0;padding-left:26px;font-size:.93rem}
+.chapter-toc li{break-inside:avoid;margin:3px 0;padding-right:5px}
+@media(max-width:680px){.chapter-toc ol{columns:1}}
+@media print{.chapter-toc{break-inside:avoid}}
+</style></head><body><header><strong>nanpa-linja-n Font Maker · Illustrated User Guide</strong><span><a href="#faq">FAQ</a> · <a href="#overview">↑ Guide start</a> · <a href="./FONT_MAKER_USER_GUIDE.md">Markdown source</a></span><div class="help-search" role="search" aria-label="Search user guide"><label for="helpSearch">Search Help</label><input id="helpSearch" type="search" placeholder="e.g. kerning, metrics" autocomplete="off" aria-controls="helpSearchCount"><button id="helpSearchPrev" type="button" title="Previous match" aria-label="Previous search match" disabled>↑</button><button id="helpSearchNext" type="button" title="Next match" aria-label="Next search match" disabled>↓</button><output id="helpSearchCount" role="status" aria-live="polite"> </output></div></header><main><h1>Font Maker — Illustrated User Guide</h1>
+<p>Version 0.3.56 · For the nanpa-linja-n sitelen pona Font Maker · Works offline when included in the deployed site.</p>
+<p>This is the <strong>complete guide to the visible controls</strong>. The screenshots are <strong>schematic illustrations based on the current controls</strong>, not photographs of a particular saved glyph. Purple indicates selected/editable controls; black indicates final glyph ink; pale grey indicates a reference or alignment guide.</p>
+<nav class="chapter-toc" aria-label="Guide chapters">
+<strong>Chapters</strong>
+<ol>
+<li><a href="#overview">1. Getting started and finding your way around</a></li>
+<li><a href="#drawing">2. Drawing tools and the canvas</a></li>
+<li><a href="#grid">3. Visible grid, spacing and snapping</a></li>
+<li><a href="#brush">4. Brush palette — stroke, smoothing and fill choices</a></li>
+<li><a href="#editing">5. Edit palette — selections, transforms, history</a></li>
+<li><a href="#paths">6. Paths palette — editable curves and joins</a></li>
+<li><a href="#repair">7. Paths → Inspect &amp; repair outlines (advanced)</a></li>
+<li><a href="#layers">8. Layers palette — independent drawings and live components</a></li>
+<li><a href="#inspect">9. Inspect palette — grid, glyph data and the original outline</a></li>
+<li><a href="#compounds">10. Compounds tab — combining source glyphs</a></li>
+<li><a href="#preview">11. Preview — see the actual compiled font pair</a></li>
+<li><a href="#typography">12. Metrics &amp; kerning — editing font spacing</a></li>
+<li><a href="#export">13. Build &amp; export — names, validation and portable files</a></li>
+<li><a href="#shortcuts">14. Handy gestures and troubleshooting</a></li>
+</ol>
+</nav>
+
+<p><a id="faq"></a></p>
+<h2>Quick answers — FAQ</h2>
+<p>Start here for common problems. Each answer gives the <strong>quick action first</strong>, followed by a link to the illustrated instructions. The drawings show the actual meaning of the purple controls, not an invented extra tool.</p>
+<p><img src="./images/11-faq-quick-fixes.svg" alt="Quick recognition guide: a spiky joined curve and smoothed junction, grid lines, and selection handles versus vector anchors" /></p>
+<table>
+<thead>
+<tr>
+  <th>I want to… / I see…</th>
+  <th>Quick answer</th>
+  <th>Illustrated details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Remove a little spike where two curves meet</strong></td>
+  <td>Choose <strong>⌁ Edit path</strong>, click the <em>round purple junction</em>, then <strong>Paths → Smooth junction</strong>. Adjust the two small tangent handles if necessary. This is usually a kink, <strong>not</strong> a tiny backtracking spike.</td>
+  <td><a href="#spike-between-curves">Curve join and spike walkthrough</a></td>
+</tr>
+<tr>
+  <td><strong>Select the join but keep getting a purple rectangle</strong></td>
+  <td>You're using <strong>▣ Select</strong>, which selects/resizes the entire shape. Switch to <strong>⌁ Edit path</strong> and select the actual interior junction.</td>
+  <td><a href="#drawing">Recognise selection vs. path handles</a> · <a href="#paths">Paths</a></td>
+</tr>
+<tr>
+  <td><strong>Join two lines or curves into one path</strong></td>
+  <td>Start the next Line/Curve at the highlighted open endpoint. For two existing paths, select their endpoints and choose <strong>Join endpoints</strong> or <strong>Join smoothly</strong>.</td>
+  <td><a href="#paths">Connect and edit paths</a></td>
+</tr>
+<tr>
+  <td><strong>Draw a circle from its centre rather than a corner</strong></td>
+  <td>Normally drag from a corner; hold <strong>Alt/Option</strong> to start at the centre. On Linux, if Alt-drag moves your window, tick <strong>Brush → Draw shapes from centre</strong> instead. Hold <strong>Shift</strong> for a perfect circle (or square).</td>
+  <td><a href="#shape-gestures">Corner/centre shape diagram</a> · <a href="#brush">Brush setting</a></td>
+</tr>
+<tr>
+  <td><strong>Use the same brush width for the whole font</strong></td>
+  <td>Choose <strong>Brush → Width</strong> and <strong>Smooth</strong> once. They are remembered <strong>per project</strong>, including after switching glyphs or reopening the project. Existing drawings are not resized automatically.</td>
+  <td><a href="#brush">Brush defaults and what they affect</a></td>
+</tr>
+<tr>
+  <td><strong>Make a straight line end square or flat</strong></td>
+  <td>Open <strong>Brush → Line / Curve end caps</strong> and choose <strong>Flat</strong> (ends exactly at the anchor) or <strong>Square</strong> (projects half a width past the anchor). Draw a new Line or Curve.</td>
+  <td><a href="#brush">Visual comparison of cap styles</a></td>
+</tr>
+<tr>
+  <td><strong>Use a square Pencil or Eraser</strong></td>
+  <td>Open <strong>Brush → Pencil / Eraser tip</strong>, choose <strong>Square</strong>, then draw or erase. This changes the complete brush footprint, not merely the ends.</td>
+  <td><a href="#brush">Round versus square tips</a></td>
+</tr>
+<tr>
+  <td><strong>Remember Brush options when switching glyphs or projects</strong></td>
+  <td>Brush settings belong to each project: set them once; the same values return on the next glyph, after reopening, or after exporting/importing the project JSON.</td>
+  <td><a href="#brush">Project-wide drawing preferences</a></td>
+</tr>
+<tr>
+  <td><strong>Make the grid visible / change the cell size</strong></td>
+  <td>Tick <strong>Grid</strong> above the canvas. Open <strong>Inspect → Grid &amp; snapping</strong> and enter a spacing, normally <strong>20 editor units</strong>.</td>
+  <td><a href="#grid">Grid diagram and settings</a></td>
+</tr>
+<tr>
+  <td><strong>Make a line or anchor follow the grid</strong></td>
+  <td>Open <strong>Inspect → Grid &amp; snapping</strong>, enable <strong>Snap to grid</strong>. You may hide grid lines while snapping. Freehand Pencil/Eraser deliberately do not snap.</td>
+  <td><a href="#grid">What snaps and what doesn't</a></td>
+</tr>
+<tr>
+  <td><strong>Erase everything inside a selected area</strong></td>
+  <td>Use <strong>▣ Select</strong> or <strong>◌ Lasso</strong> to select the area, then choose <strong>◫ Eraser</strong> or press <strong>E</strong>. The selection stays active; <strong>Undo</strong> restores the ink.</td>
+  <td><a href="#editing">Selection and erasing</a></td>
+</tr>
+<tr>
+  <td><strong>Erase the pale-grey original glyph</strong></td>
+  <td>The grey silhouette is a protected reference. Use <strong>Inspect → Show original filled silhouette</strong> to hide it; copy or restore the glyph if you need editable ink.</td>
+  <td><a href="#inspect">Imported reference controls</a></td>
+</tr>
+<tr>
+  <td><strong>Fill a shape or cut a transparent hole</strong></td>
+  <td><strong>Fill</strong> operates inside a bounded region. For a transparent vector hole, draw a closed inner Bézier contour and set its role to <strong>Hole</strong>, or use a <strong>Cut</strong> layer.</td>
+  <td><a href="#paths">Bézier paths</a> · <a href="#layers">Layer types</a></td>
+</tr>
+<tr>
+  <td><strong>Remove a detected tiny loop or crossing</strong></td>
+  <td>Open <strong>Paths → Inspect &amp; repair outlines</strong>, run <strong>Check outline</strong>, select the reported issue and use the <em>matching</em> repair. Use <strong>Undo</strong> if the result is unsuitable.</td>
+  <td><a href="#repair">Repair diagram and cautions</a></td>
+</tr>
+<tr>
+  <td><strong>Make a curved stroke smoother</strong></td>
+  <td>For a joined kink use <strong>Smooth junction</strong>. For bumpy freehand ink, adjust <strong>Brush → Smooth</strong> or select artwork and choose <strong>Smooth outline</strong>.</td>
+  <td><a href="#paths">Junction smoothing</a> · <a href="#brush">Brush smoothing</a></td>
+</tr>
+<tr>
+  <td><strong>Stop editing or moving the wrong layer</strong></td>
+  <td>Open <strong>Layers</strong>, click the layer you intend to edit, and check its <strong>lock</strong>, <strong>eye</strong>, and <strong>export</strong> switches. Keep a simple single layer until you need more.</td>
+  <td><a href="#layers">Layers illustration</a></td>
+</tr>
+<tr>
+  <td><strong>Reuse a glyph and update copies automatically</strong></td>
+  <td>Open <strong>Layers → Linked components (advanced)</strong> and link to the source glyph. Transform the link independently without changing the source.</td>
+  <td><a href="#layers">Linked components</a></td>
+</tr>
+<tr>
+  <td><strong>Preview my newly edited font</strong></td>
+  <td>In <strong>Preview</strong>, choose <strong>Build preview fonts</strong>; subsequent text changes reuse the built pair. Geometry changes may require rebuilding.</td>
+  <td><a href="#preview">Preview, test strings and geometry</a></td>
+</tr>
+<tr>
+  <td><strong>Adjust cartouche spacing, rails or tallies</strong></td>
+  <td>In <strong>Preview</strong>, use the existing <strong>Rails &amp; spacing</strong>, <strong>Cartouche ends</strong>, <strong>Pi &amp; long-pi</strong>, <strong>Tallies</strong>, or <strong>Alignment</strong> tabs. Their settings apply when the font pair is rebuilt.</td>
+  <td><a href="#preview">Illustrated Preview settings</a></td>
+</tr>
+<tr>
+  <td><strong>Adjust the width or kerning of a glyph</strong></td>
+  <td>Open <strong>Metrics &amp; kerning</strong>. Select a glyph or pair and watch the live diagrams while changing the numbers. Click <strong>Save spacing</strong> or <strong>Save pair</strong>; <strong>Build font proof</strong> verifies the compiled TTF.</td>
+  <td><a href="#typography">Typography controls</a></td>
+</tr>
+<tr>
+  <td><strong>Save work to another computer</strong></td>
+  <td>Use <strong>Save project file</strong> to preserve editable artwork. <strong>Export fonts ZIP</strong> is for installed TTFs; <strong>Use on this site</strong> only installs fonts in this browser.</td>
+  <td><a href="#overview">Projects and exports</a> · <a href="#export">Portable fonts</a></td>
+</tr>
+<tr>
+  <td><strong>Find why export is failing</strong></td>
+  <td>Open <strong>Build &amp; export → Font quality checks</strong>, run <strong>Check project</strong>, follow any glyph links, then rerun the build. Compiler/test failures are not fixed by changing grid settings.</td>
+  <td><a href="#export">Validation and build troubleshooting</a> · <a href="#shortcuts">Troubleshooting</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Where is the button?</strong> <strong>FAQ</strong> is immediately before <strong>ⓘ Help</strong> in the drawing toolbar. Both open this local guide in a separate tab; <strong>FAQ</strong> jumps here, while <strong>Help</strong> starts at the overview. Each movable palette's <strong>?</strong> still opens its own detailed section.</p>
+<hr />
+<p><a id="overview"></a></p>
+<h2>1. Getting started and finding your way around</h2>
+<p><img src="./images/01-workspace.svg" alt="Font Maker tabs, glyph library, drawing canvas and floating tool palettes" /></p>
+<ul>
+<li><strong>Draw glyph</strong> is where you make and edit individual shapes. The glyph catalogue is on the left, the canvas is central, and optional floating palettes overlay it only while open.</li>
+<li><strong>Compounds</strong> combines glyphs into an override without altering their sources.</li>
+<li><strong>Metrics &amp; kerning</strong> edits advance widths, left side bearings, glyph-pair spacing and optional kerning classes, with immediate schematic diagrams.</li>
+<li><strong>Preview</strong> shapes test strings using the two compiled font faces and changes cartouche/long-<em>pi</em> geometry.</li>
+<li><strong>Build &amp; export</strong> gives the font its identity, validates it and exports the font pair.</li>
+<li><strong>FAQ</strong> (immediately beside <strong>Inspect</strong>) opens quick solutions. <strong>ⓘ Help</strong> beside it opens this complete guide. The <strong>?</strong> in a floating palette jumps to its relevant illustrated section.</li>
+</ul>
+<p><strong>Basic workflow:</strong> select <strong>jan</strong> or another glyph from the left → choose <strong>Pencil</strong> → draw on white canvas → optionally edit with Select or Curve → open <strong>Preview</strong> and click <strong>Build preview fonts</strong> → use <strong>Build &amp; export → Export fonts ZIP</strong>.</p>
+<h3>Project and file buttons (at the top)</h3>
+<table>
+<thead>
+<tr>
+  <th>Control</th>
+  <th>What it does</th>
+  <th>Important detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Active project</td>
+  <td>Select another local project</td>
+  <td>The current editor saves to IndexedDB when available.</td>
+</tr>
+<tr>
+  <td><strong>+ New</strong></td>
+  <td>Create a separate editable project</td>
+  <td>Does not overwrite existing named projects.</td>
+</tr>
+<tr>
+  <td><strong>Delete project</strong></td>
+  <td>Remove the selected saved project</td>
+  <td>Confirm the destructive action.</td>
+</tr>
+<tr>
+  <td><strong>Open project</strong></td>
+  <td>Import a previously exported editable JSON project</td>
+  <td>Different from installing a compiled font ZIP.</td>
+</tr>
+<tr>
+  <td><strong>Import font</strong></td>
+  <td>Start a project using an existing TTF/OTF</td>
+  <td>You must provide and acknowledge the imported font's licence.</td>
+</tr>
+<tr>
+  <td><strong>Import ZIP</strong></td>
+  <td>Restore a compatible exported <em>editable</em> project/font ZIP</td>
+  <td>The verified ZIP carries its licence manifest.</td>
+</tr>
+<tr>
+  <td><strong>Save project file</strong></td>
+  <td>Download editable JSON</td>
+  <td>Use this for backups and moving editable work between computers.</td>
+</tr>
+</tbody>
+</table>
+<h3>Glyph library</h3>
+<p><strong>Find a glyph</strong> searches name/aliases. <strong>Glyph category</strong> filters sitelen pona, printable ASCII, custom slots or special controls. <strong>All / Drawn / Missing</strong> filters by editing status. Click a glyph pill to work on that glyph; the thumbnail reflects saved editable artwork. The grey source guide is not your new drawing.</p>
+<p><a id="drawing"></a></p>
+<h2>2. Drawing tools and the canvas</h2>
+<p><img src="./images/03-toolbar-selection.svg" alt="Current drawing toolbar with selected icon and editable selection versus path nodes" /></p>
+<p>The toolbar uses short glyph icons to save canvas space. <strong>Hover or focus a tool to read its full name.</strong> The purple-highlighted icon indicates the active tool.</p>
+<table>
+<thead>
+<tr>
+  <th>Tool</th>
+  <th>Gesture / result</th>
+  <th>Good for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>▣ Select</strong></td>
+  <td>Click a vector object or drag empty space to marquee-select; resize with square handles</td>
+  <td>Moving, copying, scaling or erasing a chosen area</td>
+</tr>
+<tr>
+  <td><strong>◌ Lasso</strong></td>
+  <td>Trace an irregular boundary around artwork</td>
+  <td>Selecting part of a complex shape</td>
+</tr>
+<tr>
+  <td><strong>✎ Pencil</strong></td>
+  <td>Press and drag freehand</td>
+  <td>Rough drawing; smoothing is optional</td>
+</tr>
+<tr>
+  <td><strong>◫ Eraser</strong></td>
+  <td>Drag to erase; with a Select/Lasso region already active, choosing Eraser erases that region immediately</td>
+  <td>Removing editable ink, not the grey source guide</td>
+</tr>
+<tr>
+  <td><strong>╱ Line</strong></td>
+  <td>Drag a straight segment; begin on a highlighted endpoint to continue a path</td>
+  <td>Straight edges and connected outlines</td>
+</tr>
+<tr>
+  <td><strong>◯ Circle</strong></td>
+  <td>Drag from a corner for an ellipse; <strong>Shift</strong> makes a circle; <strong>Alt/Option</strong> draws outward from the centre</td>
+  <td>Rounded shapes and holes</td>
+</tr>
+<tr>
+  <td><strong>▢ Rectangle</strong></td>
+  <td>Drag from a corner; <strong>Shift</strong> makes a square; <strong>Alt/Option</strong> draws outward from the centre</td>
+  <td>Block forms</td>
+</tr>
+<tr>
+  <td><strong>⌒ Curve</strong></td>
+  <td>Drag endpoints, then drag or click the purple bend control; can start at an existing endpoint</td>
+  <td>Rounded strokes, arches and joining paths</td>
+</tr>
+<tr>
+  <td><strong>▰ Fill</strong></td>
+  <td>Click a bounded region, or select an area first and choose Fill</td>
+  <td>Filling closed editable regions</td>
+</tr>
+<tr>
+  <td><strong>⌁ Edit path</strong></td>
+  <td>Click anchors, drag tangent handles, add Bézier nodes and edit contours</td>
+  <td>Precise outline correction</td>
+</tr>
+<tr>
+  <td><strong>✥ Pan</strong></td>
+  <td>Drag to move the view without drawing; Space+drag also pans</td>
+  <td>Navigating a zoomed canvas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Zoom:</strong> mouse wheel (over canvas), <strong>+</strong>, <strong>−</strong>, and <strong>Fit</strong> in the canvas header. Zoom and pan change only the view, never the stored outline. <strong>Metrics</strong> shows the font baseline and, for special slots, joining-rail guides. <strong>Original glyph reference</strong> in Inspect controls the pale grey source silhouette.</p>
+<p><a id="shape-gestures"></a></p>
+<h3>Circle and Rectangle: drag from a corner or from the centre</h3>
+<p><img src="./images/12-shape-origins.svg" alt="Four examples of ellipse and rectangle drawing from a bounding-box corner, from a centre, and with Shift constraining equal width and height" /></p>
+<p>By default, the <strong>first click is one corner</strong> of the shape's bounding box. Drag to its opposite corner. While dragging, a <strong>thin purple dashed box</strong> shows the bounds; that guide disappears when you release the pointer and is <strong>not exported</strong> into the font. For the Circle tool, unequal width/height makes an ellipse; for Rectangle, an ordinary rectangle.</p>
+<table>
+<thead>
+<tr>
+  <th>Gesture</th>
+  <th>Circle tool</th>
+  <th>Rectangle tool</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Drag</strong></td>
+  <td>Ellipse, first point at a corner</td>
+  <td>Rectangle, first point at a corner</td>
+</tr>
+<tr>
+  <td><strong>Shift + drag</strong></td>
+  <td>Perfect circle</td>
+  <td>Square</td>
+</tr>
+<tr>
+  <td><strong>Alt/Option + drag</strong></td>
+  <td>Ellipse, first point at its <strong>centre</strong></td>
+  <td>Rectangle, first point at its <strong>centre</strong></td>
+</tr>
+<tr>
+  <td><strong>Shift + Alt/Option + drag</strong></td>
+  <td>Circle from the centre</td>
+  <td>Square from the centre</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Linux alternative:</strong> Some Linux window managers move the whole window when you Alt-drag. Open <strong>Brush → Draw shapes from centre</strong> (checkbox) to use centre-origin drawing <em>without</em> Alt. With that box checked, Alt/Option temporarily switches <strong>back</strong> to corner-origin drawing. The last saved preference is restored whenever you reopen the project. <strong>Alt/Option on Mac is the ⌥ Option key.</strong> The centre-origin option affects only new Circle/Rectangle shapes; it never repositions existing ones.</p>
+<blockquote>
+<p><strong>Tip:</strong> Use <strong>Shift</strong> to maintain equal width and height; use <strong>Snap to grid</strong> independently for consistent anchor placement. Only Pencil, Eraser and Lasso remain freehand.</p>
+</blockquote>
+<h3>What the purple squares mean</h3>
+<p>Eight squares surrounding a <em>rectangle</em> are <strong>selection resize handles</strong>. A small purple <em>circle</em> at the bend or junction of an existing path is an <strong>editable node</strong>. These are different features. Select <strong>Edit path</strong> when you want to change an actual Bézier anchor rather than resize the whole shape.</p>
+<p><a id="grid"></a></p>
+<h2>3. Visible grid, spacing and snapping</h2>
+<p><img src="./images/02-grid.svg" alt="Artboard-aligned 20-unit square grid, with major lines and path anchors" /></p>
+<p><strong>The checked Grid box now draws real horizontal and vertical lines on the white artboard.</strong> It no longer just changes the surrounding striped area.</p>
+<table>
+<thead>
+<tr>
+  <th>Setting</th>
+  <th>Location</th>
+  <th>Initial value</th>
+  <th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Grid</strong></td>
+  <td>Drawing canvas header</td>
+  <td>On</td>
+  <td>Shows/hides pale grey grid lines behind editable ink and purple handles.</td>
+</tr>
+<tr>
+  <td><strong>Grid spacing (editor units)</strong></td>
+  <td><strong>Inspect → Grid &amp; snapping</strong></td>
+  <td><strong>20</strong></td>
+  <td>Distance between adjacent grid lines in artboard drawing coordinates. Choose 5–100 in steps of 5.</td>
+</tr>
+<tr>
+  <td><strong>Snap to grid</strong></td>
+  <td><strong>Inspect → Grid &amp; snapping</strong></td>
+  <td><strong>Off</strong></td>
+  <td>Snaps new Line/Curve/Rectangle/Circle points, new Bézier anchors and dragged editable anchors to nearest grid intersections.</td>
+</tr>
+<tr>
+  <td><strong>Metrics</strong></td>
+  <td>Drawing canvas header</td>
+  <td>On</td>
+  <td>Shows the baseline and relevant cartouche/long-pi joining guides; independent of the grid.</td>
+</tr>
+</tbody>
+</table>
+<p>Every <strong>fifth line is slightly darker</strong>, so with 20-unit spacing the stronger lines occur every 100 units. Increasing spacing makes fewer, larger cells. Decreasing spacing makes a finer grid. The grid moves and scales together with the artboard under zoom/pan.</p>
+<p><strong>Independent controls:</strong> Grid OFF + Snap ON is allowed, as is Grid ON + Snap OFF. The cursor and existing shape <em>hit testing</em> remain free-positioned so nearby anchor handles still work. Pencil, Eraser, Lasso, Select and Pan are never grid-snapped. Bézier <strong>tangent handles and bend controls remain free</strong>, so you can adjust curvature smoothly between grid points. Grid settings are remembered in this browser and are <strong>not included in exported glyphs or TTFs</strong>.</p>
+<p><strong>Try this:</strong> choose 20 units → enable Snap → draw a Line from near one grid intersection to another. It starts and ends exactly on the nearest intersections. Disable Snap to draw unconstrained curves again.</p>
+<p><a id="brush"></a></p>
+<h2>4. Brush palette — stroke, smoothing and fill choices</h2>
+<p>Open the floating <strong>Brush</strong> palette from its toolbar button. Move it by dragging its heading; <strong>× Hide</strong> closes it without shrinking the canvas; <strong>?</strong> opens this section.</p>
+<table>
+<thead>
+<tr>
+  <th>Setting</th>
+  <th>What to expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Width</strong></td>
+  <td>Default <strong>9</strong> editor units, saved for the <strong>current project</strong> and reused across glyphs and sessions. Controls Pencil, Eraser, Line, connected strokes and outlined shapes. Changing Width while artwork is selected can also resize that selection.</td>
+</tr>
+<tr>
+  <td><strong>Smooth</strong></td>
+  <td>Default <strong>55%</strong>, saved per project. Sets Pencil smoothing (0–100%); increasing it removes more hand jitter without changing previously drawn glyphs.</td>
+</tr>
+<tr>
+  <td><strong>Smooth outline</strong></td>
+  <td>Processes existing editable artwork; if Select/Lasso is active, targets only that region and protects its border. Undo reverses it.</td>
+</tr>
+<tr>
+  <td><strong>Auto-straighten / circle</strong></td>
+  <td>Recognises suitable freehand Pencil strokes and replaces them with editable geometric shapes.</td>
+</tr>
+<tr>
+  <td><strong>Solid shape</strong></td>
+  <td>When checked, new Circle/Rectangle shapes are filled rather than just outlined.</td>
+</tr>
+<tr>
+  <td><strong>Draw shapes from centre</strong></td>
+  <td>Off by default: drag from a corner. Check to make Circle and Rectangle start at their centre (Linux-friendly alternative to Alt/Option-drag). Alt/Option temporarily toggles the choice.</td>
+</tr>
+<tr>
+  <td><strong>Line / Curve end caps</strong></td>
+  <td><strong>Round</strong> by default. <strong>Flat</strong> terminates the outline at the endpoint; <strong>Square</strong> adds half the stroke width beyond it. Saved on each new editable Line/Curve path, so changing the control later will not restyle previously drawn strokes.</td>
+</tr>
+<tr>
+  <td><strong>Pencil / Eraser tip</strong></td>
+  <td><strong>Round</strong> by default. Choose <strong>Square</strong> for a square-shaped stamp swept along the whole freehand stroke. This applies to the raster drawing and the editable vector eraser footprint.</td>
+</tr>
+</tbody>
+</table>
+<p><img src="./images/13-project-brush-defaults.svg" alt="A Brush palette example showing width 9, smoothing 55 percent and an unchecked centre-origin checkbox, with an arrow indicating consistent settings across three different glyphs" /></p>
+<p><img src="./images/14-brush-caps-and-tips.svg" alt="Line and curve caps compared: Round, Flat and Square against purple endpoint guides; round and square Pencil/Eraser stamps, all saved in a project" /></p>
+<p><strong>Consistency across the font:</strong> The current <strong>Width</strong>, <strong>Smooth</strong>, <strong>Auto-straighten</strong>, <strong>Solid shape</strong>, <strong>Draw shapes from centre</strong>, <strong>Line / Curve end caps</strong> and <strong>Pencil / Eraser tip</strong> belong to the <em>project</em>, not to a particular glyph. Set them once, switch to another glyph and keep drawing at the same width. They are autosaved with the project and included when you export/import its editable JSON. Switching to a <em>different project</em> restores that project's own preferences. Existing strokes and contours keep the geometry they were drawn with; a global width or cap preference change is not a destructive restyling command. <strong>Smooth outline</strong> is a command that edits selected artwork, not a persistent Brush option. A Line/Curve that you extend keeps its original cap style for that connected path.</p>
+<p>A useful sequence is <strong>Pencil → Smooth</strong> at a moderate value → select an uneven area → <strong>Smooth outline</strong>. Avoid repeatedly smoothing already-clean shapes because each pass can soften useful corners.</p>
+<p><a id="editing"></a></p>
+<h2>5. Edit palette — selections, transforms, history</h2>
+<p><img src="./images/03-toolbar-selection.svg" alt="Selected shape resize handles and editable Bézier anchors in two examples" /></p>
+<p>Use <strong>Select</strong> for a rectangular marquee or to click an individual vector object; use <strong>Lasso</strong> for a freehand region. Drag inside the selection to move, or drag its perimeter squares to resize. Corner handles preserve proportions unless Shift is held; side handles adjust one dimension.</p>
+<table>
+<thead>
+<tr>
+  <th>Control</th>
+  <th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Select all</strong></td>
+  <td>Select editable artwork on the current layer.</td>
+</tr>
+<tr>
+  <td><strong>Copy / Cut / Paste</strong></td>
+  <td>Move reusable artwork between glyphs/projects; Cut also removes it from the source selection.</td>
+</tr>
+<tr>
+  <td><strong>Duplicate</strong></td>
+  <td>Add a copy without leaving the current glyph.</td>
+</tr>
+<tr>
+  <td><strong>Rotate left/right 90°</strong></td>
+  <td>Rotate the selected artwork by a quarter-turn.</td>
+</tr>
+<tr>
+  <td><strong>Rotate ° / Apply rotation</strong></td>
+  <td>Enter a custom angle, then apply.</td>
+</tr>
+<tr>
+  <td><strong>Scale % / Apply scale</strong></td>
+  <td>Set a scale percentage and apply it to selection.</td>
+</tr>
+<tr>
+  <td><strong>Flip H / Flip V</strong></td>
+  <td>Mirror selected artwork horizontally/vertically.</td>
+</tr>
+<tr>
+  <td><strong>Crop</strong></td>
+  <td>Retain only the selected area in editable raster art without changing glyph metrics.</td>
+</tr>
+<tr>
+  <td><strong>Delete</strong></td>
+  <td>Remove selected artwork.</td>
+</tr>
+<tr>
+  <td><strong>Deselect</strong></td>
+  <td>Clear selection handles and return to ordinary drawing.</td>
+</tr>
+<tr>
+  <td><strong>Copy glyph / Paste into glyph / Replace glyph</strong></td>
+  <td>Work with an entire glyph; Replace asks before overwriting.</td>
+</tr>
+<tr>
+  <td><strong>Undo / Redo</strong></td>
+  <td>Reverse/restore editable actions, including selected erasing and successful repairs.</td>
+</tr>
+<tr>
+  <td><strong>Clear glyph</strong></td>
+  <td>Removes the current active editable drawing after confirmation.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Selected Eraser and Fill:</strong> first draw a Select/Lasso region. Click Eraser to clear <em>inside that region</em>, or Fill to add ink there. The selection stays active so you can adjust or Undo. The imported grey silhouette is only a guide and is not erased. Locked layers cannot be edited.</p>
+<p><a id="paths"></a></p>
+<h2>6. Paths palette — editable curves and joins</h2>
+<p><img src="./images/04-path-join.svg" alt="Line joined to Curve, then an interior Bézier junction ready for smoothing" /></p>
+<p>A line and a curve can share a node and become one editable path. Start a new Line or Curve close to a highlighted <em>open endpoint</em> to extend that path. Switch between Line and Curve without losing the connection.</p>
+<p><strong>Recognising path controls:</strong> square nodes at open ends can extend a path; circular nodes at an interior junction can be selected, dragged and smoothed; small tangent handles change the angle/curvature of Bézier segments. A purple bend handle changes a Curve tool's arc without moving its endpoints.</p>
+<table>
+<thead>
+<tr>
+  <th>Control</th>
+  <th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Join endpoints</strong></td>
+  <td>Select one endpoint using Edit path, Shift-click another, then use Join endpoints.</td>
+</tr>
+<tr>
+  <td><strong>Join smoothly</strong></td>
+  <td>Connect the endpoints and align the curve direction.</td>
+</tr>
+<tr>
+  <td><strong>Smooth junction</strong></td>
+  <td>Select an interior node and align incoming/outgoing tangents to remove a kink.</td>
+</tr>
+<tr>
+  <td><strong>Close path</strong></td>
+  <td>Join first/last points of one open path into a closed contour.</td>
+</tr>
+<tr>
+  <td><strong>Close outline / Close hole</strong></td>
+  <td>Finish a Bézier contour as solid ink or transparent cutout.</td>
+</tr>
+<tr>
+  <td><strong>Cancel contour</strong></td>
+  <td>Discard the unfinished Bézier contour.</td>
+</tr>
+<tr>
+  <td><strong>Outline picker / Selected contour</strong></td>
+  <td>Select a finished path, then choose Filled (black) or Hole (transparent).</td>
+</tr>
+<tr>
+  <td><strong>Preview filled glyph</strong></td>
+  <td>Hide editing nodes and inspect the black silhouette.</td>
+</tr>
+</tbody>
+</table>
+<p>Inside <strong>Edit nodes</strong> (collapsed): advanced insertion/deletion/splitting, point type adjustment and extrema generation. Inside <strong>Combine shapes</strong> (collapsed): Union, Subtract, Intersect, Exclude. These operate on editable closed vector outlines; Undo restores the originals. Advanced operations do <strong>not</strong> need to be open for everyday drawing.</p>
+<p><a id="spike-between-curves"></a></p>
+<h3>How to fix a spike in a curve</h3>
+<p><img src="./images/06-repair.svg" alt="Curve kink before and after smoothing the connected tangent handles" /></p>
+<ol>
+<li>Select <strong>Edit path (⌁)</strong>, not Select (▣).</li>
+<li>Click the curve and then click the <strong>purple interior junction</strong> where two sections meet.</li>
+<li>In Paths, use <strong>Smooth junction</strong> (near the top of that palette).</li>
+<li>If the curve still needs adjusting, drag its smaller tangent handles individually.</li>
+<li>Use <strong>Undo</strong> if the modification is not right.</li>
+</ol>
+<p><strong>Why not begin with “Trim tiny spike”?</strong> That command removes a short <em>backtracking segment in an outline</em>. A kink between joined curves is normally a tangent alignment problem, and smoothing the junction is preferable because it keeps the path intact.</p>
+<p><a id="repair"></a></p>
+<h2>7. Paths → Inspect &amp; repair outlines (advanced)</h2>
+<p>This panel is <strong>closed by default</strong>. These commands are for geometry problems; they do not repair ordinary freehand inaccuracies and are not required to export every glyph.</p>
+<table>
+<thead>
+<tr>
+  <th>Button</th>
+  <th>Purpose and caution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Check outline</strong></td>
+  <td>Scan for duplicates, intersecting contours, tiny spikes, small Bézier loops and invalid holes. Does not change artwork.</td>
+</tr>
+<tr>
+  <td><strong>Safe cleanup</strong></td>
+  <td>Conservative cleanup of duplicate/zero-length points and winding where safe.</td>
+</tr>
+<tr>
+  <td><strong>Trim tiny spike</strong></td>
+  <td>Remove a short backtracking vector spike. Not for an ordinary tangent kink.</td>
+</tr>
+<tr>
+  <td><strong>Trim tiny Bézier loop…</strong></td>
+  <td>Remove a small detected loop on a curve after selecting the reported issue.</td>
+</tr>
+<tr>
+  <td><strong>Remove overlaps…</strong></td>
+  <td>Resolve overlaps using vector boolean processing; confirm the change.</td>
+</tr>
+<tr>
+  <td><strong>Resolve crossing…</strong></td>
+  <td>Attempt to regularise a self-crossing outline; inspect result and Undo if needed.</td>
+</tr>
+</tbody>
+</table>
+<p>Use <strong>Check outline → click the finding → choose the matching repair</strong>. Repair reports are not proof of perfectly valid font geometry; the Build &amp; export quality checks provide another gate. Edits affect the active editable layer, and risky operations require explicit confirmation.</p>
+<p><a id="layers"></a></p>
+<h2>8. Layers palette — independent drawings and live components</h2>
+<p><img src="./images/05-layers.svg" alt="Add and subtract layer composition forming a transparent hole" /></p>
+<p>Open <strong>Layers</strong> for your current glyph. The list includes editable layers and a protected imported/Fairfax reference base. Click a layer to edit it. Double-click its label to rename. Reorder layers to change composition; eye controls visibility, lock prevents editing, and the export checkbox controls whether geometry contributes to TTF output.</p>
+<table>
+<thead>
+<tr>
+  <th>Layer type</th>
+  <th>Meaning</th>
+  <th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Add</strong></td>
+  <td>Add this layer's solid geometry</td>
+  <td>Main body of <code>jan</code></td>
+</tr>
+<tr>
+  <td><strong>Cut (Subtract)</strong></td>
+  <td>Remove this layer's shape from the accumulated shape</td>
+  <td>A transparent centre/hole</td>
+</tr>
+<tr>
+  <td><strong>Keep (Intersect)</strong></td>
+  <td>Retain only shared filled areas</td>
+  <td>Clip a fill within another outline</td>
+</tr>
+<tr>
+  <td><strong>Guide</strong></td>
+  <td>Show reference artwork in the editor but not in export</td>
+  <td>Sketch or construction guide</td>
+</tr>
+</tbody>
+</table>
+<p><strong>+ Layer / Duplicate / Delete</strong> manage editable layers. <strong>Linked components (advanced)</strong> lets a layer refer to another glyph's live outline, with independent position/scale/rotation. Changes to the source glyph can flow into dependent glyphs. Circular links are rejected. <strong>Clipping &amp; shape modifiers (advanced)</strong> includes reversible layer composition, live boolean operands and clip boundaries. <strong>Isolate layer</strong> hides other editable layers for your view only; it does not change font export.</p>
+<p><strong>Good habit:</strong> keep the simple draw-on-one-layer workflow until a second layer genuinely helps. Complex layer effects are optional; they do not change Pencil/Curve tools.</p>
+<p><a id="inspect"></a></p>
+<h2>9. Inspect palette — grid, glyph data and the original outline</h2>
+<p><img src="./images/10-context-help.svg" alt="Contextual help question mark inside the floating tool palette header" /></p>
+<p>At the top of <strong>Inspect</strong>, <strong>Grid &amp; snapping</strong> is a small collapsed section. It contains <strong>Grid spacing</strong> (default 20 editor units) and <strong>Snap to grid</strong> (off by default). The visibility checkbox itself stays in the drawing canvas header. See the <a href="#grid">illustrated grid explanation</a>.</p>
+<p>The remaining Inspector sections are:</p>
+<table>
+<thead>
+<tr>
+  <th>Control</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Word / slot name</strong></td>
+  <td>Identifies current glyph (from the fixed catalogue).</td>
+</tr>
+<tr>
+  <td><strong>Unicode assignment</strong></td>
+  <td>Shows the fixed Unicode/UCSUR value; read-only.</td>
+</tr>
+<tr>
+  <td><strong>Additional input aliases</strong></td>
+  <td>Alternative text names for this glyph. Click <strong>Apply metadata</strong> to save.</td>
+</tr>
+<tr>
+  <td><strong>Vector trace</strong></td>
+  <td>Preview of bitmap traced into SVG.</td>
+</tr>
+<tr>
+  <td><strong>Opacity threshold</strong></td>
+  <td>Determines which pixels count as solid in tracing.</td>
+</tr>
+<tr>
+  <td><strong>Outline simplification</strong></td>
+  <td>Controls path simplification of the traced raster outline.</td>
+</tr>
+<tr>
+  <td><strong>Export this glyph as SVG</strong></td>
+  <td>Download this individual glyph's vector output.</td>
+</tr>
+<tr>
+  <td><strong>Show original filled silhouette</strong></td>
+  <td>Show/hide non-editable grey source art.</td>
+</tr>
+<tr>
+  <td><strong>Reference opacity</strong></td>
+  <td>Set grey guide transparency (independent of glyph ink).</td>
+</tr>
+<tr>
+  <td><strong>Joining-stroke alignment</strong></td>
+  <td>For special cartouche/long-pi slots only, inspect/confirm attachment geometry.</td>
+</tr>
+<tr>
+  <td><strong>Restore selected glyph from font</strong></td>
+  <td>Recover imported source art into the editable glyph.</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>grey source silhouette</strong>, <strong>grid</strong> and <strong>Metrics baseline</strong> are all separate visual layers, not font ink. Hiding them does not delete a glyph; using Eraser on the grey reference does not remove it.</p>
+<p><a id="compounds"></a></p>
+<h2>10. Compounds tab — combining source glyphs</h2>
+<p><img src="./images/07-compounds.svg" alt="Compound editor selection and transformed component preview" /></p>
+<p>Choose <strong>First glyph</strong>, <strong>Operator</strong> and <strong>Second glyph</strong>. The operators are <code>&amp;</code> (generic/font-defined compound), <code>−</code> (stacking) and <code>+</code> (nesting/scaling). Click <strong>Create / edit override</strong> to edit that specific combination. The two source glyphs are not overwritten.</p>
+<p>In the preview, click a component and drag to move it. Set <strong>Horizontal offset</strong>, <strong>Vertical offset</strong>, <strong>Scale</strong> and <strong>Rotation (degrees)</strong> in the right-hand controls; <strong>Reset component transform</strong> restores its default placement. <strong>Defined overrides</strong> lets you revisit a saved compound; <strong>Remove override</strong> discards that combination's custom layout.</p>
+<p>If a component is only an imported reference outline rather than editable geometry, follow the instruction in the Compounds panel to copy/draw its source first before export.</p>
+<p><a id="preview"></a></p>
+<h2>11. Preview — see the actual compiled font pair</h2>
+<p><img src="./images/08-preview.svg" alt="Preview text output and five geometry adjustment groups" /></p>
+<p><strong>Show font:</strong> Both fonts, Ligatures only or Literal only. <strong>Font size:</strong> display size in pixels. <strong>Build preview fonts:</strong> compile the pair for preview. <strong>Test text:</strong> enter examples and compare the actual output.</p>
+<p>Try:</p>
+<pre><code class="language-text">toki pona [jan pona]
+[&quot;ABC&quot;]
+[nanpa½ :½ wan]
+[jan,, telo,,]
+pi(telo lete) pi jan
+</code></pre>
+<p>The <strong>Ligatures</strong> TTF shapes sitelen pona ligatures and native cartouche controls. The <strong>Literal</strong> TTF is for literal ASCII/quoted content. The Preview tab is a font-shaping test; it is not a substitute for a website's separate Toki Pona date/time parser.</p>
+<h3>Rails &amp; spacing</h3>
+<table>
+<thead>
+<tr>
+  <th>Setting</th>
+  <th>What it changes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Cartouche glyph spacing</strong></td>
+  <td>Extra spacing between adjacent cartouche glyphs. In this version its slider starts at zero; negative compression is <strong>not</strong> implemented.</td>
+</tr>
+<tr>
+  <td><strong>Top rail / Bottom rail</strong></td>
+  <td>Vertical placement of top and bottom cartouche rules.</td>
+</tr>
+<tr>
+  <td><strong>Rail thickness</strong></td>
+  <td>Shared horizontal rule stroke weight.</td>
+</tr>
+<tr>
+  <td><strong>Start/end padding</strong></td>
+  <td>Extra space at the left and right ends; minimum currently zero.</td>
+</tr>
+<tr>
+  <td><strong>Content X offset</strong></td>
+  <td>Shifts cartouche contents horizontally without shifting its rails.</td>
+</tr>
+</tbody>
+</table>
+<h3>Cartouche ends</h3>
+<p><strong>End shape</strong> adjusts the cap curvature/height. <strong>End curve Y</strong> offsets the rounded curvature vertically. <strong>Left cap stroke / Right cap stroke</strong> control each cap independently. <strong>Left X / Right X</strong> adjust each cap horizontally. The cap-to-rail joins are maintained by the compiler.</p>
+<h3>Pi &amp; long-pi</h3>
+<p><strong>Pi height, Pi Y, Pi X</strong> control long-<em>pi</em> start geometry. <strong>Pi stroke</strong> controls ordinary <code>pi</code>; <strong>Long-pi stroke</strong> separately controls extended <code>pi(...)</code>. <strong>Round Pi tips</strong> rounds eligible exposed tips while keeping attachment widths.</p>
+<h3>Tallies</h3>
+<p><strong>Tally length</strong>, <strong>Tally Y</strong>, and <strong>Tally spacing</strong> affect the small marks beneath cartouche glyphs. Use the preview strings containing <code>,,</code> to compare stroke placement before export.</p>
+<h3>Alignment</h3>
+<p><strong>Fraction %</strong> controls fractional glyph vertical alignment; <strong>Baseline</strong> and <strong>Centre</strong> provide quick presets. <strong>Top padding / Bottom padding</strong> reserve clearance outside rails and tallies to prevent font clipping. The clearance gauge visualises the reserved space.</p>
+<p>Changes to font geometry cause the compiled preview pair to rebuild after a brief pause. If you are testing final output, confirm the last build completed before exporting.</p>
+<p><a id="typography"></a></p>
+<h2>12. Metrics &amp; kerning — editing font spacing</h2>
+<p>Open the <strong>Metrics &amp; kerning</strong> tab beside <strong>Draw glyph</strong>, <strong>Compounds</strong> and <strong>Preview</strong>. This is an editing operation, not an export-only option. Select a glyph in the left-hand library, then open the tab to load that glyph's spacing settings; <strong>Use selected glyph</strong> also synchronises the choice.</p>
+<p><strong>Live glyph metrics diagram:</strong> Set <strong>Advance width</strong> (the horizontal progression to the next glyph) and <strong>Left bearing</strong> (clearance before the actual ink). The diagram updates immediately while you type; <strong>Save spacing</strong> persists the override, and <strong>Use original</strong> removes it. Blank input fields keep the native metric from the imported/template font. There is no independent editable right-bearing field because the right bearing depends on advance, left bearing and actual outline width.</p>
+<p><strong>Live pair spacing diagram:</strong> Choose <strong>First glyph</strong>, <strong>Following glyph</strong> and a signed <strong>Adjustment</strong>. Negative values bring the glyphs closer; positive values move them apart. The diagram changes immediately as you type, and <strong>Save pair</strong> records the adjustment. <strong>Remove pair</strong> clears it. <strong>Kerning classes (advanced)</strong> lets you define reusable classes; explicit pair adjustments override class rules.</p>
+<p><strong>Cartouches and long-pi (Ligatures font):</strong> Pair and class kerning also applies to corresponding contextual content glyphs in <code>[...]</code> cartouches and <code>pi(...)</code> long-pi constructions. Negative kerning uses GPOS positioning. <strong>Positive kerning builds real connecting rail geometry</strong> to cover the extra width: for adjacent content (such as <code>[aa]</code> or <code>pi(aa)</code>) a contextual content variant receives an extended rail; with one Fairfax space separator (such as <code>[a a]</code> or <code>pi(a a)</code>) the separator is substituted with a rail-bearing spacer. Repeated pairs inside longer constructions are handled. Unlike spacing-only adjustments, this preserves continuous cartouche top/bottom rails and long-pi lower strokes. Individual pair rules and kerning classes use the same mechanism. The compiler supports up to 128 distinct positive pairs with contextual variants per export; excess rules produce an explicit export error instead of a broken font. Structural end caps, unboxed glyph outlines and the Literal font's ASCII behaviour remain separate. The live diagrams remain schematic; use <strong>Build font proof</strong> to inspect the actual shaped output.</p>
+<p><strong>Fractions and kerning:</strong> When the <strong>second</strong> glyph has a fractional suffix, kerning changes only the space before it: neither the fraction itself nor its scaling is altered. The connector adapts to each supported vulgar suffix (<code>¼</code>, <code>⅓</code>, <code>½</code>, <code>⅔</code>, <code>¾</code>) and the equivalent ASCII suffixes (<code>1/4</code>, <code>1/3</code>, <code>1/2</code>, <code>2/3</code>, <code>3/4</code>) in both adjacent and space-separated cartouches and long-pi. The compiler matches the actual GSUB fractional variants, including ASCII fractions that expand into multiple shaping glyphs. The live diagram remains schematic; <strong>Build font proof</strong> shows the authoritative shaped result. Fractional suffixes on the <em>first</em> glyph, tally combinations and other complex intermediary sequences are not covered by this contextual connector guarantee and should be independently verified.</p>
+<p><strong>Diagram limitation:</strong> The drawings are intentionally schematic, not measured glyph outlines. A blank advance or bearing is shown using a labelled example value because the browser-side controls do not read the native horizontal metrics directly from the source TTF. The pair diagram likewise illustrates the spacing shift, not a fully shaped font run. These immediate diagrams are <strong>not</strong> confirmation of final font geometry, ligatures or GPOS behaviour. Click <strong>Build font proof</strong> after saving changes to compile the actual Rust/WASM-generated TTF and inspect its OpenType positioning. Structural spacing/cartouche slots remain protected.</p>
+<p><a id="export"></a></p>
+<h2>13. Build &amp; export — names, validation and portable files</h2>
+<p><img src="./images/09-export.svg" alt="Font identity, optional typography, quality checks and export ZIP" /></p>
+<h3>Font identity</h3>
+<p><strong>Font family</strong>, <strong>Style</strong>, <strong>Version</strong> and <strong>PostScript base name</strong> are written to the OpenType name table. <strong>User project ID</strong> identifies the portable project and is distinct from the browser's private IndexedDB key. Click <strong>Save font identity</strong> after changing names.</p>
+<h3>Editable files and font ZIPs</h3>
+<table>
+<thead>
+<tr>
+  <th>Button</th>
+  <th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Export editable project JSON</strong></td>
+  <td>Project backup with editable outlines/settings for future work.</td>
+</tr>
+<tr>
+  <td><strong>Export vector SVG assets ZIP</strong></td>
+  <td>Individual vector glyph assets.</td>
+</tr>
+<tr>
+  <td><strong>Export custom-name Unicode manifest</strong></td>
+  <td>Custom name/codepoint mapping for compatible website parsers.</td>
+</tr>
+<tr>
+  <td><strong>Export fonts ZIP</strong></td>
+  <td>Compiles both TTFs and packages a verified manifest, licences and quality report.</td>
+</tr>
+<tr>
+  <td><strong>Use on this site</strong></td>
+  <td>Saves the compiled font pair in this browser for other pages of this website.</td>
+</tr>
+<tr>
+  <td><strong>Import font ZIP</strong></td>
+  <td>Installs a previously exported compiled pair in this browser.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Advanced font settings → Rasterization profile</strong> can select Default, Grayscale without grid-fitting, or Grayscale with grid-fitting. This affects generated-font display hints; it does <strong>not</strong> toggle the visible drawing grid.</p>
+<h3>Font quality checks (optional)</h3>
+<p>Click <strong>Check project</strong> to inspect outline and dependency findings. Problems are reported with glyph references; inspection does not alter drawings. Compilation also checks the output TTF structures and browser font loading. The ZIP includes <code>quality-report.json</code> describing the checks performed. External Rust, fontTools, HarfBuzz and LibreOffice checks are additional release gates; a browser's quality report is not a blanket certification.</p>
+<p><a id="shortcuts"></a></p>
+<h2>14. Handy gestures and troubleshooting</h2>
+<table>
+<thead>
+<tr>
+  <th>Gesture</th>
+  <th>Effect / reminder</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Space + drag</strong></td>
+  <td>Pan without modifying the glyph.</td>
+</tr>
+<tr>
+  <td><strong>Wheel</strong></td>
+  <td>Zoom around the pointer.</td>
+</tr>
+<tr>
+  <td><strong>F</strong></td>
+  <td>Fit whole canvas.</td>
+</tr>
+<tr>
+  <td><strong>Drag Circle/Rectangle from a corner</strong></td>
+  <td>Default: the first point is a bounding-box corner; the last point is the opposite corner.</td>
+</tr>
+<tr>
+  <td><strong>Shift while drawing Circle/Rectangle</strong></td>
+  <td>Keep equal width and height: perfect circle or square.</td>
+</tr>
+<tr>
+  <td><strong>Alt/Option-drag Circle/Rectangle</strong></td>
+  <td>Start from the centre. On Linux enable <strong>Brush → Draw shapes from centre</strong> instead if Alt-drag is intercepted.</td>
+</tr>
+<tr>
+  <td><strong>Shift+Alt/Option Circle/Rectangle</strong></td>
+  <td>Perfect circle or square, drawn outward from its centre.</td>
+</tr>
+<tr>
+  <td><strong>Brush Width/Smooth across glyphs</strong></td>
+  <td>Saved per project and reused across glyphs; the drawn geometry itself is unchanged.</td>
+</tr>
+<tr>
+  <td><strong>Alt-drag line/curve endpoint</strong></td>
+  <td>Move an existing endpoint.</td>
+</tr>
+<tr>
+  <td><strong>Click purple interior junction</strong></td>
+  <td>Select it for repositioning and tangent editing.</td>
+</tr>
+<tr>
+  <td><strong>Double-click Bézier segment in Edit path</strong></td>
+  <td>Insert an editable node on the segment.</td>
+</tr>
+<tr>
+  <td><strong>Enter / Shift+Enter (Bézier draft)</strong></td>
+  <td>Close filled contour / close hole.</td>
+</tr>
+<tr>
+  <td><strong>Esc (Bézier draft)</strong></td>
+  <td>Cancel unfinished contour.</td>
+</tr>
+<tr>
+  <td><strong>Ctrl+Z / Ctrl+Y</strong></td>
+  <td>Undo/Redo; may ask before travelling to another glyph.</td>
+</tr>
+<tr>
+  <td><strong>Drag palette heading</strong></td>
+  <td>Reposition floating palette. Arrow keys when focused also nudge it.</td>
+</tr>
+<tr>
+  <td><strong>Double-click palette heading</strong></td>
+  <td>Reset palette position.</td>
+</tr>
+<tr>
+  <td><strong>? in palette heading</strong></td>
+  <td>Open that palette's section in this guide.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Alt-drag moves my Linux window:</strong> tick <strong>Brush → Draw shapes from centre</strong>, then drag normally; hold Shift if you want a circle/square. <a href="#shape-gestures">Shape gestures</a>.</p>
+<p><strong>My brush width resets when changing projects:</strong> settings are per project, not global across every project. Set Brush → Width once in the new project. <a href="#brush">Brush defaults</a>.</p>
+<p><strong>I see only white, no grid:</strong> confirm <strong>Grid</strong> at the top of Drawing canvas is checked; it draws on the <em>artboard</em>, not the striped area outside it. In Inspect → Grid &amp; snapping, try 20-unit spacing.</p>
+<p><strong>My Pencil is not snapping:</strong> intentional. Pencil is freehand even with Snap enabled. Use Line/Curve/Bézier/Circle/Rectangle for grid-aligned construction.</p>
+<p><strong>I can't erase the grey outline:</strong> it is a protected reference, not editable ink. Inspect → Show original filled silhouette toggles it off.</p>
+<p><strong>Small spike at joined curve:</strong> choose <strong>Edit path</strong>, select the purple interior junction and <strong>Smooth junction</strong>; do not start with contour cleanup unless Check outline reports a genuine tiny backtracking spike.</p>
+<p><strong>The reference or guides appear in preview:</strong> check the drawing and editing layers; grey source, artboard grid and metrics do not enter TTF output.</p>
+<p><strong>Changing a glyph didn't change a linked copy:</strong> inspect linked-component references, source layer export participation and circular-link warnings; build a new preview after modifications.</p>
+<p><strong>Build fails or a font doesn't render:</strong> use Font quality checks and then run the project's <code>./bin/test-all.sh</code> on a computer with Rust/WASM toolchain and external font-testing dependencies. JavaScript-only success does not certify the final TTF.</p>
+<hr />
+<p><em>This guide is shipped as Markdown (<code>FONT_MAKER_USER_GUIDE.md</code>), a browsable HTML copy (<code>guide.html</code>), and local SVG examples. It requires no network connection or hosted fonts. Help links lead to stable headings in this document.</em></p>
+</main><script>
+(() => {
+  'use strict';
+  const article = document.querySelector('main');
+  const input = document.getElementById('helpSearch');
+  const counter = document.getElementById('helpSearchCount');
+  const previous = document.getElementById('helpSearchPrev');
+  const next = document.getElementById('helpSearchNext');
+  if (!article || !input || !counter || !previous || !next) return;
+  let matches = [];
+  let selected = -1;
+  function clear() {
+    for (const mark of matches) {
+      const parent = mark.parentNode;
+      if (parent) { parent.replaceChild(document.createTextNode(mark.textContent), mark); parent.normalize(); }
+    }
+    matches = [];
+    selected = -1;
+  }
+  function show(position, scroll = true) {
+    if (!matches.length) return;
+    if (selected >= 0) matches[selected].classList.remove('help-hit-current');
+    selected = (position + matches.length) % matches.length;
+    const mark = matches[selected];
+    mark.classList.add('help-hit-current');
+    counter.textContent = `${selected + 1} of ${matches.length}`;
+    if (scroll) mark.scrollIntoView({behavior:'auto',block:'center'});
+  }
+  function search() {
+    clear();
+    const needle = input.value.trim().toLocaleLowerCase();
+    previous.disabled = next.disabled = !needle;
+    if (!needle) { counter.textContent = ''; return; }
+    const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        return node.parentElement && !node.parentElement.closest('script,style,mark') &&
+          node.nodeValue.toLocaleLowerCase().includes(needle)
+          ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      const value = node.nodeValue;
+      const lower = value.toLocaleLowerCase();
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      let idx;
+      while ((idx = lower.indexOf(needle, cursor)) !== -1) {
+        fragment.appendChild(document.createTextNode(value.slice(cursor, idx)));
+        const mark = document.createElement('mark');
+        mark.className = 'help-hit';
+        mark.textContent = value.slice(idx, idx + needle.length);
+        fragment.appendChild(mark);
+        matches.push(mark);
+        cursor = idx + needle.length;
+      }
+      fragment.appendChild(document.createTextNode(value.slice(cursor)));
+      node.replaceWith(fragment);
+    }
+    previous.disabled = next.disabled = matches.length === 0;
+    if (matches.length) show(0, false);
+    else counter.textContent = 'No matches';
+  }
+  input.addEventListener('input', search);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && matches.length) { e.preventDefault(); show(selected + (e.shiftKey ? -1 : 1)); }
+    if (e.key === 'Escape' && input.value) { input.value = ''; search(); }
+  });
+  previous.addEventListener('click', () => show(selected - 1));
+  next.addEventListener('click', () => show(selected + 1));
+})();
+</script></body></html>

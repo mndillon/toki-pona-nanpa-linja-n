@@ -2,7 +2,7 @@
  * Operates on a frozen selection snapshot, never on the previous slider result.
  * No external dependencies or changes to the font compiler or WASM interface.
  */
-import {signedAnchorArea} from './bezier.js';
+import {signedAnchorArea} from './bezier.js?v=0.3.42.2';
 
 // Exact squared Euclidean distance transform, O(width * height).
 function distanceRow(f, out, n) {
@@ -89,6 +89,7 @@ export function resizeSelectedInk(rgba,width,height,deltaWidth){
 // nodes and translating their handles together.  Filled outer contours grow;
 // hole contours contract. Geometry is always based on the original nodes.
 export function offsetSelectedContour(contour,deltaWidth){
+  if(contour?.kind==='stroke')return {...structuredClone(contour),width:Math.max(1,(contour.width||9)+deltaWidth),widths:(contour.widths||Array(Math.max(1,contour.points.length-1)).fill(contour.width||9)).map(w=>Math.max(1,w+deltaWidth))};
   const points=contour?.points||[];
   if(points.length<3||!deltaWidth)return structuredClone(contour);
   const area=signedAnchorArea(points),sign=(area<0?-1:1)*(contour.role==='hole'?-1:1);

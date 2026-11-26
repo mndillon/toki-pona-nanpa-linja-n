@@ -1,3 +1,5 @@
+import {fontGlyphsForCompilation} from './glyph-layers.js?v=0.3.43.0';
+import {inspectCompiledPair} from './font-quality.js?v=0.3.49';
 /* Browser-only wasm-pack bridge. The font compiler has NO JavaScript fallback.
  * A local preview/tracing fallback remains so art can be edited before WASM
  * is built; the app never labels an SVG ZIP as a TTF. */
@@ -43,7 +45,7 @@ export async function compileBoth(project,catalogue){
   // Rust's Project request has no sourceFont or licensing fields. Large binary
   // base64 records (especially a preserved Literal partner) are supplied as
   // native byte arguments instead of being copied twice through JSON/WASM.
-  const request=JSON.stringify({project:{...project,sourceFont:undefined,licensing:undefined},catalogue});
+  const request=JSON.stringify({project:{...project,sourceFont:undefined,licensing:undefined,glyphs:fontGlyphsForCompilation(project.glyphs||{})},catalogue});
   const normal=core.compile_project(request,source,'normal');
   // A verified exported pair can be reimported as a new editing source.
   // Retain its separate Literal font instead of silently rebuilding Literal
@@ -64,6 +66,8 @@ export async function compileBoth(project,catalogue){
         throw Error(`Compiler produced invalid ${name} TTF: empty fpgm hinting table`);
     }
   }
+  const quality=inspectCompiledPair(normal,literal);
+  if(!quality.valid)throw Error('Compiled TTF failed structural validation: '+quality.issues.filter(i=>i.severity==='error').slice(0,4).map(i=>`${i.font}: ${i.message}`).join('; '));
   return {normal,literal};
 }
 export function inspectImportedFont(bytes){if(!core)return 'Font imported for editing, but WASM has not been built.';return core.inspect_font(bytes);}

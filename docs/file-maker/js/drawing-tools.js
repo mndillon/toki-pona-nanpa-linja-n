@@ -55,16 +55,25 @@ export function lineContour(a,b,width){
     anchor(...F,shift(F,0,-K*r),shift(F,0,K*r))
   ]);
 }
-export function shapeContours(kind,a,b,width,{filled=false,constrain=false}={}){
+/** Bounds for Rectangle/Circle drawing. The initial point is normally a
+ * corner; when fromCenter is true it is the centre and the drag defines a
+ * radius along each axis. Shift constrains both axes to the larger extent.
+ * The same calculation is used for the live preview and committed geometry.
+ */
+export function shapeBounds(a,b,{constrain=false,fromCenter=false}={}){
+  if(!a||!b)return null;
+  const dx=b.x-a.x,dy=b.y-a.y;
+  const extentX=constrain?Math.max(Math.abs(dx),Math.abs(dy)):Math.abs(dx);
+  const extentY=constrain?Math.max(Math.abs(dx),Math.abs(dy)):Math.abs(dy);
+  if(fromCenter)return {x0:a.x-extentX,y0:a.y-extentY,x1:a.x+extentX,y1:a.y+extentY};
+  const endX=a.x+(dx<0?-extentX:extentX),endY=a.y+(dy<0?-extentY:extentY);
+  return {x0:Math.min(a.x,endX),y0:Math.min(a.y,endY),x1:Math.max(a.x,endX),y1:Math.max(a.y,endY)};
+}
+export function shapeContours(kind,a,b,width,{filled=false,constrain=false,fromCenter=false}={}){
   if(!a||!b)return [];
   const w=Math.max(1,Number(width)||1);
   if(kind==='line')return [lineContour(a,b,w)];
-  let x0=Math.min(a.x,b.x),x1=Math.max(a.x,b.x),y0=Math.min(a.y,b.y),y1=Math.max(a.y,b.y);
-  if(constrain){
-    const side=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
-    x1=a.x+(b.x>=a.x?side:0);x0=a.x-(b.x<a.x?side:0);
-    y1=a.y+(b.y>=a.y?side:0);y0=a.y-(b.y<a.y?side:0);
-  }
+  const {x0,y0,x1,y1}=shapeBounds(a,b,{constrain,fromCenter});
   if(x1-x0<1||y1-y0<1)return [];
   if(kind==='ellipse'){
     const cx=(x0+x1)/2,cy=(y0+y1)/2,rx=(x1-x0)/2,ry=(y1-y0)/2;
@@ -115,8 +124,11 @@ export function curveContour(start,end,through,width){
 }
 
 export function affineContour(contour,{a=1,b=0,c=0,d=1,e=0,f=0}={}){
+  // With uniform scale, a stroke's ink thickness must scale with its
+  // centrelines. Non-uniform transforms use the geometric-mean approximation.
+  const scale=Math.sqrt(Math.abs(a*d-b*c));
   const at=p=>[round(a*p[0]+c*p[1]+e),round(b*p[0]+d*p[1]+f)];
-  return {...contour,points:contour.points.map(p=>{
+  return {...contour,...(contour.kind==='stroke'?{width:round(contour.width*scale),widths:(contour.widths||[]).map(w=>round(w*scale))}:{}),points:contour.points.map(p=>{
     const [x,y]=at([p.x,p.y]);return {...p,x,y,in:at(p.in),out:at(p.out)};
   })};
 }
